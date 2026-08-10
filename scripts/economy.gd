@@ -13,6 +13,8 @@ const RARITY_VALUES := {
 	FishRarity.Tier.MYTHIC: 150,
 }
 
-func add_coins_for_catch(rarity: FishRarity.Tier) -> void:
-	coins += RARITY_VALUES[rarity]
+func add_coins_for_catch(rarity: FishRarity.Tier, weight: float) -> void:
+	var base_value: float = RARITY_VALUES[rarity]
+	var weight_multiplier: float = weight / FishRarity.average_weight(rarity)
+	coins += roundi(base_value * weight_multiplier)
 	coins_changed.emit(coins)
