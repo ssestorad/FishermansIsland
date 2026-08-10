@@ -13,7 +13,7 @@ const TIER_COLORS := {
 @onready var title_label: Label = $MarginContainer/VBoxContainer/TitleLabel
 @onready var card_area: VBoxContainer = $MarginContainer/VBoxContainer/CardArea
 @onready var page_label: Label = $MarginContainer/VBoxContainer/CardArea/PageLabel
-@onready var icon: Control = $MarginContainer/VBoxContainer/CardArea/IconPanel/FishIcon
+@onready var icon: Sprite2D = $MarginContainer/VBoxContainer/CardArea/IconPanel/FishIcon
 @onready var icon_question_mark: Label = $MarginContainer/VBoxContainer/CardArea/IconPanel/QuestionMark
 @onready var species_name_label: Label = $MarginContainer/VBoxContainer/CardArea/SpeciesNameLabel
 @onready var tier_label: Label = $MarginContainer/VBoxContainer/CardArea/TierLabel
@@ -113,7 +113,7 @@ func refresh() -> void:
 	var tier_color: Color = TIER_COLORS[species.tier]
 
 	page_label.text = "%d / %d" % [_current_index + 1, _all_species.size()]
-	icon.set_state(discovered, tier_color)
+	icon.set_species(species.species_name, discovered, tier_color)
 	icon_question_mark.visible = not discovered
 	tier_label.text = FishRarity.name_for(species.tier)
 	tier_label.add_theme_color_override("font_color", tier_color)

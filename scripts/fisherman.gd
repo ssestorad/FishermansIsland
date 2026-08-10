@@ -17,6 +17,11 @@ const MAX_SPEED_REDUCTION := 0.6
 const XP_PER_LEVEL := 10.0
 const LEVEL_CAP := 10.0
 const XP_PER_CATCH := 2.0
+const WALK_ANIM_FPS := 6.0
+const WALK_TEXTURES := [
+	preload("res://assets/sprites/fisherman/walk_a.png"),
+	preload("res://assets/sprites/fisherman/walk_b.png"),
+]
 
 enum State { WALK_TO_DOCK, FISHING, WALK_HOME, RESTING }
 
@@ -30,6 +35,8 @@ var speed_xp: float = 0.0
 var luck_xp: float = 0.0
 var power_xp: float = 0.0
 var is_hovered: bool = false
+var _walk_anim_timer: float = 0.0
+var _walk_frame: int = 0
 
 var equipped_items: Dictionary = {
 	"Rod": null,
@@ -40,6 +47,7 @@ var equipped_items: Dictionary = {
 }
 
 @onready var click_area: Area2D = $ClickArea
+@onready var sprite: Sprite2D = $Sprite2D
 
 func _ready() -> void:
 	if display_name.is_empty():
@@ -49,6 +57,7 @@ func _ready() -> void:
 	click_area.input_event.connect(_on_click_area_input_event)
 	click_area.mouse_entered.connect(_on_mouse_entered)
 	click_area.mouse_exited.connect(_on_mouse_exited)
+	sprite.texture = WALK_TEXTURES[0]
 	queue_redraw()
 
 func _process(delta: float) -> void:
@@ -75,7 +84,20 @@ func _process(delta: float) -> void:
 			if wait_timer <= 0.0:
 				current_target = _random_dock_point()
 				state = State.WALK_TO_DOCK
+	_update_sprite_animation(delta)
 	queue_redraw()
+
+func _update_sprite_animation(delta: float) -> void:
+	var moving := state == State.WALK_TO_DOCK or state == State.WALK_HOME
+	if moving:
+		_walk_anim_timer += delta
+		if _walk_anim_timer >= 1.0 / WALK_ANIM_FPS:
+			_walk_anim_timer = 0.0
+			_walk_frame = 1 - _walk_frame
+			sprite.texture = WALK_TEXTURES[_walk_frame]
+	elif _walk_frame != 0:
+		_walk_frame = 0
+		sprite.texture = WALK_TEXTURES[0]
 
 func _resolve_catch() -> void:
 	var caught_rarity := FishRarity.roll(get_effective_stat(luck_xp, "luck"))
@@ -164,11 +186,7 @@ func get_slot_display(slot_name: String) -> String:
 	return item.item_name if item != null else "—"
 
 func _draw() -> void:
-	draw_rect(Rect2(-5, 0, 4, 9), Color(0.2, 0.15, 0.1))
-	draw_rect(Rect2(1, 0, 4, 9), Color(0.2, 0.15, 0.1))
-	draw_rect(Rect2(-6, -8, 12, 10), Color(0.85, 0.55, 0.2))
-	draw_circle(Vector2(0, -12), 5, Color(0.92, 0.75, 0.6))
 	if state == State.FISHING:
-		draw_line(Vector2(4, -6), Vector2(15, 4), Color(0.35, 0.25, 0.15), 1.5)
+		draw_line(Vector2(6, -10), Vector2(17, -2), Color(0.35, 0.25, 0.15), 1.5)
 	if is_hovered:
-		draw_rect(Rect2(-9, -18, 18, 28), Color.WHITE, false, 2.0)
+		draw_rect(Rect2(-9, -26, 18, 28), Color.WHITE, false, 2.0)

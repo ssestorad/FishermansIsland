@@ -1,21 +1,21 @@
-extends Control
+extends Sprite2D
 
-var discovered: bool = false
-var tier_color: Color = Color.WHITE
+const TEXTURES := [
+	preload("res://assets/sprites/fish/fish_0_classic.png"),
+	preload("res://assets/sprites/fish/fish_1_puffer.png"),
+	preload("res://assets/sprites/fish/fish_2_eel.png"),
+	preload("res://assets/sprites/fish/fish_3_shark.png"),
+	preload("res://assets/sprites/fish/fish_4_ray.png"),
+	preload("res://assets/sprites/fish/fish_5_bigeye.png"),
+	preload("res://assets/sprites/fish/fish_6_swordfish.png"),
+	preload("res://assets/sprites/fish/fish_7_finned.png"),
+	preload("res://assets/sprites/fish/fish_8_fancy.png"),
+	preload("res://assets/sprites/fish/fish_9_serpent.png"),
+]
 
-func set_state(p_discovered: bool, p_tier_color: Color) -> void:
-	discovered = p_discovered
-	tier_color = p_tier_color
-	queue_redraw()
+const UNDISCOVERED_COLOR := Color(0.28, 0.28, 0.28)
 
-func _draw() -> void:
-	var body_color := tier_color if discovered else Color(0.25, 0.25, 0.25)
-	var w := size.x
-	var h := size.y
-	draw_circle(Vector2(w * 0.42, h * 0.5), h * 0.4, body_color)
-	var tail := PackedVector2Array([
-		Vector2(w * 0.72, h * 0.5),
-		Vector2(w * 0.95, h * 0.2),
-		Vector2(w * 0.95, h * 0.8),
-	])
-	draw_colored_polygon(tail, body_color)
+func set_species(species_name: String, discovered: bool, tier_color: Color) -> void:
+	var index: int = abs(species_name.hash()) % TEXTURES.size()
+	texture = TEXTURES[index]
+	modulate = tier_color if discovered else UNDISCOVERED_COLOR
