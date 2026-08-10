@@ -41,3 +41,9 @@ func spend_scales(amount: int) -> bool:
 	scales -= amount
 	scales_changed.emit(scales)
 	return true
+
+func load_state(new_coins: int, new_scales: int) -> void:
+	coins = new_coins
+	scales = new_scales
+	coins_changed.emit(coins)
+	scales_changed.emit(scales)

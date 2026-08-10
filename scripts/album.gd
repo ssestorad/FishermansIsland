@@ -14,3 +14,8 @@ func record_catch(species: FishSpecies, weight: float) -> void:
 
 func is_discovered(species_name: String) -> bool:
 	return caught_counts.get(species_name, 0) > 0
+
+func load_state(new_caught_counts: Dictionary, new_best_weights: Dictionary) -> void:
+	caught_counts = new_caught_counts
+	best_weights = new_best_weights
+	updated.emit()

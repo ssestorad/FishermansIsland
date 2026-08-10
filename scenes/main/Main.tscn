@@ -14,6 +14,10 @@
 [node name="Main" type="Node2D"]
 script = ExtResource("1_main")
 
+[node name="AutosaveTimer" type="Timer" parent="."]
+wait_time = 30.0
+autostart = true
+
 [node name="WorldEffectsLayer" type="CanvasLayer" parent="."]
 layer = 1
 
@@ -54,6 +58,14 @@ offset_top = 44.0
 offset_right = 628.0
 offset_bottom = 58.0
 script = ExtResource("4_season_timeline")
+
+[node name="MenuButton" type="Button" parent="CanvasLayer"]
+offset_left = 470.0
+offset_top = 60.0
+offset_right = 628.0
+offset_bottom = 84.0
+theme_override_font_sizes/font_size = 12
+text = "Menu"
 
 [node name="CoinsLabel" type="Label" parent="CanvasLayer"]
 offset_left = 12.0
@@ -205,6 +217,10 @@ text = "Bait
 [node name="ShopButton" type="Button" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer"]
 layout_mode = 2
 text = "Shop"
+
+[node name="DismissButton" type="Button" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Dismiss"
 
 [node name="CloseButton" type="Button" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer"]
 layout_mode = 2

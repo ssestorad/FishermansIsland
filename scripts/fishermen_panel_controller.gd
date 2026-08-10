@@ -33,5 +33,7 @@ func _process(_delta: float) -> void:
 
 func refresh() -> void:
 	for fisherman in _row_by_fisherman:
+		if not is_instance_valid(fisherman):
+			continue
 		var row: Button = _row_by_fisherman[fisherman]
 		row.text = "%s — %s" % [fisherman.display_name, fisherman.get_stats_text()]

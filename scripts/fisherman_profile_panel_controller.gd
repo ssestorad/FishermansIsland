@@ -2,6 +2,7 @@ class_name FishermanProfilePanelController
 extends Panel
 
 signal shop_requested(fisherman)
+signal dismiss_requested(fisherman)
 
 @onready var name_label: Label = $MarginContainer/VBoxContainer/NameLabel
 @onready var speed_label: Label = $MarginContainer/VBoxContainer/SpeedLabel
@@ -9,16 +10,21 @@ signal shop_requested(fisherman)
 @onready var power_label: Label = $MarginContainer/VBoxContainer/PowerLabel
 @onready var equipment_slots: HBoxContainer = $MarginContainer/VBoxContainer/EquipmentSlots
 @onready var shop_button: Button = $MarginContainer/VBoxContainer/ShopButton
+@onready var dismiss_button: Button = $MarginContainer/VBoxContainer/DismissButton
 @onready var close_button: Button = $MarginContainer/VBoxContainer/CloseButton
 
 var _fisherman: Node = null
+var _dismiss_armed: bool = false
 
 func _ready() -> void:
 	shop_button.pressed.connect(_on_shop_button_pressed)
+	dismiss_button.pressed.connect(_on_dismiss_button_pressed)
 	close_button.pressed.connect(_on_close_button_pressed)
 
 func show_fisherman(fisherman: Node) -> void:
 	_fisherman = fisherman
+	_dismiss_armed = false
+	dismiss_button.text = "Dismiss"
 	visible = true
 	refresh()
 
@@ -41,6 +47,17 @@ func refresh() -> void:
 func _on_shop_button_pressed() -> void:
 	if _fisherman != null:
 		shop_requested.emit(_fisherman)
+
+func _on_dismiss_button_pressed() -> void:
+	if _fisherman == null:
+		return
+	if not _dismiss_armed:
+		_dismiss_armed = true
+		dismiss_button.text = "Confirm dismiss?"
+		return
+	dismiss_requested.emit(_fisherman)
+	visible = false
+	_fisherman = null
 
 func _on_close_button_pressed() -> void:
 	visible = false

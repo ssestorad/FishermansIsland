@@ -57,6 +57,9 @@ var _weather_timer: float = 0.0
 func _ready() -> void:
 	_reroll_weather()
 
+func load_state(new_elapsed_time: float) -> void:
+	elapsed_time = new_elapsed_time
+
 func _process(delta: float) -> void:
 	elapsed_time += delta
 	_weather_timer += delta

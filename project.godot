@@ -19,6 +19,7 @@ config/features=PackedStringArray("4.7", "GL Compatibility")
 Economy="*res://scripts/economy.gd"
 Album="*res://scripts/album.gd"
 WorldClock="*res://scripts/world_clock.gd"
+SaveManager="*res://scripts/save_manager.gd"
 
 [gui]
 
