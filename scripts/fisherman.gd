@@ -27,7 +27,8 @@ func _process(delta: float) -> void:
 		State.FISHING:
 			wait_timer -= delta
 			if wait_timer <= 0.0:
-				print(name, " chytil rybu!")
+				var caught_rarity := FishRarity.roll()
+				print(name, " caught a ", FishRarity.name_for(caught_rarity), " fish!")
 				state = State.WALK_HOME
 		State.WALK_HOME:
 			_move_toward(home_position, delta)
