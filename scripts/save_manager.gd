@@ -18,6 +18,7 @@ func save_game(fishermen: Array) -> void:
 			"caught_counts": Album.caught_counts,
 			"best_weights": Album.best_weights,
 		},
+		"inventory": Inventory.items.map(func(item): return item.item_name),
 		"fishermen": fishermen_data,
 	}
 

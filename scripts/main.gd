@@ -12,11 +12,13 @@ const HIRE_COST_GROWTH := 1.25
 @onready var fishermen_button: Button = $CanvasLayer/FishermenButton
 @onready var hire_button: Button = $CanvasLayer/HireButton
 @onready var album_button: Button = $CanvasLayer/AlbumButton
+@onready var shop_button: Button = $CanvasLayer/ShopButton
 @onready var menu_button: Button = $CanvasLayer/MenuButton
 @onready var fishermen_panel: FishermenPanelController = $CanvasLayer/FishermenPanel
 @onready var album_panel: AlbumPanelController = $CanvasLayer/AlbumPanel
-@onready var profile_panel: FishermanProfilePanelController = $CanvasLayer/FishermanProfilePanel
 @onready var shop_panel: ShopPanelController = $CanvasLayer/ShopPanel
+@onready var profile_panel: FishermanProfilePanelController = $CanvasLayer/FishermanProfilePanel
+@onready var equip_panel: EquipPanelController = $CanvasLayer/EquipPanel
 @onready var autosave_timer: Timer = $AutosaveTimer
 
 var fishermen: Array = []
@@ -37,12 +39,12 @@ func _ready() -> void:
 	fishermen_button.pressed.connect(_on_fishermen_button_pressed)
 	hire_button.pressed.connect(_on_hire_button_pressed)
 	album_button.pressed.connect(_on_album_button_pressed)
+	shop_button.pressed.connect(_on_shop_button_pressed)
 	menu_button.pressed.connect(_on_menu_button_pressed)
 
 	fishermen_panel.fisherman_selected.connect(_show_profile)
-	profile_panel.shop_requested.connect(_on_shop_requested)
 	profile_panel.dismiss_requested.connect(_on_dismiss_requested)
-	shop_panel.back_pressed.connect(_on_shop_back)
+	profile_panel.slot_clicked.connect(_on_slot_clicked)
 
 	autosave_timer.timeout.connect(_on_autosave_timeout)
 
@@ -59,6 +61,7 @@ func _load_game() -> void:
 	var album_data: Dictionary = data.get("album", {})
 	Album.load_state(album_data.get("caught_counts", {}), album_data.get("best_weights", {}))
 	WorldClock.load_state(float(data.get("elapsed_time", 0.0)))
+	Inventory.load_state(data.get("inventory", []))
 	var saved_fishermen: Array = data.get("fishermen", [])
 	if saved_fishermen.is_empty():
 		_spawn_starting_fishermen()
@@ -121,29 +124,37 @@ func _update_hire_button() -> void:
 
 func _on_fishermen_button_pressed() -> void:
 	album_panel.visible = false
+	shop_panel.visible = false
 	fishermen_panel.toggle(fishermen)
 
 func _on_album_button_pressed() -> void:
 	fishermen_panel.visible = false
+	shop_panel.visible = false
 	album_panel.toggle()
+
+func _on_shop_button_pressed() -> void:
+	fishermen_panel.visible = false
+	album_panel.visible = false
+	shop_panel.toggle()
 
 func _on_menu_button_pressed() -> void:
 	SaveManager.save_game(fishermen)
 	get_tree().change_scene_to_file("res://scenes/main_menu/MainMenu.tscn")
 
 func _show_profile(fisherman: Node) -> void:
-	shop_panel.visible = false
+	equip_panel.visible = false
 	fishermen_panel.visible = false
 	profile_panel.show_fisherman(fisherman)
 
-func _on_shop_requested(fisherman: Node) -> void:
+func _on_slot_clicked(fisherman: Node, slot_name: String) -> void:
 	profile_panel.visible = false
-	shop_panel.open_for(fisherman)
-
-func _on_shop_back() -> void:
-	profile_panel.visible = true
+	equip_panel.open_for(fisherman, slot_name)
 
 func _on_dismiss_requested(fisherman: Node) -> void:
+	for slot in fisherman.equipped_items:
+		var item = fisherman.equipped_items[slot]
+		if item != null:
+			Inventory.add_item(item)
 	fishermen.erase(fisherman)
 	fisherman.queue_free()
 	_update_hire_button()

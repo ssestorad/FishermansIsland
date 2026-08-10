@@ -1,21 +1,18 @@
 class_name ShopPanelController
 extends Panel
 
-signal back_pressed
-
 @onready var rows_container: VBoxContainer = $MarginContainer/VBoxContainer/ShopScroll/ShopRows
-@onready var back_button: Button = $MarginContainer/VBoxContainer/BackButton
+@onready var close_button: Button = $MarginContainer/VBoxContainer/CloseButton
 
-var _current_fisherman: Node = null
 var _items: Array = []
 
 func _ready() -> void:
-	back_button.pressed.connect(_on_back_button_pressed)
+	close_button.pressed.connect(_on_close_button_pressed)
 
-func open_for(fisherman: Node) -> void:
-	_current_fisherman = fisherman
-	visible = true
-	build()
+func toggle() -> void:
+	visible = not visible
+	if visible:
+		build()
 
 func build() -> void:
 	UiListUtils.clear_children(rows_container)
@@ -43,12 +40,9 @@ func refresh() -> void:
 		button.disabled = balance < item.cost
 
 func _on_buy_item(item: Item) -> void:
-	if _current_fisherman == null or not is_instance_valid(_current_fisherman):
-		return
 	var spent: bool = Economy.spend_coins(item.cost) if item.currency == "Coins" else Economy.spend_scales(item.cost)
 	if spent:
-		_current_fisherman.equip_item(item)
+		Inventory.add_item(item)
 
-func _on_back_button_pressed() -> void:
+func _on_close_button_pressed() -> void:
 	visible = false
-	back_pressed.emit()

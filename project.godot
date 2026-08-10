@@ -20,6 +20,7 @@ Economy="*res://scripts/economy.gd"
 Album="*res://scripts/album.gd"
 WorldClock="*res://scripts/world_clock.gd"
 SaveManager="*res://scripts/save_manager.gd"
+Inventory="*res://scripts/inventory.gd"
 
 [display]
 
