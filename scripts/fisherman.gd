@@ -28,6 +28,7 @@ func _process(delta: float) -> void:
 			wait_timer -= delta
 			if wait_timer <= 0.0:
 				var caught_rarity := FishRarity.roll()
+				Economy.add_coins_for_catch(caught_rarity)
 				print(name, " caught a ", FishRarity.name_for(caught_rarity), " fish!")
 				state = State.WALK_HOME
 		State.WALK_HOME:

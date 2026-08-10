@@ -14,6 +14,10 @@ config/name="Fishermans Island"
 run/main_scene="res://scenes/main/Main.tscn"
 config/features=PackedStringArray("4.7", "GL Compatibility")
 
+[autoload]
+
+Economy="*res://scripts/economy.gd"
+
 [display]
 
 window/size/viewport_width=640
