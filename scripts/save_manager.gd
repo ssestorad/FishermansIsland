@@ -19,6 +19,11 @@ func save_game(fishermen: Array) -> void:
 			"best_weights": Album.best_weights,
 		},
 		"inventory": Inventory.items.map(func(item): return item.item_name),
+		"meta_progress": {
+			"extra_slots": MetaProgress.extra_slots,
+			"luck_level": MetaProgress.luck_level,
+			"discount_level": MetaProgress.discount_level,
+		},
 		"fishermen": fishermen_data,
 	}
 

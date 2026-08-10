@@ -196,11 +196,12 @@ func get_effective_stat(xp: float, axis: String) -> float:
 	var environment_bonus := 0.0
 	match axis:
 		"luck":
-			environment_bonus = WorldClock.get_weather_luck_bonus() + WorldClock.get_season_luck_bonus()
+			environment_bonus = WorldClock.get_weather_luck_bonus() + WorldClock.get_season_luck_bonus() + MetaProgress.get_global_luck_bonus()
 		"speed":
 			environment_bonus = WorldClock.get_weather_speed_bonus() + WorldClock.get_season_speed_bonus()
 		"power":
 			environment_bonus = WorldClock.get_season_power_bonus()
+	environment_bonus += PotionManager.get_bonus(axis)
 	return clampf(get_level_fraction(xp) + get_equipment_bonus(axis) + environment_bonus, 0.0, 1.0)
 
 func equip_item(item) -> void:

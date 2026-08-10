@@ -21,6 +21,8 @@ Album="*res://scripts/album.gd"
 WorldClock="*res://scripts/world_clock.gd"
 SaveManager="*res://scripts/save_manager.gd"
 Inventory="*res://scripts/inventory.gd"
+MetaProgress="*res://scripts/meta_progress.gd"
+PotionManager="*res://scripts/potion_manager.gd"
 
 [display]
 

@@ -13,10 +13,12 @@ const HIRE_COST_GROWTH := 1.25
 @onready var hire_button: Button = $CanvasLayer/HireButton
 @onready var album_button: Button = $CanvasLayer/AlbumButton
 @onready var shop_button: Button = $CanvasLayer/ShopButton
+@onready var meta_button: Button = $CanvasLayer/MetaButton
 @onready var menu_button: Button = $CanvasLayer/MenuButton
 @onready var fishermen_panel: FishermenPanelController = $CanvasLayer/FishermenPanel
 @onready var album_panel: AlbumPanelController = $CanvasLayer/AlbumPanel
 @onready var shop_panel: ShopPanelController = $CanvasLayer/ShopPanel
+@onready var meta_panel: MetaPanelController = $CanvasLayer/MetaPanel
 @onready var profile_panel: FishermanProfilePanelController = $CanvasLayer/FishermanProfilePanel
 @onready var equip_panel: EquipPanelController = $CanvasLayer/EquipPanel
 @onready var autosave_timer: Timer = $AutosaveTimer
@@ -40,6 +42,7 @@ func _ready() -> void:
 	hire_button.pressed.connect(_on_hire_button_pressed)
 	album_button.pressed.connect(_on_album_button_pressed)
 	shop_button.pressed.connect(_on_shop_button_pressed)
+	meta_button.pressed.connect(_on_meta_button_pressed)
 	menu_button.pressed.connect(_on_menu_button_pressed)
 
 	fishermen_panel.fisherman_selected.connect(_show_profile)
@@ -47,6 +50,7 @@ func _ready() -> void:
 	profile_panel.slot_clicked.connect(_on_slot_clicked)
 
 	autosave_timer.timeout.connect(_on_autosave_timeout)
+	MetaProgress.updated.connect(_update_hire_button)
 
 	_update_hire_button()
 
@@ -62,6 +66,7 @@ func _load_game() -> void:
 	Album.load_state(album_data.get("caught_counts", {}), album_data.get("best_weights", {}))
 	WorldClock.load_state(float(data.get("elapsed_time", 0.0)))
 	Inventory.load_state(data.get("inventory", []))
+	MetaProgress.load_state(data.get("meta_progress", {}))
 	var saved_fishermen: Array = data.get("fishermen", [])
 	if saved_fishermen.is_empty():
 		_spawn_starting_fishermen()
@@ -105,19 +110,23 @@ func _spawn_fisherman(saved_data: Dictionary = {}) -> Node:
 	return fisherman
 
 func _on_hire_button_pressed() -> void:
-	if fishermen.size() >= MAX_FISHERMEN_SLOTS:
+	if fishermen.size() >= _max_fishermen_slots():
 		return
 	var cost := _hire_cost_for_next_slot()
 	if Economy.spend_coins(cost):
 		_spawn_fisherman()
 		_update_hire_button()
 
+func _max_fishermen_slots() -> int:
+	return MAX_FISHERMEN_SLOTS + MetaProgress.extra_slots
+
 func _hire_cost_for_next_slot() -> int:
 	return int(round(BASE_HIRE_COST * pow(HIRE_COST_GROWTH, fishermen.size() - 1)))
 
 func _update_hire_button() -> void:
-	if fishermen.size() >= MAX_FISHERMEN_SLOTS:
-		hire_button.text = "Slots full (%d/%d)" % [fishermen.size(), MAX_FISHERMEN_SLOTS]
+	var max_slots := _max_fishermen_slots()
+	if fishermen.size() >= max_slots:
+		hire_button.text = "Slots full (%d/%d)" % [fishermen.size(), max_slots]
 		hire_button.disabled = true
 	else:
 		var cost := _hire_cost_for_next_slot()
@@ -127,17 +136,26 @@ func _update_hire_button() -> void:
 func _on_fishermen_button_pressed() -> void:
 	album_panel.visible = false
 	shop_panel.visible = false
+	meta_panel.visible = false
 	fishermen_panel.toggle(fishermen)
 
 func _on_album_button_pressed() -> void:
 	fishermen_panel.visible = false
 	shop_panel.visible = false
+	meta_panel.visible = false
 	album_panel.toggle()
 
 func _on_shop_button_pressed() -> void:
 	fishermen_panel.visible = false
 	album_panel.visible = false
+	meta_panel.visible = false
 	shop_panel.toggle()
+
+func _on_meta_button_pressed() -> void:
+	fishermen_panel.visible = false
+	album_panel.visible = false
+	shop_panel.visible = false
+	meta_panel.toggle()
 
 func _on_menu_button_pressed() -> void:
 	SaveManager.save_game(fishermen)

@@ -1,4 +1,4 @@
-[gd_scene load_steps=12 format=3]
+[gd_scene load_steps=13 format=3]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
 [ext_resource type="Script" path="res://scripts/night_tint.gd" id="2_night_tint"]
@@ -11,6 +11,7 @@
 [ext_resource type="Script" path="res://scripts/album_panel_controller.gd" id="9_album_panel"]
 [ext_resource type="Script" path="res://scripts/fish_icon.gd" id="10_fish_icon"]
 [ext_resource type="Script" path="res://scripts/equip_panel_controller.gd" id="11_equip_panel"]
+[ext_resource type="Script" path="res://scripts/meta_panel_controller.gd" id="12_meta_panel"]
 
 [node name="Main" type="Node2D"]
 script = ExtResource("1_main")
@@ -87,30 +88,38 @@ text = "Scales: 0"
 [node name="FishermenButton" type="Button" parent="CanvasLayer"]
 offset_left = 12.0
 offset_top = 48.0
-offset_right = 112.0
+offset_right = 96.0
 offset_bottom = 80.0
+theme_override_font_sizes/font_size = 13
 text = "Fishermen"
 
 [node name="HireButton" type="Button" parent="CanvasLayer"]
-offset_left = 120.0
+offset_left = 102.0
 offset_top = 48.0
-offset_right = 258.0
+offset_right = 232.0
 offset_bottom = 80.0
 text = "Hire (5 coins)"
 
 [node name="AlbumButton" type="Button" parent="CanvasLayer"]
-offset_left = 266.0
+offset_left = 238.0
 offset_top = 48.0
-offset_right = 346.0
+offset_right = 300.0
 offset_bottom = 80.0
 text = "Album"
 
 [node name="ShopButton" type="Button" parent="CanvasLayer"]
-offset_left = 354.0
+offset_left = 306.0
 offset_top = 48.0
-offset_right = 454.0
+offset_right = 368.0
 offset_bottom = 80.0
 text = "Shop"
+
+[node name="MetaButton" type="Button" parent="CanvasLayer"]
+offset_left = 374.0
+offset_top = 48.0
+offset_right = 436.0
+offset_bottom = 80.0
+text = "Meta"
 
 [node name="FishermenPanel" type="Panel" parent="CanvasLayer"]
 visible = false
@@ -344,6 +353,21 @@ layout_mode = 2
 theme_override_font_sizes/font_size = 18
 text = "Shop"
 
+[node name="TabRow" type="HBoxContainer" parent="CanvasLayer/ShopPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="GearTabButton" type="Button" parent="CanvasLayer/ShopPanel/MarginContainer/VBoxContainer/TabRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+disabled = true
+text = "Gear"
+
+[node name="PotionsTabButton" type="Button" parent="CanvasLayer/ShopPanel/MarginContainer/VBoxContainer/TabRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Potions"
+
 [node name="ShopScroll" type="ScrollContainer" parent="CanvasLayer/ShopPanel/MarginContainer/VBoxContainer"]
 layout_mode = 2
 size_flags_vertical = 3
@@ -352,7 +376,53 @@ size_flags_vertical = 3
 layout_mode = 2
 size_flags_horizontal = 3
 
+[node name="PotionRows" type="VBoxContainer" parent="CanvasLayer/ShopPanel/MarginContainer/VBoxContainer"]
+visible = false
+layout_mode = 2
+size_flags_vertical = 3
+
 [node name="CloseButton" type="Button" parent="CanvasLayer/ShopPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Close"
+
+[node name="MetaPanel" type="Panel" parent="CanvasLayer"]
+visible = false
+offset_left = 12.0
+offset_top = 88.0
+offset_right = 320.0
+offset_bottom = 340.0
+script = ExtResource("12_meta_panel")
+
+[node name="MarginContainer" type="MarginContainer" parent="CanvasLayer/MetaPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 8.0
+offset_top = 8.0
+offset_right = -8.0
+offset_bottom = -8.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="CanvasLayer/MetaPanel/MarginContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="TitleLabel" type="Label" parent="CanvasLayer/MetaPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "Meta"
+
+[node name="MetaScroll" type="ScrollContainer" parent="CanvasLayer/MetaPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="MetaRows" type="VBoxContainer" parent="CanvasLayer/MetaPanel/MarginContainer/VBoxContainer/MetaScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="CloseButton" type="Button" parent="CanvasLayer/MetaPanel/MarginContainer/VBoxContainer"]
 layout_mode = 2
 text = "Close"
 
