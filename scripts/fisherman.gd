@@ -1,5 +1,7 @@
 extends Node2D
 
+signal clicked(fisherman: Node2D)
+
 @export var home_position: Vector2 = Vector2(100, 250)
 @export var dock_position: Vector2 = Vector2(450, 200)
 @export var move_speed: float = 80.0
@@ -27,12 +29,26 @@ var current_catch_duration: float = 0.0
 var speed_xp: float = 0.0
 var luck_xp: float = 0.0
 var power_xp: float = 0.0
+var is_hovered: bool = false
+
+var equipped_items: Dictionary = {
+	"Rod": null,
+	"Hat": null,
+	"Outfit": null,
+	"Charm": null,
+	"Bait": null,
+}
+
+@onready var click_area: Area2D = $ClickArea
 
 func _ready() -> void:
 	if display_name.is_empty():
 		display_name = NameGenerator.random_name()
 	position = home_position
 	current_target = _random_dock_point()
+	click_area.input_event.connect(_on_click_area_input_event)
+	click_area.mouse_entered.connect(_on_mouse_entered)
+	click_area.mouse_exited.connect(_on_mouse_exited)
 	queue_redraw()
 
 func _process(delta: float) -> void:
@@ -61,11 +77,11 @@ func _process(delta: float) -> void:
 				state = State.WALK_TO_DOCK
 
 func _resolve_catch() -> void:
-	var caught_rarity := FishRarity.roll(_level_fraction(luck_xp))
-	var caught_weight := FishRarity.roll_weight(caught_rarity, _level_fraction(power_xp))
+	var caught_rarity := FishRarity.roll(get_level_fraction(luck_xp))
+	var caught_weight := FishRarity.roll_weight(caught_rarity, get_level_fraction(power_xp))
 	Economy.add_coins_for_catch(caught_rarity, caught_weight)
 	print(display_name, " caught a ", FishRarity.name_for(caught_rarity), " fish (%.1f kg)! [Spd %d / Lck %d / Pwr %d]" % [
-		caught_weight, _level(speed_xp), _level(luck_xp), _level(power_xp)
+		caught_weight, get_level(speed_xp), get_level(luck_xp), get_level(power_xp)
 	])
 
 	var speed_range := _catch_time_range()
@@ -90,18 +106,39 @@ func _random_home_point() -> Vector2:
 	return home_position + Vector2(randf_range(-home_wander_range, home_wander_range), randf_range(-home_wander_range, home_wander_range))
 
 func _catch_time_range() -> Vector2:
-	var reduction := _level_fraction(speed_xp) * MAX_SPEED_REDUCTION
+	var reduction := get_level_fraction(speed_xp) * MAX_SPEED_REDUCTION
 	return Vector2(min_catch_time * (1.0 - reduction), max_catch_time * (1.0 - reduction))
 
 func _rolled_catch_time() -> float:
 	var r := _catch_time_range()
 	return randf_range(r.x, r.y)
 
-func _level_fraction(xp: float) -> float:
-	return clampf(_level(xp) / LEVEL_CAP, 0.0, 1.0)
+func _on_click_area_input_event(_viewport: Node, event: InputEvent, _shape_idx: int) -> void:
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		clicked.emit(self)
 
-func _level(xp: float) -> int:
+func _on_mouse_entered() -> void:
+	is_hovered = true
+	queue_redraw()
+
+func _on_mouse_exited() -> void:
+	is_hovered = false
+	queue_redraw()
+
+func get_level_fraction(xp: float) -> float:
+	return clampf(get_level(xp) / LEVEL_CAP, 0.0, 1.0)
+
+func get_level(xp: float) -> int:
 	return int(xp / XP_PER_LEVEL)
+
+func get_stats_text() -> String:
+	return "Spd %d / Lck %d / Pwr %d" % [get_level(speed_xp), get_level(luck_xp), get_level(power_xp)]
+
+func get_slot_display(slot_name: String) -> String:
+	var item = equipped_items.get(slot_name)
+	return item if item != null else "—"
 
 func _draw() -> void:
 	draw_rect(Rect2(-8, -8, 16, 16), Color.ORANGE)
+	if is_hovered:
+		draw_rect(Rect2(-10, -10, 20, 20), Color.WHITE, false, 2.0)

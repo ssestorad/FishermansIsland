@@ -1,6 +1,15 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://scripts/fisherman.gd" id="1_fisherman"]
 
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_1"]
+size = Vector2(16, 16)
+
 [node name="Fisherman" type="Node2D"]
 script = ExtResource("1_fisherman")
+
+[node name="ClickArea" type="Area2D" parent="."]
+input_pickable = true
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="ClickArea"]
+shape = SubResource("RectangleShape2D_1")
