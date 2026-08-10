@@ -103,4 +103,10 @@ func _update_scales_label(new_total: int) -> void:
 	scales_label.text = "Scales: %d" % new_total
 
 func _draw() -> void:
-	draw_rect(Rect2(300, 100, 300, 200), Color(0.2, 0.4, 0.8))
+	draw_rect(Rect2(0, 0, 640, 360), Color(0.55, 0.72, 0.38))
+	draw_rect(Rect2(280, 80, 40, 240), Color(0.82, 0.72, 0.5))
+	draw_rect(Rect2(300, 100, 300, 200), Color(0.22, 0.45, 0.65))
+	for i in range(4):
+		var y := 130.0 + i * 45.0
+		draw_line(Vector2(320, y), Vector2(580, y), Color(0.35, 0.58, 0.75, 0.5), 2.0)
+	draw_rect(Rect2(305, 95, 22, 210), Color(0.5, 0.35, 0.2))

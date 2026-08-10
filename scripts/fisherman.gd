@@ -75,6 +75,7 @@ func _process(delta: float) -> void:
 			if wait_timer <= 0.0:
 				current_target = _random_dock_point()
 				state = State.WALK_TO_DOCK
+	queue_redraw()
 
 func _resolve_catch() -> void:
 	var caught_rarity := FishRarity.roll(get_effective_stat(luck_xp, "luck"))
@@ -163,6 +164,11 @@ func get_slot_display(slot_name: String) -> String:
 	return item.item_name if item != null else "—"
 
 func _draw() -> void:
-	draw_rect(Rect2(-8, -8, 16, 16), Color.ORANGE)
+	draw_rect(Rect2(-5, 0, 4, 9), Color(0.2, 0.15, 0.1))
+	draw_rect(Rect2(1, 0, 4, 9), Color(0.2, 0.15, 0.1))
+	draw_rect(Rect2(-6, -8, 12, 10), Color(0.85, 0.55, 0.2))
+	draw_circle(Vector2(0, -12), 5, Color(0.92, 0.75, 0.6))
+	if state == State.FISHING:
+		draw_line(Vector2(4, -6), Vector2(15, 4), Color(0.35, 0.25, 0.15), 1.5)
 	if is_hovered:
-		draw_rect(Rect2(-10, -10, 20, 20), Color.WHITE, false, 2.0)
+		draw_rect(Rect2(-9, -18, 18, 28), Color.WHITE, false, 2.0)

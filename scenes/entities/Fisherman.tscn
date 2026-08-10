@@ -3,7 +3,7 @@
 [ext_resource type="Script" path="res://scripts/fisherman.gd" id="1_fisherman"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_1"]
-size = Vector2(16, 16)
+size = Vector2(18, 27)
 
 [node name="Fisherman" type="Node2D"]
 script = ExtResource("1_fisherman")
@@ -12,4 +12,5 @@ script = ExtResource("1_fisherman")
 input_pickable = true
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="ClickArea"]
+position = Vector2(0, -4)
 shape = SubResource("RectangleShape2D_1")
