@@ -19,6 +19,21 @@ const ADJECTIVES := {
 	FishRarity.Tier.MYTHIC: ["Abyssal", "Void", "Cosmic", "Primordial", "Draconic"],
 }
 
+# Bonus species layered on top of the generated grid, only catchable
+# while the given weather is active.
+const WEATHER_EXCLUSIVE_SPECIES := [
+	{"name": "Frostbound Wyrm", "tier": FishRarity.Tier.MYTHIC, "weather": "Blizzard"},
+]
+
+# Bonus species layered on top of the generated grid, only catchable
+# during the given season (any weather).
+const SEASON_EXCLUSIVE_SPECIES := [
+	{"name": "Bloomtail Carp", "tier": FishRarity.Tier.LEGENDARY, "season": "Spring"},
+	{"name": "Sunscale Marlin", "tier": FishRarity.Tier.LEGENDARY, "season": "Summer"},
+	{"name": "Harvest Salmon", "tier": FishRarity.Tier.LEGENDARY, "season": "Autumn"},
+	{"name": "Icebound Sturgeon", "tier": FishRarity.Tier.LEGENDARY, "season": "Winter"},
+]
+
 static var _catalog_by_tier: Dictionary = {}
 
 static func _build_catalog() -> void:
@@ -30,6 +45,14 @@ static func _build_catalog() -> void:
 			for base_name in BASE_NAMES[tier]:
 				species_list.append(FishSpecies.new("%s %s" % [adjective, base_name], tier))
 		_catalog_by_tier[tier] = species_list
+	for entry in WEATHER_EXCLUSIVE_SPECIES:
+		_catalog_by_tier[entry["tier"]].append(
+			FishSpecies.new(entry["name"], entry["tier"], entry["weather"], "")
+		)
+	for entry in SEASON_EXCLUSIVE_SPECIES:
+		_catalog_by_tier[entry["tier"]].append(
+			FishSpecies.new(entry["name"], entry["tier"], "", entry["season"])
+		)
 
 static func species_for_tier(tier: FishRarity.Tier) -> Array:
 	_build_catalog()
@@ -37,4 +60,12 @@ static func species_for_tier(tier: FishRarity.Tier) -> Array:
 
 static func roll_species(tier: FishRarity.Tier) -> FishSpecies:
 	var species_list: Array = species_for_tier(tier)
-	return species_list.pick_random()
+	var current_weather: String = WorldClock.get_weather()
+	var current_season: String = WorldClock.get_season_name()
+	var eligible: Array = []
+	for species in species_list:
+		var weather_ok: bool = species.required_weather == "" or species.required_weather == current_weather
+		var season_ok: bool = species.required_season == "" or species.required_season == current_season
+		if weather_ok and season_ok:
+			eligible.append(species)
+	return eligible.pick_random()

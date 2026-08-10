@@ -1,11 +1,54 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=6 format=3]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
+[ext_resource type="Script" path="res://scripts/night_tint.gd" id="2_night_tint"]
+[ext_resource type="Script" path="res://scripts/clock_label.gd" id="3_clock_label"]
+[ext_resource type="Script" path="res://scripts/season_timeline.gd" id="4_season_timeline"]
+[ext_resource type="Script" path="res://scripts/weather_tint.gd" id="5_weather_tint"]
 
 [node name="Main" type="Node2D"]
 script = ExtResource("1_main")
 
+[node name="WorldEffectsLayer" type="CanvasLayer" parent="."]
+layer = 1
+
+[node name="WeatherTint" type="ColorRect" parent="WorldEffectsLayer"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+color = Color(1, 1, 1, 0)
+script = ExtResource("5_weather_tint")
+
+[node name="NightTint" type="ColorRect" parent="WorldEffectsLayer"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+color = Color(0.05, 0.05, 0.2, 0)
+script = ExtResource("2_night_tint")
+
 [node name="CanvasLayer" type="CanvasLayer" parent="."]
+layer = 2
+
+[node name="ClockLabel" type="Label" parent="CanvasLayer"]
+offset_left = 460.0
+offset_top = 8.0
+offset_right = 628.0
+offset_bottom = 40.0
+theme_override_font_sizes/font_size = 14
+horizontal_alignment = 2
+text = "Day 1 — 00:00 (Spring)"
+script = ExtResource("3_clock_label")
+
+[node name="SeasonTimeline" type="Control" parent="CanvasLayer"]
+offset_left = 460.0
+offset_top = 44.0
+offset_right = 628.0
+offset_bottom = 58.0
+script = ExtResource("4_season_timeline")
 
 [node name="CoinsLabel" type="Label" parent="CanvasLayer"]
 offset_left = 12.0
