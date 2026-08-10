@@ -18,7 +18,9 @@ func _spawn_starting_fishermen() -> void:
 		var row_y := 110.0 + i * ROW_SPACING
 		fisherman.home_position = Vector2(80, row_y)
 		fisherman.dock_position = Vector2(320, row_y)
-		fisherman.power = randf_range(0.0, 0.8)
+		fisherman.speed_xp = randf_range(0.0, 40.0)
+		fisherman.luck_xp = randf_range(0.0, 40.0)
+		fisherman.power_xp = randf_range(0.0, 40.0)
 		add_child(fisherman)
 
 func _update_coins_label(new_total: int) -> void:

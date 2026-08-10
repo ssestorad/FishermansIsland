@@ -21,17 +21,22 @@ const NAMES := {
 	Tier.MYTHIC: "Mythic",
 }
 
-static func roll() -> Tier:
+## Rolls a rarity tier. `luck` in [0, 1] biases the roll toward rarer
+## tiers (0 = the raw weighted table, 1 = always the rarest tier),
+## using the same skew as roll_weight().
+static func roll(luck: float = 0.0) -> Tier:
 	var total := 0.0
 	for w in WEIGHTS.values():
 		total += w
-	var roll_value := randf() * total
+	var t := randf()
+	t = t + (1.0 - t) * clampf(luck, 0.0, 1.0)
+	var roll_value := t * total
 	var cumulative := 0.0
 	for tier in WEIGHTS.keys():
 		cumulative += WEIGHTS[tier]
 		if roll_value <= cumulative:
 			return tier
-	return Tier.COMMON
+	return Tier.MYTHIC
 
 static func name_for(tier: Tier) -> String:
 	return NAMES[tier]
