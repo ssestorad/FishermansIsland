@@ -78,7 +78,8 @@ func _process(delta: float) -> void:
 			_move_toward(current_target, delta)
 			if position.distance_to(current_target) < 2.0:
 				state = State.RESTING
-				wait_timer = randf_range(min_rest_time, max_rest_time)
+				var rest_reduction := clampf(get_equipment_bonus("rest_time"), 0.0, 0.9)
+				wait_timer = randf_range(min_rest_time, max_rest_time) * (1.0 - rest_reduction)
 		State.RESTING:
 			wait_timer -= delta
 			if wait_timer <= 0.0:
@@ -103,7 +104,7 @@ func _resolve_catch() -> void:
 	var caught_rarity := FishRarity.roll(get_effective_stat(luck_xp, "luck"))
 	var caught_species := FishCatalog.roll_species(caught_rarity)
 	var caught_weight := FishRarity.roll_weight(caught_rarity, get_effective_stat(power_xp, "power"))
-	Economy.add_currency_for_catch(caught_rarity, caught_weight)
+	Economy.add_currency_for_catch(caught_rarity, caught_weight, get_equipment_bonus("coin_gain"), get_equipment_bonus("scale_gain"))
 	Album.record_catch(caught_species, caught_weight)
 	print("%s caught a %s (%s, %.1f kg)! [Spd %d / Lck %d / Pwr %d]" % [
 		display_name, caught_species.species_name, FishRarity.name_for(caught_rarity), caught_weight,
@@ -116,13 +117,15 @@ func _resolve_catch() -> void:
 	var weight_range: Vector2 = FishRarity.WEIGHT_RANGES[caught_rarity]
 	var normalized_power := inverse_lerp(weight_range.x, weight_range.y, caught_weight)
 
-	speed_xp += normalized_speed * XP_PER_CATCH
-	luck_xp += normalized_luck * XP_PER_CATCH
-	power_xp += normalized_power * XP_PER_CATCH
+	var xp_multiplier := 1.0 + get_equipment_bonus("xp_gain")
+	speed_xp += normalized_speed * XP_PER_CATCH * xp_multiplier
+	luck_xp += normalized_luck * XP_PER_CATCH * xp_multiplier
+	power_xp += normalized_power * XP_PER_CATCH * xp_multiplier
 
 func _move_toward(target: Vector2, delta: float) -> void:
 	var direction: Vector2 = (target - position).normalized()
-	position += direction * move_speed * delta
+	var effective_speed := move_speed * (1.0 + get_equipment_bonus("walk_speed"))
+	position += direction * effective_speed * delta
 
 func _random_dock_point() -> Vector2:
 	var y := clampf(dock_position.y + randf_range(-dock_wander_range, dock_wander_range), dock_y_bounds.x, dock_y_bounds.y)
@@ -160,8 +163,8 @@ func get_level(xp: float) -> int:
 func get_equipment_bonus(axis: String) -> float:
 	var total := 0.0
 	for item in equipped_items.values():
-		if item != null and item.axis == axis:
-			total += item.bonus
+		if item != null:
+			total += item.get_bonus(axis)
 	return total
 
 func get_effective_stat(xp: float, axis: String) -> float:

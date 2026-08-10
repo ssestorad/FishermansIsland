@@ -88,9 +88,11 @@ func _spawn_fisherman(saved_data: Dictionary = {}) -> Node:
 		fisherman.power_xp = float(saved_data.get("power_xp", 0.0))
 		var equipped: Dictionary = saved_data.get("equipped_items", {})
 		for slot in equipped:
-			var item_data = equipped[slot]
-			if item_data != null:
-				fisherman.equipped_items[slot] = SaveManager.deserialize_item(item_data)
+			var item_name = equipped[slot]
+			if item_name is String:
+				var item := SaveManager.find_item_by_name(item_name)
+				if item != null:
+					fisherman.equipped_items[slot] = item
 
 	add_child(fisherman)
 	fishermen.append(fisherman)

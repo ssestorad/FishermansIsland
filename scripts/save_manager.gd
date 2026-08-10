@@ -45,7 +45,7 @@ func _serialize_fisherman(fisherman: Node) -> Dictionary:
 	var equipped := {}
 	for slot in fisherman.equipped_items:
 		var item = fisherman.equipped_items[slot]
-		equipped[slot] = _serialize_item(item) if item != null else null
+		equipped[slot] = item.item_name if item != null else null
 	return {
 		"display_name": fisherman.display_name,
 		"speed_xp": fisherman.speed_xp,
@@ -54,14 +54,10 @@ func _serialize_fisherman(fisherman: Node) -> Dictionary:
 		"equipped_items": equipped,
 	}
 
-func _serialize_item(item: Item) -> Dictionary:
-	return {
-		"item_name": item.item_name,
-		"slot": item.slot,
-		"axis": item.axis,
-		"bonus": item.bonus,
-		"cost": item.cost,
-	}
-
-func deserialize_item(data: Dictionary) -> Item:
-	return Item.new(data["item_name"], data["slot"], data["axis"], float(data["bonus"]), int(data["cost"]))
+## Items are looked up by name from the live catalog rather than
+## serialized in full, so the save stays valid if item balance changes.
+func find_item_by_name(item_name: String) -> Item:
+	for item in ShopCatalog.all_items():
+		if item.item_name == item_name:
+			return item
+	return null

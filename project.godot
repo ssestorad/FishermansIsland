@@ -21,10 +21,6 @@ Album="*res://scripts/album.gd"
 WorldClock="*res://scripts/world_clock.gd"
 SaveManager="*res://scripts/save_manager.gd"
 
-[gui]
-
-theme/custom="res://assets/ui_theme.tres"
-
 [display]
 
 window/size/viewport_width=640
@@ -32,6 +28,10 @@ window/size/viewport_height=360
 window/size/window_width_override=1280
 window/size/window_height_override=720
 window/stretch/mode="canvas_items"
+
+[gui]
+
+theme/custom="res://assets/ui_theme.tres"
 
 [rendering]
 
