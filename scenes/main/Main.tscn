@@ -315,6 +315,19 @@ max_value = 1.0
 step = 0.01
 show_percentage = false
 
+[node name="EnduranceLabel" type="Label" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer/StatsScroll/StatsBlock"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.45, 0.35, 0.6, 1)
+text = "Endurance: Lvl 0"
+
+[node name="EnduranceBar" type="ProgressBar" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer/StatsScroll/StatsBlock"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 8)
+theme_type_variation = &"EnduranceBar"
+max_value = 1.0
+step = 0.01
+show_percentage = false
+
 [node name="EquipmentSlots" type="HBoxContainer" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer/StatsScroll/StatsBlock"]
 layout_mode = 2
 theme_override_constants/separation = 6

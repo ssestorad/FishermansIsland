@@ -11,6 +11,8 @@ signal slot_clicked(fisherman, slot_name)
 @onready var luck_bar: ProgressBar = $MarginContainer/VBoxContainer/StatsScroll/StatsBlock/LuckBar
 @onready var power_label: Label = $MarginContainer/VBoxContainer/StatsScroll/StatsBlock/PowerLabel
 @onready var power_bar: ProgressBar = $MarginContainer/VBoxContainer/StatsScroll/StatsBlock/PowerBar
+@onready var endurance_label: Label = $MarginContainer/VBoxContainer/StatsScroll/StatsBlock/EnduranceLabel
+@onready var endurance_bar: ProgressBar = $MarginContainer/VBoxContainer/StatsScroll/StatsBlock/EnduranceBar
 @onready var equipment_slots: HBoxContainer = $MarginContainer/VBoxContainer/StatsScroll/StatsBlock/EquipmentSlots
 @onready var perks_label: Label = $MarginContainer/VBoxContainer/StatsScroll/StatsBlock/PerksLabel
 @onready var history_label: Label = $MarginContainer/VBoxContainer/StatsScroll/StatsBlock/HistoryLabel
@@ -71,6 +73,8 @@ func refresh() -> void:
 	luck_bar.value = _fisherman.get_level_progress(_fisherman.luck_xp)
 	power_label.text = "Power: Lvl %d" % _fisherman.get_level(_fisherman.power_xp)
 	power_bar.value = _fisherman.get_level_progress(_fisherman.power_xp)
+	endurance_label.text = "Endurance: Lvl %d" % _fisherman.get_level(_fisherman.endurance_xp)
+	endurance_bar.value = _fisherman.get_level_progress(_fisherman.endurance_xp)
 	for slot_button in equipment_slots.get_children():
 		var slot_name: String = slot_button.name.trim_suffix("Slot")
 		slot_button.text = "%s\n%s" % [slot_name, _fisherman.get_slot_display(slot_name)]

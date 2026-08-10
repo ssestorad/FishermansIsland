@@ -22,6 +22,7 @@ func build(fishermen: Array) -> void:
 	_add_section("Highest Speed", fishermen, func(f): return f.get_level(f.speed_xp), " Lvl")
 	_add_section("Highest Luck", fishermen, func(f): return f.get_level(f.luck_xp), " Lvl")
 	_add_section("Highest Power", fishermen, func(f): return f.get_level(f.power_xp), " Lvl")
+	_add_section("Highest Endurance", fishermen, func(f): return f.get_level(f.endurance_xp), " Lvl")
 
 func _add_section(section_title: String, fishermen: Array, value_fn: Callable, suffix: String) -> void:
 	var header := Label.new()

@@ -1,4 +1,4 @@
-[gd_resource type="Theme" load_steps=33 format=3]
+[gd_resource type="Theme" load_steps=34 format=3]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel"]
 bg_color = Color(0.96, 0.91, 0.78, 0.95)
@@ -229,6 +229,13 @@ corner_radius_top_right = 4
 corner_radius_bottom_right = 4
 corner_radius_bottom_left = 4
 
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_fill_endurance"]
+bg_color = Color(0.55, 0.4, 0.75, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
 [resource]
 Panel/styles/panel = SubResource("StyleBoxFlat_panel")
 
@@ -324,3 +331,6 @@ LuckBar/styles/fill = SubResource("StyleBoxFlat_fill_luck")
 
 PowerBar/base_type = &"ProgressBar"
 PowerBar/styles/fill = SubResource("StyleBoxFlat_fill_power")
+
+EnduranceBar/base_type = &"ProgressBar"
+EnduranceBar/styles/fill = SubResource("StyleBoxFlat_fill_endurance")

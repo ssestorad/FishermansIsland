@@ -133,6 +133,7 @@ func _spawn_starting_fishermen() -> void:
 		fisherman.speed_xp = randf_range(0.0, 40.0)
 		fisherman.luck_xp = randf_range(0.0, 40.0)
 		fisherman.power_xp = randf_range(0.0, 40.0)
+		fisherman.endurance_xp = randf_range(0.0, 40.0)
 
 func _spawn_fisherman(saved_data: Dictionary = {}) -> Node:
 	var index := fishermen.size()
@@ -147,6 +148,7 @@ func _spawn_fisherman(saved_data: Dictionary = {}) -> Node:
 		fisherman.speed_xp = float(saved_data.get("speed_xp", 0.0))
 		fisherman.luck_xp = float(saved_data.get("luck_xp", 0.0))
 		fisherman.power_xp = float(saved_data.get("power_xp", 0.0))
+		fisherman.endurance_xp = float(saved_data.get("endurance_xp", 0.0))
 		fisherman.perks = saved_data.get("perks", [])
 		fisherman.total_catches = int(saved_data.get("total_catches", 0))
 		var raw_history: Array = saved_data.get("catch_history", [])

@@ -62,6 +62,7 @@ func _serialize_fisherman(fisherman: Node) -> Dictionary:
 		"speed_xp": fisherman.speed_xp,
 		"luck_xp": fisherman.luck_xp,
 		"power_xp": fisherman.power_xp,
+		"endurance_xp": fisherman.endurance_xp,
 		"equipped_items": equipped,
 		"appearance_variant": fisherman.appearance_variant,
 		"perks": fisherman.perks,

@@ -16,7 +16,11 @@ signal stats_changed
 
 const MAX_SPEED_REDUCTION := 0.6
 const XP_PER_LEVEL := 10.0
-const LEVEL_CAP := 10.0
+## Levels are spread across 20 (was 10) so leveling one axis to cap takes
+## twice as long at the same per-catch XP rate — a fully-leveled fisherman
+## is a longer-term milestone, and each level along the way is a smaller,
+## more gradual step.
+const LEVEL_CAP := 20.0
 const XP_PER_CATCH := 2.0
 const WALK_ANIM_FPS := 6.0
 
@@ -63,6 +67,11 @@ var current_catch_duration: float = 0.0
 var speed_xp: float = 0.0
 var luck_xp: float = 0.0
 var power_xp: float = 0.0
+## Fourth stat axis: reduces rest time, same additive+leveled treatment as
+## the other three via get_effective_stat(). Gains XP from every completed
+## catch cycle regardless of what was caught — endurance is built by simply
+## staying out fishing, not by catch quality the way the other axes are.
+var endurance_xp: float = 0.0
 var is_hovered: bool = false
 var _walk_anim_timer: float = 0.0
 var _walk_frame: int = 0
@@ -138,7 +147,7 @@ func _process(delta: float) -> void:
 					# Resting is the one idle pose that isn't aimed at the
 					# water, so turn to face the camera while standing around.
 					facing = "down"
-					var rest_reduction := clampf(get_equipment_bonus("rest_time") + get_perk_bonus("rest_time"), 0.0, 0.9)
+					var rest_reduction := clampf(get_effective_stat(endurance_xp, "endurance") + get_equipment_bonus("rest_time") + get_perk_bonus("rest_time"), 0.0, 0.9)
 					wait_timer = randf_range(min_rest_time, max_rest_time) * (1.0 - rest_reduction)
 		State.RESTING:
 			wait_timer -= delta
@@ -169,9 +178,9 @@ func _apply_sprite_frame(column: int) -> void:
 
 func _resolve_catch() -> void:
 	var result := _roll_and_apply_catch(current_catch_duration)
-	print("%s caught a %s (%s, %.1f kg)! [Spd %d / Lck %d / Pwr %d]" % [
+	print("%s caught a %s (%s, %.1f kg)! [Spd %d / Lck %d / Pwr %d / End %d]" % [
 		display_name, result.species.species_name, FishRarity.name_for(result.rarity), result.weight,
-		get_level(speed_xp), get_level(luck_xp), get_level(power_xp)
+		get_level(speed_xp), get_level(luck_xp), get_level(power_xp), get_level(endurance_xp)
 	])
 
 ## Rolls and applies one catch (currency, album, XP). `catch_duration` feeds
@@ -237,6 +246,9 @@ func _roll_and_apply_catch(catch_duration: float = -1.0, forced_rarity: int = -1
 	speed_xp += normalized_speed * XP_PER_CATCH * xp_multiplier
 	luck_xp += normalized_luck * XP_PER_CATCH * xp_multiplier
 	power_xp += normalized_power * XP_PER_CATCH * xp_multiplier
+	# Flat, not tied to any catch trait — endurance comes from having worked
+	# the cycle at all, not from what was caught.
+	endurance_xp += XP_PER_CATCH * xp_multiplier
 
 	total_catches += 1
 	catch_history.append({
@@ -300,7 +312,7 @@ func resolve_offline_catches(duration: float) -> Dictionary:
 func _estimate_cycle_time() -> float:
 	var catch_range := _catch_time_range()
 	var avg_catch := (catch_range.x + catch_range.y) / 2.0
-	var rest_reduction := clampf(get_equipment_bonus("rest_time") + get_perk_bonus("rest_time"), 0.0, 0.9)
+	var rest_reduction := clampf(get_effective_stat(endurance_xp, "endurance") + get_equipment_bonus("rest_time") + get_perk_bonus("rest_time"), 0.0, 0.9)
 	var skip_rest_chance := clampf(get_equipment_bonus("skip_rest_chance"), 0.0, 1.0)
 	var avg_rest := (min_rest_time + max_rest_time) / 2.0 * (1.0 - rest_reduction) * (1.0 - skip_rest_chance)
 	var effective_speed := move_speed * (1.0 + get_equipment_bonus("walk_speed") + get_perk_bonus("walk_speed"))
@@ -416,6 +428,17 @@ func get_perk_description(perk_name: String) -> String:
 	var perk := PerkCatalog.find(perk_name)
 	return perk.get("description", "") if not perk.is_empty() else ""
 
+## Below max level (10) alone contributes, capped so a fully-leveled axis with
+## no gear at all can't get anywhere near the ceiling — gear, perks and
+## environment need to carry the rest, for the whole game, not just early on.
+const LEVEL_STAT_WEIGHT := 0.55
+
+## Hard ceiling on the value FishRarity.roll()/roll_weight() ever see. Strictly
+## below 1.0: at exactly 1.0 those two skew formulas stop being probabilistic
+## and collapse onto a single guaranteed outcome (see their docs) — a maxed
+## Luck/Power fisherman should still roll, not always land Mythic-at-max-weight.
+const EFFECTIVE_STAT_CEILING := 0.95
+
 func get_effective_stat(xp: float, axis: String) -> float:
 	var environment_bonus := 0.0
 	match axis:
@@ -428,13 +451,14 @@ func get_effective_stat(xp: float, axis: String) -> float:
 	environment_bonus += PotionManager.get_bonus(axis)
 	environment_bonus += get_perk_bonus(axis)
 	environment_bonus += get_set_bonus(axis)
-	return clampf(get_level_fraction(xp) + get_equipment_bonus(axis) + environment_bonus, 0.0, 1.0)
+	var raw := get_level_fraction(xp) * LEVEL_STAT_WEIGHT + get_equipment_bonus(axis) + environment_bonus
+	return clampf(raw, 0.0, EFFECTIVE_STAT_CEILING)
 
 func equip_item(item) -> void:
 	equipped_items[item.slot] = item
 
 func get_stats_text() -> String:
-	return "Spd %d / Lck %d / Pwr %d" % [get_level(speed_xp), get_level(luck_xp), get_level(power_xp)]
+	return "Spd %d / Lck %d / Pwr %d / End %d" % [get_level(speed_xp), get_level(luck_xp), get_level(power_xp), get_level(endurance_xp)]
 
 func get_slot_display(slot_name: String) -> String:
 	var item = equipped_items.get(slot_name)

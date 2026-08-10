@@ -5,6 +5,7 @@ const AXIS_LABELS := {
 	"speed": "Speed",
 	"luck": "Luck",
 	"power": "Power",
+	"endurance": "Endurance",
 	"walk_speed": "Walk Speed",
 	"rest_time": "Rest Time",
 	"coin_gain": "Coin Gain",

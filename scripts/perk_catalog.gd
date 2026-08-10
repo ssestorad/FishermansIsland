@@ -12,6 +12,7 @@ const PERKS := [
 	{"name": "Cold-Blooded", "description": "+10% Speed in Winter", "effects": [["speed", 0.1]], "condition": {"season": "Winter"}},
 	{"name": "Quick Feet", "description": "+15% walking speed", "effects": [["walk_speed", 0.15]], "condition": {}},
 	{"name": "Well-Rested", "description": "-15% rest time", "effects": [["rest_time", 0.15]], "condition": {}},
+	{"name": "Second Wind", "description": "+10% Endurance", "effects": [["endurance", 0.1]], "condition": {}},
 ]
 
 static func find(perk_name: String) -> Dictionary:
