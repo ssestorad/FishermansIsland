@@ -1,10 +1,14 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=10 format=3]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
 [ext_resource type="Script" path="res://scripts/night_tint.gd" id="2_night_tint"]
 [ext_resource type="Script" path="res://scripts/clock_label.gd" id="3_clock_label"]
 [ext_resource type="Script" path="res://scripts/season_timeline.gd" id="4_season_timeline"]
 [ext_resource type="Script" path="res://scripts/weather_tint.gd" id="5_weather_tint"]
+[ext_resource type="Script" path="res://scripts/fishermen_panel_controller.gd" id="6_fishermen_panel"]
+[ext_resource type="Script" path="res://scripts/fisherman_profile_panel_controller.gd" id="7_profile_panel"]
+[ext_resource type="Script" path="res://scripts/shop_panel_controller.gd" id="8_shop_panel"]
+[ext_resource type="Script" path="res://scripts/album_panel_controller.gd" id="9_album_panel"]
 
 [node name="Main" type="Node2D"]
 script = ExtResource("1_main")
@@ -93,6 +97,7 @@ offset_left = 12.0
 offset_top = 88.0
 offset_right = 320.0
 offset_bottom = 340.0
+script = ExtResource("6_fishermen_panel")
 
 [node name="MarginContainer" type="MarginContainer" parent="CanvasLayer/FishermenPanel"]
 layout_mode = 1
@@ -123,6 +128,7 @@ offset_left = 340.0
 offset_top = 88.0
 offset_right = 620.0
 offset_bottom = 320.0
+script = ExtResource("7_profile_panel")
 
 [node name="MarginContainer" type="MarginContainer" parent="CanvasLayer/FishermanProfilePanel"]
 layout_mode = 1
@@ -209,6 +215,7 @@ offset_left = 340.0
 offset_top = 88.0
 offset_right = 620.0
 offset_bottom = 320.0
+script = ExtResource("8_shop_panel")
 
 [node name="MarginContainer" type="MarginContainer" parent="CanvasLayer/ShopPanel"]
 layout_mode = 1
@@ -243,6 +250,7 @@ offset_left = 12.0
 offset_top = 88.0
 offset_right = 320.0
 offset_bottom = 340.0
+script = ExtResource("9_album_panel")
 
 [node name="MarginContainer" type="MarginContainer" parent="CanvasLayer/AlbumPanel"]
 layout_mode = 1
