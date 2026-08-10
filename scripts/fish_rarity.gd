@@ -55,6 +55,15 @@ static func roll(luck: float = 0.0) -> Tier:
 static func name_for(tier: Tier) -> String:
 	return NAMES[tier]
 
+## Reverse of name_for(), so the species catalog can spell tiers as short
+## readable strings instead of repeating FishRarity.Tier.X 120 times.
+static func tier_from_name(tier_name: String) -> Tier:
+	for tier in NAMES:
+		if NAMES[tier] == tier_name:
+			return tier
+	push_error("Unknown fish tier name: %s" % tier_name)
+	return Tier.COMMON
+
 ## Share of catches this tier would get with 0 Luck — the un-skewed base
 ## rate before roll()'s luck bias pushes toward rarer tiers. Always 0 for
 ## SECRET: it's never part of the rollable pool in the first place.
@@ -64,6 +73,10 @@ static func base_chance_percent(tier: Tier) -> float:
 		total += w
 	return (WEIGHTS.get(tier, 0.0) / total) * 100.0
 
+## Fallback weight bands. Species carry their own ranges now; these only
+## cover entries whose species can no longer be looked up — dock items and
+## catch-history rows saved under a species name that has since been
+## retired from the catalog.
 const WEIGHT_RANGES := {
 	Tier.COMMON: Vector2(0.3, 2.0),
 	Tier.UNCOMMON: Vector2(1.0, 4.0),
@@ -74,14 +87,7 @@ const WEIGHT_RANGES := {
 	Tier.SECRET: Vector2(20.0, 60.0),
 }
 
-## Rolls a weight (kg) within the tier's range. `power` in [0, 1] biases
-## the roll toward the top of the range (0 = uniform, 1 = always max).
-static func roll_weight(tier: Tier, power: float = 0.0) -> float:
-	var w_range: Vector2 = WEIGHT_RANGES[tier]
-	var t := randf()
-	t = t + (1.0 - t) * clampf(power, 0.0, 1.0)
-	return lerpf(w_range.x, w_range.y, t)
-
+## Fallback average for the tier band; prefer FishSpecies.average_weight().
 static func average_weight(tier: Tier) -> float:
 	var w_range: Vector2 = WEIGHT_RANGES[tier]
 	return (w_range.x + w_range.y) / 2.0

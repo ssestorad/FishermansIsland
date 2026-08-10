@@ -31,7 +31,7 @@ func build() -> void:
 		var row: ListRow = LIST_ROW_SCENE.instantiate()
 		rows_container.add_child(row)
 		var color := RarityColors.for_tier(entry.tier)
-		var value := Economy.preview_value(entry.tier, entry.weight)
+		var value := Economy.preview_value(entry.tier, entry.weight, 0.0, entry.species_name)
 		row.setup(
 			entry.species_name,
 			"%s · %.1f kg" % [FishRarity.name_for(entry.tier), entry.weight],

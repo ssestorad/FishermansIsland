@@ -14,7 +14,7 @@ var entries: Array = []
 ## on the spot as an overflow safety valve so nothing is silently lost.
 func add_catch(species: FishSpecies, weight: float, tier: FishRarity.Tier) -> void:
 	if entries.size() >= DOCK_CAPACITY:
-		Economy.add_currency_for_catch(tier, weight)
+		Economy.add_currency_for_catch(tier, weight, 0.0, 0.0, species.species_name)
 		updated.emit()
 		return
 	entries.append({"species_name": species.species_name, "tier": tier, "weight": weight})
@@ -27,14 +27,14 @@ func sell(index: int) -> int:
 		return 0
 	var entry: Dictionary = entries[index]
 	entries.remove_at(index)
-	var earned := Economy.add_currency_for_catch(entry.tier, entry.weight)
+	var earned := Economy.add_currency_for_catch(entry.tier, entry.weight, 0.0, 0.0, entry.species_name)
 	updated.emit()
 	return earned.amount
 
 func sell_all() -> int:
 	var total := 0
 	for entry in entries:
-		total += Economy.add_currency_for_catch(entry.tier, entry.weight).amount
+		total += Economy.add_currency_for_catch(entry.tier, entry.weight, 0.0, 0.0, entry.species_name).amount
 	entries.clear()
 	updated.emit()
 	return total
@@ -55,6 +55,6 @@ func load_state(data: Array) -> void:
 		var overflow: Array = parsed.slice(0, parsed.size() - DOCK_CAPACITY)
 		parsed = parsed.slice(parsed.size() - DOCK_CAPACITY, parsed.size())
 		for entry in overflow:
-			Economy.add_currency_for_catch(entry.tier, entry.weight)
+			Economy.add_currency_for_catch(entry.tier, entry.weight, 0.0, 0.0, entry.species_name)
 	entries = parsed
 	updated.emit()

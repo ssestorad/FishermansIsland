@@ -18,24 +18,30 @@ const RARITY_VALUES := {
 
 const COIN_TIERS := [FishRarity.Tier.COMMON, FishRarity.Tier.UNCOMMON]
 
-func _catch_value(rarity: FishRarity.Tier, weight: float, bonus: float = 0.0) -> int:
-	var base_value: float = RARITY_VALUES[rarity]
-	var weight_multiplier: float = weight / FishRarity.average_weight(rarity)
+## Values a catch from its species' own base value and weight band, so two
+## fish of the same tier can be worth noticeably different money. Falls
+## back to the tier-wide numbers when the species can't be looked up —
+## dock entries and history rows outlive species retired from the catalog.
+func _catch_value(rarity: FishRarity.Tier, weight: float, bonus: float = 0.0, species_name: String = "") -> int:
+	var species: FishSpecies = FishCatalog.find(species_name)
+	var base_value: float = float(species.value) if species != null else float(RARITY_VALUES[rarity])
+	var average: float = species.average_weight() if species != null else FishRarity.average_weight(rarity)
+	var weight_multiplier: float = weight / average
 	return roundi(base_value * weight_multiplier * (1.0 + bonus))
 
 ## Read-only preview of what a catch/dock sale would be worth, without
 ## granting it — used by the Dock panel to show a price before selling.
-func preview_value(rarity: FishRarity.Tier, weight: float, bonus: float = 0.0) -> int:
-	return _catch_value(rarity, weight, bonus)
+func preview_value(rarity: FishRarity.Tier, weight: float, bonus: float = 0.0, species_name: String = "") -> int:
+	return _catch_value(rarity, weight, bonus, species_name)
 
-func add_currency_for_catch(rarity: FishRarity.Tier, weight: float, coin_bonus: float = 0.0, scale_bonus: float = 0.0) -> Dictionary:
+func add_currency_for_catch(rarity: FishRarity.Tier, weight: float, coin_bonus: float = 0.0, scale_bonus: float = 0.0, species_name: String = "") -> Dictionary:
 	if rarity in COIN_TIERS:
-		var gained := _catch_value(rarity, weight, coin_bonus)
+		var gained := _catch_value(rarity, weight, coin_bonus, species_name)
 		coins += gained
 		coins_changed.emit(coins)
 		return {"currency": "Coins", "amount": gained}
 	else:
-		var gained := _catch_value(rarity, weight, scale_bonus)
+		var gained := _catch_value(rarity, weight, scale_bonus, species_name)
 		scales += gained
 		scales_changed.emit(scales)
 		return {"currency": "Scales", "amount": gained}

@@ -201,8 +201,15 @@ func _roll_and_apply_catch(catch_duration: float = -1.0, forced_rarity: int = -1
 			if caught_rarity < FishRarity.Tier.RARE and get_equipment_bonus("guarantee_rare") > 0.0:
 				caught_rarity = FishRarity.Tier.RARE
 	if caught_species == null:
-		caught_species = FishCatalog.roll_species(caught_rarity)
-	var caught_weight := FishRarity.roll_weight(caught_rarity, get_effective_stat(power_xp, "power"))
+		# Every species of a tier can be condition-locked at once as the
+		# catalog grows, so step down tiers rather than failing the catch.
+		var tier: int = caught_rarity
+		while caught_species == null and tier >= 0:
+			caught_species = FishCatalog.roll_species(tier)
+			if caught_species != null:
+				caught_rarity = tier
+			tier -= 1
+	var caught_weight := caught_species.roll_weight(get_effective_stat(power_xp, "power"))
 
 	# Common/Uncommon auto-sell for Coins on the spot, same as always. Rare+
 	# no longer auto-sells for Scales — it lands in the dock so the player
@@ -212,7 +219,7 @@ func _roll_and_apply_catch(catch_duration: float = -1.0, forced_rarity: int = -1
 	var docked := false
 	if caught_rarity in Economy.COIN_TIERS:
 		var coin_bonus := get_equipment_bonus("coin_gain") + MetaProgress.get_global_coin_gain_bonus()
-		var earned := Economy.add_currency_for_catch(caught_rarity, caught_weight, coin_bonus, get_equipment_bonus("scale_gain"))
+		var earned := Economy.add_currency_for_catch(caught_rarity, caught_weight, coin_bonus, get_equipment_bonus("scale_gain"), caught_species.species_name)
 		currency = earned.currency
 		amount = earned.amount
 	else:
@@ -223,7 +230,7 @@ func _roll_and_apply_catch(catch_duration: float = -1.0, forced_rarity: int = -1
 	var speed_range := _catch_time_range()
 	var normalized_speed := 1.0 - inverse_lerp(speed_range.x, speed_range.y, catch_duration)
 	var normalized_luck := float(caught_rarity) / float(FishRarity.MAX_ROLLABLE_TIER)
-	var weight_range: Vector2 = FishRarity.WEIGHT_RANGES[caught_rarity]
+	var weight_range: Vector2 = caught_species.weight_range
 	var normalized_power := inverse_lerp(weight_range.x, weight_range.y, caught_weight)
 
 	var xp_multiplier := 1.0 + get_equipment_bonus("xp_gain")

@@ -34,9 +34,11 @@ func _ensure_layers() -> void:
 	_outline.show_behind_parent = true
 	add_child(_outline)
 
-func set_species(species_name: String, discovered: bool, tier_color: Color) -> void:
+## `model` is the species' own atlas frame, assigned in the catalog rather
+## than hashed from the name, so each fish gets a silhouette that suits it.
+func set_species(model: int, discovered: bool, tier_color: Color) -> void:
 	_ensure_layers()
-	var index: int = abs(species_name.hash()) % MODEL_COUNT
+	var index: int = clampi(model, 0, MODEL_COUNT - 1)
 	frame = index
 	_outline.frame = index
 	self_modulate = Color.WHITE if discovered else UNDISCOVERED_COLOR

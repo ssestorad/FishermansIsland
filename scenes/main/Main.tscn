@@ -714,16 +714,29 @@ theme_override_constants/separation = 4
 
 [node name="PageLabel" type="Label" parent="CanvasLayer/AlbumPanel/MarginContainer/VBoxContainer/CardScroll/CardArea"]
 layout_mode = 2
+theme_type_variation = &"MutedLabel"
+theme_override_font_sizes/font_size = 12
 horizontal_alignment = 1
-text = "1 / 155"
+text = "All — 1 / 120"
+
+[node name="SpeciesNameLabel" type="Label" parent="CanvasLayer/AlbumPanel/MarginContainer/VBoxContainer/CardScroll/CardArea"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+horizontal_alignment = 1
+text = "???"
+
+[node name="TierLabel" type="Label" parent="CanvasLayer/AlbumPanel/MarginContainer/VBoxContainer/CardScroll/CardArea"]
+layout_mode = 2
+horizontal_alignment = 1
+text = "Common"
 
 [node name="IconPanel" type="Control" parent="CanvasLayer/AlbumPanel/MarginContainer/VBoxContainer/CardScroll/CardArea"]
 layout_mode = 2
-custom_minimum_size = Vector2(100, 80)
+custom_minimum_size = Vector2(100, 64)
 size_flags_horizontal = 4
 
 [node name="FishIcon" type="Sprite2D" parent="CanvasLayer/AlbumPanel/MarginContainer/VBoxContainer/CardScroll/CardArea/IconPanel"]
-position = Vector2(50, 40)
+position = Vector2(50, 32)
 scale = Vector2(2.5, 2.5)
 script = ExtResource("10_fish_icon")
 
@@ -745,17 +758,6 @@ theme_override_constants/outline_size = 4
 horizontal_alignment = 1
 text = "?"
 
-[node name="SpeciesNameLabel" type="Label" parent="CanvasLayer/AlbumPanel/MarginContainer/VBoxContainer/CardScroll/CardArea"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 18
-horizontal_alignment = 1
-text = "???"
-
-[node name="TierLabel" type="Label" parent="CanvasLayer/AlbumPanel/MarginContainer/VBoxContainer/CardScroll/CardArea"]
-layout_mode = 2
-horizontal_alignment = 1
-text = "Common"
-
 [node name="StatsLabel" type="Label" parent="CanvasLayer/AlbumPanel/MarginContainer/VBoxContainer/CardScroll/CardArea"]
 layout_mode = 2
 horizontal_alignment = 1
@@ -764,6 +766,15 @@ text = "Not yet discovered"
 [node name="DetailLabel" type="Label" parent="CanvasLayer/AlbumPanel/MarginContainer/VBoxContainer/CardScroll/CardArea"]
 layout_mode = 2
 theme_type_variation = &"MutedLabel"
+horizontal_alignment = 1
+autowrap_mode = 3
+text = ""
+
+[node name="DescriptionLabel" type="Label" parent="CanvasLayer/AlbumPanel/MarginContainer/VBoxContainer/CardScroll/CardArea"]
+layout_mode = 2
+custom_minimum_size = Vector2(240, 0)
+theme_override_font_sizes/font_size = 11
+theme_override_colors/font_color = Color(0.42, 0.34, 0.24, 1)
 horizontal_alignment = 1
 autowrap_mode = 3
 text = ""
@@ -780,6 +791,26 @@ theme_type_variation = &"MutedLabel"
 theme_override_font_sizes/font_size = 13
 horizontal_alignment = 1
 text = "Discovery by Rarity"
+
+[node name="ModeRow" type="HBoxContainer" parent="CanvasLayer/AlbumPanel/MarginContainer/VBoxContainer/StatsArea"]
+layout_mode = 2
+alignment = 1
+theme_override_constants/separation = 6
+
+[node name="RarityModeButton" type="Button" parent="CanvasLayer/AlbumPanel/MarginContainer/VBoxContainer/StatsArea/ModeRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(74, 26)
+theme_type_variation = &"TabButton"
+theme_override_font_sizes/font_size = 11
+disabled = true
+text = "Rarity"
+
+[node name="HabitatModeButton" type="Button" parent="CanvasLayer/AlbumPanel/MarginContainer/VBoxContainer/StatsArea/ModeRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(74, 26)
+theme_type_variation = &"TabButton"
+theme_override_font_sizes/font_size = 11
+text = "Habitat"
 
 [node name="StatsScroll" type="ScrollContainer" parent="CanvasLayer/AlbumPanel/MarginContainer/VBoxContainer/StatsArea"]
 layout_mode = 2
