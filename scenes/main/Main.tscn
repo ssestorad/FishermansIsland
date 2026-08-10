@@ -1,4 +1,4 @@
-[gd_scene load_steps=10 format=3]
+[gd_scene load_steps=11 format=3]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
 [ext_resource type="Script" path="res://scripts/night_tint.gd" id="2_night_tint"]
@@ -9,6 +9,7 @@
 [ext_resource type="Script" path="res://scripts/fisherman_profile_panel_controller.gd" id="7_profile_panel"]
 [ext_resource type="Script" path="res://scripts/shop_panel_controller.gd" id="8_shop_panel"]
 [ext_resource type="Script" path="res://scripts/album_panel_controller.gd" id="9_album_panel"]
+[ext_resource type="Script" path="res://scripts/fish_icon.gd" id="10_fish_icon"]
 
 [node name="Main" type="Node2D"]
 script = ExtResource("1_main")
@@ -267,16 +268,179 @@ grow_vertical = 2
 [node name="VBoxContainer" type="VBoxContainer" parent="CanvasLayer/AlbumPanel/MarginContainer"]
 layout_mode = 2
 size_flags_vertical = 3
+theme_override_constants/separation = 6
 
 [node name="TitleLabel" type="Label" parent="CanvasLayer/AlbumPanel/MarginContainer/VBoxContainer"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 18
-text = "Fish Album"
+theme_override_font_sizes/font_size = 16
+horizontal_alignment = 1
+text = "Fish Album (0/155)"
 
-[node name="AlbumScroll" type="ScrollContainer" parent="CanvasLayer/AlbumPanel/MarginContainer/VBoxContainer"]
+[node name="TierTabs" type="HBoxContainer" parent="CanvasLayer/AlbumPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+alignment = 1
+theme_override_constants/separation = 4
+
+[node name="OverviewTab" type="Button" parent="CanvasLayer/AlbumPanel/MarginContainer/VBoxContainer/TierTabs"]
+layout_mode = 2
+custom_minimum_size = Vector2(38, 28)
+theme_override_font_sizes/font_size = 11
+text = "All"
+
+[node name="CommonTab" type="Button" parent="CanvasLayer/AlbumPanel/MarginContainer/VBoxContainer/TierTabs"]
+layout_mode = 2
+custom_minimum_size = Vector2(38, 28)
+theme_override_font_sizes/font_size = 11
+modulate = Color(0.7, 0.7, 0.7, 1)
+text = "Com"
+
+[node name="UncommonTab" type="Button" parent="CanvasLayer/AlbumPanel/MarginContainer/VBoxContainer/TierTabs"]
+layout_mode = 2
+custom_minimum_size = Vector2(38, 28)
+theme_override_font_sizes/font_size = 11
+modulate = Color(0.4, 0.75, 0.4, 1)
+text = "Unc"
+
+[node name="RareTab" type="Button" parent="CanvasLayer/AlbumPanel/MarginContainer/VBoxContainer/TierTabs"]
+layout_mode = 2
+custom_minimum_size = Vector2(38, 28)
+theme_override_font_sizes/font_size = 11
+modulate = Color(0.3, 0.5, 0.9, 1)
+text = "Rare"
+
+[node name="EpicTab" type="Button" parent="CanvasLayer/AlbumPanel/MarginContainer/VBoxContainer/TierTabs"]
+layout_mode = 2
+custom_minimum_size = Vector2(38, 28)
+theme_override_font_sizes/font_size = 11
+modulate = Color(0.6, 0.35, 0.85, 1)
+text = "Epic"
+
+[node name="LegendaryTab" type="Button" parent="CanvasLayer/AlbumPanel/MarginContainer/VBoxContainer/TierTabs"]
+layout_mode = 2
+custom_minimum_size = Vector2(38, 28)
+theme_override_font_sizes/font_size = 11
+modulate = Color(0.9, 0.65, 0.15, 1)
+text = "Leg"
+
+[node name="MythicTab" type="Button" parent="CanvasLayer/AlbumPanel/MarginContainer/VBoxContainer/TierTabs"]
+layout_mode = 2
+custom_minimum_size = Vector2(38, 28)
+theme_override_font_sizes/font_size = 11
+modulate = Color(0.85, 0.2, 0.25, 1)
+text = "Myth"
+
+[node name="CardArea" type="VBoxContainer" parent="CanvasLayer/AlbumPanel/MarginContainer/VBoxContainer"]
 layout_mode = 2
 size_flags_vertical = 3
+alignment = 1
+theme_override_constants/separation = 4
 
-[node name="AlbumRows" type="VBoxContainer" parent="CanvasLayer/AlbumPanel/MarginContainer/VBoxContainer/AlbumScroll"]
+[node name="PageLabel" type="Label" parent="CanvasLayer/AlbumPanel/MarginContainer/VBoxContainer/CardArea"]
 layout_mode = 2
-size_flags_horizontal = 3
+horizontal_alignment = 1
+text = "1 / 155"
+
+[node name="IconPanel" type="Control" parent="CanvasLayer/AlbumPanel/MarginContainer/VBoxContainer/CardArea"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 80)
+size_flags_horizontal = 4
+
+[node name="FishIcon" type="Control" parent="CanvasLayer/AlbumPanel/MarginContainer/VBoxContainer/CardArea/IconPanel"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -50.0
+offset_top = -30.0
+offset_right = 50.0
+offset_bottom = 30.0
+script = ExtResource("10_fish_icon")
+
+[node name="QuestionMark" type="Label" parent="CanvasLayer/AlbumPanel/MarginContainer/VBoxContainer/CardArea/IconPanel"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -10.0
+offset_top = -16.0
+offset_right = 10.0
+offset_bottom = 16.0
+theme_override_font_sizes/font_size = 28
+horizontal_alignment = 1
+text = "?"
+
+[node name="SpeciesNameLabel" type="Label" parent="CanvasLayer/AlbumPanel/MarginContainer/VBoxContainer/CardArea"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+horizontal_alignment = 1
+text = "???"
+
+[node name="TierLabel" type="Label" parent="CanvasLayer/AlbumPanel/MarginContainer/VBoxContainer/CardArea"]
+layout_mode = 2
+horizontal_alignment = 1
+text = "Common"
+
+[node name="StatsLabel" type="Label" parent="CanvasLayer/AlbumPanel/MarginContainer/VBoxContainer/CardArea"]
+layout_mode = 2
+horizontal_alignment = 1
+text = "Not yet discovered"
+
+[node name="StatsArea" type="VBoxContainer" parent="CanvasLayer/AlbumPanel/MarginContainer/VBoxContainer"]
+visible = false
+layout_mode = 2
+size_flags_vertical = 3
+alignment = 1
+theme_override_constants/separation = 4
+
+[node name="OverviewTitle" type="Label" parent="CanvasLayer/AlbumPanel/MarginContainer/VBoxContainer/StatsArea"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+horizontal_alignment = 1
+text = "Discovery by Rarity"
+
+[node name="CommonStat" type="Label" parent="CanvasLayer/AlbumPanel/MarginContainer/VBoxContainer/StatsArea"]
+layout_mode = 2
+horizontal_alignment = 1
+text = "Common — 0/25"
+
+[node name="UncommonStat" type="Label" parent="CanvasLayer/AlbumPanel/MarginContainer/VBoxContainer/StatsArea"]
+layout_mode = 2
+horizontal_alignment = 1
+text = "Uncommon — 0/25"
+
+[node name="RareStat" type="Label" parent="CanvasLayer/AlbumPanel/MarginContainer/VBoxContainer/StatsArea"]
+layout_mode = 2
+horizontal_alignment = 1
+text = "Rare — 0/25"
+
+[node name="EpicStat" type="Label" parent="CanvasLayer/AlbumPanel/MarginContainer/VBoxContainer/StatsArea"]
+layout_mode = 2
+horizontal_alignment = 1
+text = "Epic — 0/25"
+
+[node name="LegendaryStat" type="Label" parent="CanvasLayer/AlbumPanel/MarginContainer/VBoxContainer/StatsArea"]
+layout_mode = 2
+horizontal_alignment = 1
+text = "Legendary — 0/29"
+
+[node name="MythicStat" type="Label" parent="CanvasLayer/AlbumPanel/MarginContainer/VBoxContainer/StatsArea"]
+layout_mode = 2
+horizontal_alignment = 1
+text = "Mythic — 0/26"
+
+[node name="NavRow" type="HBoxContainer" parent="CanvasLayer/AlbumPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+alignment = 1
+theme_override_constants/separation = 16
+
+[node name="PrevButton" type="Button" parent="CanvasLayer/AlbumPanel/MarginContainer/VBoxContainer/NavRow"]
+layout_mode = 2
+text = "◀ Prev"
+
+[node name="NextButton" type="Button" parent="CanvasLayer/AlbumPanel/MarginContainer/VBoxContainer/NavRow"]
+layout_mode = 2
+text = "Next ▶"
