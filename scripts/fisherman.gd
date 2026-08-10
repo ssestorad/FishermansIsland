@@ -78,10 +78,13 @@ func _process(delta: float) -> void:
 
 func _resolve_catch() -> void:
 	var caught_rarity := FishRarity.roll(get_effective_stat(luck_xp, "luck"))
+	var caught_species := FishCatalog.roll_species(caught_rarity)
 	var caught_weight := FishRarity.roll_weight(caught_rarity, get_effective_stat(power_xp, "power"))
-	Economy.add_coins_for_catch(caught_rarity, caught_weight)
-	print(display_name, " caught a ", FishRarity.name_for(caught_rarity), " fish (%.1f kg)! [Spd %d / Lck %d / Pwr %d]" % [
-		caught_weight, get_level(speed_xp), get_level(luck_xp), get_level(power_xp)
+	Economy.add_currency_for_catch(caught_rarity, caught_weight)
+	Album.record_catch(caught_species, caught_weight)
+	print("%s caught a %s (%s, %.1f kg)! [Spd %d / Lck %d / Pwr %d]" % [
+		display_name, caught_species.species_name, FishRarity.name_for(caught_rarity), caught_weight,
+		get_level(speed_xp), get_level(luck_xp), get_level(power_xp)
 	])
 
 	var speed_range := _catch_time_range()

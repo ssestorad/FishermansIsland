@@ -15,6 +15,14 @@ offset_bottom = 40.0
 theme_override_font_sizes/font_size = 20
 text = "Coins: 0"
 
+[node name="ScalesLabel" type="Label" parent="CanvasLayer"]
+offset_left = 230.0
+offset_top = 8.0
+offset_right = 440.0
+offset_bottom = 40.0
+theme_override_font_sizes/font_size = 20
+text = "Scales: 0"
+
 [node name="FishermenButton" type="Button" parent="CanvasLayer"]
 offset_left = 12.0
 offset_top = 48.0
@@ -28,6 +36,13 @@ offset_top = 48.0
 offset_right = 320.0
 offset_bottom = 80.0
 text = "Hire (5 coins)"
+
+[node name="AlbumButton" type="Button" parent="CanvasLayer"]
+offset_left = 330.0
+offset_top = 48.0
+offset_right = 460.0
+offset_bottom = 80.0
+text = "Album"
 
 [node name="FishermenPanel" type="Panel" parent="CanvasLayer"]
 visible = false
@@ -178,3 +193,39 @@ layout_mode = 2
 [node name="BackButton" type="Button" parent="CanvasLayer/ShopPanel/MarginContainer/VBoxContainer"]
 layout_mode = 2
 text = "Back"
+
+[node name="AlbumPanel" type="Panel" parent="CanvasLayer"]
+visible = false
+offset_left = 12.0
+offset_top = 88.0
+offset_right = 320.0
+offset_bottom = 340.0
+
+[node name="MarginContainer" type="MarginContainer" parent="CanvasLayer/AlbumPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 8.0
+offset_top = 8.0
+offset_right = -8.0
+offset_bottom = -8.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="CanvasLayer/AlbumPanel/MarginContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="TitleLabel" type="Label" parent="CanvasLayer/AlbumPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "Fish Album"
+
+[node name="AlbumScroll" type="ScrollContainer" parent="CanvasLayer/AlbumPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="AlbumRows" type="VBoxContainer" parent="CanvasLayer/AlbumPanel/MarginContainer/VBoxContainer/AlbumScroll"]
+layout_mode = 2
+size_flags_horizontal = 3

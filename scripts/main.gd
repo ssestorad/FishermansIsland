@@ -8,10 +8,15 @@ const BASE_HIRE_COST := 5
 const HIRE_COST_GROWTH := 1.25
 
 @onready var coins_label: Label = $CanvasLayer/CoinsLabel
+@onready var scales_label: Label = $CanvasLayer/ScalesLabel
 @onready var fishermen_button: Button = $CanvasLayer/FishermenButton
 @onready var hire_button: Button = $CanvasLayer/HireButton
+@onready var album_button: Button = $CanvasLayer/AlbumButton
 @onready var fishermen_panel: Panel = $CanvasLayer/FishermenPanel
 @onready var fishermen_rows: VBoxContainer = $CanvasLayer/FishermenPanel/MarginContainer/VBoxContainer/FishermenRows
+@onready var album_panel: Panel = $CanvasLayer/AlbumPanel
+@onready var album_title_label: Label = $CanvasLayer/AlbumPanel/MarginContainer/VBoxContainer/TitleLabel
+@onready var album_rows: VBoxContainer = $CanvasLayer/AlbumPanel/MarginContainer/VBoxContainer/AlbumScroll/AlbumRows
 @onready var profile_panel: Panel = $CanvasLayer/FishermanProfilePanel
 @onready var profile_name_label: Label = $CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer/NameLabel
 @onready var profile_speed_label: Label = $CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer/SpeedLabel
@@ -32,13 +37,17 @@ var shop_items: Array = []
 func _ready() -> void:
 	get_viewport().physics_object_picking = true
 	_update_coins_label(Economy.coins)
+	_update_scales_label(Economy.scales)
 	Economy.coins_changed.connect(_update_coins_label)
+	Economy.scales_changed.connect(_update_scales_label)
 	_spawn_starting_fishermen()
 	fishermen_button.pressed.connect(_on_fishermen_button_pressed)
 	hire_button.pressed.connect(_on_hire_button_pressed)
+	album_button.pressed.connect(_on_album_button_pressed)
 	profile_close_button.pressed.connect(_on_profile_close_pressed)
 	profile_shop_button.pressed.connect(_on_shop_button_pressed)
 	shop_back_button.pressed.connect(_on_shop_back_pressed)
+	Album.updated.connect(_on_album_updated)
 	_update_hire_button()
 
 func _process(_delta: float) -> void:
@@ -91,7 +100,49 @@ func _update_hire_button() -> void:
 func _on_fishermen_button_pressed() -> void:
 	fishermen_panel.visible = not fishermen_panel.visible
 	if fishermen_panel.visible:
+		album_panel.visible = false
 		_build_fishermen_list()
+
+func _on_album_button_pressed() -> void:
+	album_panel.visible = not album_panel.visible
+	if album_panel.visible:
+		fishermen_panel.visible = false
+		_build_album_list()
+
+func _on_album_updated() -> void:
+	if album_panel.visible:
+		_build_album_list()
+
+func _build_album_list() -> void:
+	for child in album_rows.get_children():
+		album_rows.remove_child(child)
+		child.queue_free()
+
+	var total_discovered := 0
+	var total_species := 0
+
+	for tier in FishRarity.Tier.values():
+		var species_list: Array = FishCatalog.species_for_tier(tier)
+		var discovered_species: Array = []
+		for species in species_list:
+			if Album.is_discovered(species.species_name):
+				discovered_species.append(species)
+
+		total_discovered += discovered_species.size()
+		total_species += species_list.size()
+
+		var header := Label.new()
+		header.add_theme_font_size_override("font_size", 16)
+		header.text = "%s — %d/%d discovered" % [FishRarity.name_for(tier), discovered_species.size(), species_list.size()]
+		album_rows.add_child(header)
+
+		for species in discovered_species:
+			var key: String = species.species_name
+			var row := Label.new()
+			row.text = "   %s — caught %d, best %.1f kg" % [key, Album.caught_counts[key], Album.best_weights[key]]
+			album_rows.add_child(row)
+
+	album_title_label.text = "Fish Album (%d/%d)" % [total_discovered, total_species]
 
 func _build_fishermen_list() -> void:
 	for child in fishermen_rows.get_children():
@@ -174,6 +225,9 @@ func _on_buy_item(item: Item) -> void:
 func _update_coins_label(new_total: int) -> void:
 	coins_label.text = "Coins: %d" % new_total
 	_update_hire_button()
+
+func _update_scales_label(new_total: int) -> void:
+	scales_label.text = "Scales: %d" % new_total
 
 func _draw() -> void:
 	draw_rect(Rect2(300, 100, 300, 200), Color(0.2, 0.4, 0.8))

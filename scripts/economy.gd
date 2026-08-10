@@ -1,8 +1,10 @@
 extends Node
 
 signal coins_changed(new_total: int)
+signal scales_changed(new_total: int)
 
 var coins: int = 0
+var scales: int = 0
 
 const RARITY_VALUES := {
 	FishRarity.Tier.COMMON: 1,
@@ -13,15 +15,29 @@ const RARITY_VALUES := {
 	FishRarity.Tier.MYTHIC: 150,
 }
 
-func add_coins_for_catch(rarity: FishRarity.Tier, weight: float) -> void:
+const COIN_TIERS := [FishRarity.Tier.COMMON, FishRarity.Tier.UNCOMMON]
+
+func add_currency_for_catch(rarity: FishRarity.Tier, weight: float) -> void:
 	var base_value: float = RARITY_VALUES[rarity]
 	var weight_multiplier: float = weight / FishRarity.average_weight(rarity)
-	coins += roundi(base_value * weight_multiplier)
-	coins_changed.emit(coins)
+	var amount := roundi(base_value * weight_multiplier)
+	if rarity in COIN_TIERS:
+		coins += amount
+		coins_changed.emit(coins)
+	else:
+		scales += amount
+		scales_changed.emit(scales)
 
 func spend_coins(amount: int) -> bool:
 	if coins < amount:
 		return false
 	coins -= amount
 	coins_changed.emit(coins)
+	return true
+
+func spend_scales(amount: int) -> bool:
+	if scales < amount:
+		return false
+	scales -= amount
+	scales_changed.emit(scales)
 	return true
