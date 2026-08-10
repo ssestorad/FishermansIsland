@@ -1,8 +1,8 @@
 extends Node
 
-const DAY_NIGHT_CYCLE_DURATION := 60.0  # placeholder for testing; design target is 1200s (20 min)
-const SEASON_DURATION := 90.0  # placeholder for testing; design target is 3600s (1 hour)
-const WEATHER_CHANGE_INTERVAL := 20.0  # placeholder for testing; design target is 300s (5 min)
+const DAY_NIGHT_CYCLE_DURATION := 1200.0  # 20 min
+const SEASON_DURATION := 3600.0  # 1 hour
+const WEATHER_CHANGE_INTERVAL := 300.0  # 5 min
 const SEASON_NAMES := ["Spring", "Summer", "Autumn", "Winter"]
 
 const WEATHER_TYPES := ["Sunny", "Rainy", "Foggy", "Stormy", "Blizzard"]

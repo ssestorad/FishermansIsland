@@ -2,7 +2,7 @@ extends Node
 
 signal rotated
 
-const ROTATION_INTERVAL := 20.0  # placeholder for testing; design target is 300s (5 min)
+const ROTATION_INTERVAL := 300.0  # 5 min
 const SLOTS_COUNT := 8
 
 const RARITY_WEIGHTS := {

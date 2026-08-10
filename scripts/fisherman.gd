@@ -1,6 +1,7 @@
 extends Node2D
 
 signal clicked(fisherman: Node2D)
+signal stats_changed
 
 @export var home_position: Vector2 = Vector2(100, 250)
 @export var dock_position: Vector2 = Vector2(450, 200)
@@ -130,10 +131,11 @@ func _resolve_catch() -> void:
 ## Rolls and applies one catch (currency, album, XP). `catch_duration` feeds
 ## the speed-XP shaping; pass -1 (default) to have one rolled on the spot,
 ## which is what offline batch catches do since they skip the real timer.
-func _roll_and_apply_catch(catch_duration: float = -1.0) -> Dictionary:
+## `forced_rarity` skips the luck roll entirely (used by the dev console).
+func _roll_and_apply_catch(catch_duration: float = -1.0, forced_rarity: int = -1) -> Dictionary:
 	if catch_duration < 0.0:
 		catch_duration = _rolled_catch_time()
-	var caught_rarity := FishRarity.roll(get_effective_stat(luck_xp, "luck"))
+	var caught_rarity: FishRarity.Tier = forced_rarity if forced_rarity >= 0 else FishRarity.roll(get_effective_stat(luck_xp, "luck"))
 	var caught_species := FishCatalog.roll_species(caught_rarity)
 	var caught_weight := FishRarity.roll_weight(caught_rarity, get_effective_stat(power_xp, "power"))
 	var earned := Economy.add_currency_for_catch(caught_rarity, caught_weight, get_equipment_bonus("coin_gain"), get_equipment_bonus("scale_gain"))
@@ -149,6 +151,7 @@ func _roll_and_apply_catch(catch_duration: float = -1.0) -> Dictionary:
 	speed_xp += normalized_speed * XP_PER_CATCH * xp_multiplier
 	luck_xp += normalized_luck * XP_PER_CATCH * xp_multiplier
 	power_xp += normalized_power * XP_PER_CATCH * xp_multiplier
+	stats_changed.emit()
 
 	return {
 		"species": caught_species,
@@ -157,6 +160,14 @@ func _roll_and_apply_catch(catch_duration: float = -1.0) -> Dictionary:
 		"currency": earned.currency,
 		"amount": earned.amount,
 	}
+
+## Dev-console hook: forces a catch of the given rarity (skips the luck
+## roll) through the normal currency/album/XP pipeline. Returns {} if no
+## species is currently eligible for that rarity (e.g. a weather-gated tier).
+func debug_force_catch(tier: FishRarity.Tier) -> Dictionary:
+	if FishCatalog.roll_species(tier) == null:
+		return {}
+	return _roll_and_apply_catch(-1.0, tier)
 
 ## Simulates `duration` seconds of offline fishing without moving the
 ## fisherman: estimates how many walk/catch/rest cycles would have fit and

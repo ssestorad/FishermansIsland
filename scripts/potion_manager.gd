@@ -3,7 +3,7 @@ extends Node
 signal updated
 
 const POTION_BONUS := 0.15
-const DURATION := 60.0  # placeholder for testing; design target is 300s (5 min)
+const DURATION := 300.0  # 5 min
 
 var _active_until: Dictionary = {"speed": 0.0, "luck": 0.0, "power": 0.0}
 

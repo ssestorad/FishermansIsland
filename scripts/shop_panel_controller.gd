@@ -12,6 +12,8 @@ const POTION_COLORS := {
 	"power": Color(0.85, 0.45, 0.3),
 }
 
+const TICK_INTERVAL := 0.2  # 5/sec, just for the restock/potion countdown text
+
 @onready var restock_label: Label = $MarginContainer/VBoxContainer/RestockLabel
 @onready var gear_tab_button: Button = $MarginContainer/VBoxContainer/TabRow/GearTabButton
 @onready var potions_tab_button: Button = $MarginContainer/VBoxContainer/TabRow/PotionsTabButton
@@ -23,13 +25,21 @@ const POTION_COLORS := {
 var _items: Array = []
 var _potion_rows: Dictionary = {}
 var _showing_potions: bool = false
+var _tick_accumulator: float = 0.0
 
 func _ready() -> void:
 	close_button.pressed.connect(_on_close_button_pressed)
 	gear_tab_button.pressed.connect(_on_gear_tab_pressed)
 	potions_tab_button.pressed.connect(_on_potions_tab_pressed)
 	ShopRotation.rotated.connect(_on_shop_rotated)
+	Economy.coins_changed.connect(_on_state_changed)
+	Economy.scales_changed.connect(_on_state_changed)
+	PotionManager.updated.connect(_on_state_changed)
 	_build_potion_rows()
+
+func _on_state_changed(_value = null) -> void:
+	if visible:
+		refresh()
 
 func _on_shop_rotated() -> void:
 	if visible and not _showing_potions:
@@ -72,8 +82,12 @@ func _build_potion_rows() -> void:
 		potions_container.add_child(row)
 		_potion_rows[axis] = row
 
-func _process(_delta: float) -> void:
-	if visible:
+func _process(delta: float) -> void:
+	if not visible:
+		return
+	_tick_accumulator += delta
+	if _tick_accumulator >= TICK_INTERVAL:
+		_tick_accumulator = 0.0
 		refresh()
 
 func refresh() -> void:

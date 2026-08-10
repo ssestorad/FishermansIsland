@@ -24,6 +24,8 @@ var _discount_row: ListRow
 
 func _ready() -> void:
 	close_button.pressed.connect(_on_close_pressed)
+	Economy.scales_changed.connect(_on_state_changed)
+	MetaProgress.updated.connect(_on_state_changed)
 	_build()
 
 func toggle() -> void:
@@ -31,7 +33,7 @@ func toggle() -> void:
 	if visible:
 		refresh()
 
-func _process(_delta: float) -> void:
+func _on_state_changed(_value = null) -> void:
 	if visible:
 		refresh()
 

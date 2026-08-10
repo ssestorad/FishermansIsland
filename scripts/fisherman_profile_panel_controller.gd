@@ -24,17 +24,27 @@ func _ready() -> void:
 		slot_button.pressed.connect(_on_slot_pressed.bind(slot_name))
 	dismiss_button.pressed.connect(_on_dismiss_button_pressed)
 	close_button.pressed.connect(_on_close_button_pressed)
+	visibility_changed.connect(_on_visibility_changed)
+
+## Any code path that hides this panel — the close/dismiss buttons, or
+## main.gd switching to a different panel — ends up here, so the stats
+## subscription never leaks onto a fisherman we're no longer showing.
+func _on_visibility_changed() -> void:
+	if not visible:
+		_unsubscribe()
 
 func show_fisherman(fisherman: Node) -> void:
+	_unsubscribe()
 	_fisherman = fisherman
+	_fisherman.stats_changed.connect(refresh)
 	_dismiss_armed = false
 	dismiss_button.text = "Dismiss"
 	visible = true
 	refresh()
 
-func _process(_delta: float) -> void:
-	if visible:
-		refresh()
+func _unsubscribe() -> void:
+	if _fisherman != null and is_instance_valid(_fisherman) and _fisherman.stats_changed.is_connected(refresh):
+		_fisherman.stats_changed.disconnect(refresh)
 
 func refresh() -> void:
 	if _fisherman == null or not is_instance_valid(_fisherman):

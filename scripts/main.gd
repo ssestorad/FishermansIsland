@@ -32,6 +32,7 @@ var fishermen: Array = []
 
 func _ready() -> void:
 	get_viewport().physics_object_picking = true
+	DevConsole.register_main(self)
 
 	if SaveManager.has_save():
 		_load_game()
@@ -64,6 +65,9 @@ func _notification(what: int) -> void:
 	if what == NOTIFICATION_WM_CLOSE_REQUEST:
 		SaveManager.save_game(fishermen)
 		get_tree().quit()
+
+func _exit_tree() -> void:
+	DevConsole.unregister_main(self)
 
 func _load_game() -> void:
 	var data := SaveManager.load_data()
