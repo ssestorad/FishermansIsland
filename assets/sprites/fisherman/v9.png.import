@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dtm4mm5108wtk"
-path="res://.godot/imported/v5_walk_b.png-4e85d53b484346e3265214ea352cf930.ctex"
+uid="uid://cohvgxtfadqso"
+path="res://.godot/imported/v9.png-c0207d5fdf9ca84f897176f6eb5caeb5.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/sprites/fisherman/v5_walk_b.png"
-dest_files=["res://.godot/imported/v5_walk_b.png-4e85d53b484346e3265214ea352cf930.ctex"]
+source_file="res://assets/sprites/fisherman/v9.png"
+dest_files=["res://.godot/imported/v9.png-c0207d5fdf9ca84f897176f6eb5caeb5.ctex"]
 
 [params]
 

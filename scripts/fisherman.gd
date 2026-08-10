@@ -20,21 +20,32 @@ const LEVEL_CAP := 10.0
 const XP_PER_CATCH := 2.0
 const WALK_ANIM_FPS := 6.0
 
-## Each entry is a [walk_a, walk_b] texture pair for one pre-baked
-## look (shirt/hair/beard/eye combo). A new fisherman picks one at
-## random instead of recoloring a shared texture at runtime.
+## One pre-baked sheet per look (shirt/hair/beard/hat combo), laid out as
+## a 3x3 grid of 16x24 frames: columns are stand/walk-A/walk-B, rows are
+## the facing direction (see DIRECTION_ROWS). A new fisherman picks a
+## sheet at random instead of recoloring a shared texture at runtime.
+## Regenerate them with tools/generate_fisherman_sprites.py.
 const APPEARANCE_VARIANTS := [
-	[preload("res://assets/sprites/fisherman/v0_walk_a.png"), preload("res://assets/sprites/fisherman/v0_walk_b.png")],
-	[preload("res://assets/sprites/fisherman/v1_walk_a.png"), preload("res://assets/sprites/fisherman/v1_walk_b.png")],
-	[preload("res://assets/sprites/fisherman/v2_walk_a.png"), preload("res://assets/sprites/fisherman/v2_walk_b.png")],
-	[preload("res://assets/sprites/fisherman/v3_walk_a.png"), preload("res://assets/sprites/fisherman/v3_walk_b.png")],
-	[preload("res://assets/sprites/fisherman/v4_walk_a.png"), preload("res://assets/sprites/fisherman/v4_walk_b.png")],
-	[preload("res://assets/sprites/fisherman/v5_walk_a.png"), preload("res://assets/sprites/fisherman/v5_walk_b.png")],
-	[preload("res://assets/sprites/fisherman/v6_walk_a.png"), preload("res://assets/sprites/fisherman/v6_walk_b.png")],
-	[preload("res://assets/sprites/fisherman/v7_walk_a.png"), preload("res://assets/sprites/fisherman/v7_walk_b.png")],
-	[preload("res://assets/sprites/fisherman/v8_walk_a.png"), preload("res://assets/sprites/fisherman/v8_walk_b.png")],
-	[preload("res://assets/sprites/fisherman/v9_walk_a.png"), preload("res://assets/sprites/fisherman/v9_walk_b.png")],
+	preload("res://assets/sprites/fisherman/v0.png"),
+	preload("res://assets/sprites/fisherman/v1.png"),
+	preload("res://assets/sprites/fisherman/v2.png"),
+	preload("res://assets/sprites/fisherman/v3.png"),
+	preload("res://assets/sprites/fisherman/v4.png"),
+	preload("res://assets/sprites/fisherman/v5.png"),
+	preload("res://assets/sprites/fisherman/v6.png"),
+	preload("res://assets/sprites/fisherman/v7.png"),
+	preload("res://assets/sprites/fisherman/v8.png"),
+	preload("res://assets/sprites/fisherman/v9.png"),
 ]
+
+## Sheet row per facing. "left" reuses the right-facing row mirrored with
+## flip_h, so only three directions need art.
+const DIRECTION_ROWS := {"down": 0, "right": 1, "left": 1, "up": 2}
+
+## Column order the walk cycle steps through: contact pose, passing pose,
+## opposite contact, passing again.
+const WALK_FRAME_SEQUENCE := [1, 0, 2, 0]
+const STAND_FRAME := 0
 
 enum State { WALK_TO_DOCK, FISHING, WALK_HOME, RESTING }
 
@@ -52,6 +63,10 @@ var _walk_anim_timer: float = 0.0
 var _walk_frame: int = 0
 
 var appearance_variant: int = -1
+
+## "left"/"right"/"up"/"down", updated every move step from the direction
+## vector and mapped to a sheet row through DIRECTION_ROWS.
+var facing: String = "down"
 
 var equipped_items: Dictionary = {
 	"Rod": null,
@@ -85,7 +100,8 @@ func _ready() -> void:
 	click_area.input_event.connect(_on_click_area_input_event)
 	click_area.mouse_entered.connect(_on_mouse_entered)
 	click_area.mouse_exited.connect(_on_mouse_exited)
-	sprite.texture = APPEARANCE_VARIANTS[appearance_variant][0]
+	sprite.texture = APPEARANCE_VARIANTS[appearance_variant]
+	_apply_sprite_frame(STAND_FRAME)
 	queue_redraw()
 
 func set_appearance_variant(variant: int) -> void:
@@ -114,6 +130,9 @@ func _process(delta: float) -> void:
 					state = State.WALK_TO_DOCK
 				else:
 					state = State.RESTING
+					# Resting is the one idle pose that isn't aimed at the
+					# water, so turn to face the camera while standing around.
+					facing = "down"
 					var rest_reduction := clampf(get_equipment_bonus("rest_time") + get_perk_bonus("rest_time"), 0.0, 0.9)
 					wait_timer = randf_range(min_rest_time, max_rest_time) * (1.0 - rest_reduction)
 		State.RESTING:
@@ -130,11 +149,18 @@ func _update_sprite_animation(delta: float) -> void:
 		_walk_anim_timer += delta
 		if _walk_anim_timer >= 1.0 / WALK_ANIM_FPS:
 			_walk_anim_timer = 0.0
-			_walk_frame = 1 - _walk_frame
-			sprite.texture = APPEARANCE_VARIANTS[appearance_variant][_walk_frame]
-	elif _walk_frame != 0:
+			_walk_frame = (_walk_frame + 1) % WALK_FRAME_SEQUENCE.size()
+		_apply_sprite_frame(WALK_FRAME_SEQUENCE[_walk_frame])
+	else:
 		_walk_frame = 0
-		sprite.texture = APPEARANCE_VARIANTS[appearance_variant][0]
+		_walk_anim_timer = 0.0
+		_apply_sprite_frame(STAND_FRAME)
+
+## Points the sprite at one cell of the appearance sheet: `column` picks
+## the pose, the current facing picks the row.
+func _apply_sprite_frame(column: int) -> void:
+	sprite.flip_h = facing == "left"
+	sprite.frame_coords = Vector2i(column, DIRECTION_ROWS[facing])
 
 func _resolve_catch() -> void:
 	var result := _roll_and_apply_catch(current_catch_duration)
@@ -257,8 +283,17 @@ func _estimate_cycle_time() -> float:
 
 func _move_toward(target: Vector2, delta: float) -> void:
 	var direction: Vector2 = (target - position).normalized()
+	_update_facing(direction)
 	var effective_speed := move_speed * (1.0 + get_equipment_bonus("walk_speed") + get_perk_bonus("walk_speed"))
 	position += direction * effective_speed * delta
+
+func _update_facing(direction: Vector2) -> void:
+	if direction == Vector2.ZERO:
+		return
+	if absf(direction.x) >= absf(direction.y):
+		facing = "right" if direction.x >= 0.0 else "left"
+	else:
+		facing = "down" if direction.y >= 0.0 else "up"
 
 func _random_dock_point() -> Vector2:
 	var y := clampf(dock_position.y + randf_range(-dock_wander_range, dock_wander_range), dock_y_bounds.x, dock_y_bounds.y)
@@ -384,8 +419,7 @@ func get_recent_catches_text(count: int = 5) -> String:
 	for i in range(catch_history.size() - 1, start - 1, -1):
 		var entry: Dictionary = catch_history[i]
 		lines.append("Day %d: %s (%s, %.1f kg)" % [entry.day, entry.species, FishRarity.name_for(entry.tier), entry.weight])
-	return "
-".join(lines)
+	return "\n".join(lines)
 
 func _draw() -> void:
 	if state == State.FISHING:
