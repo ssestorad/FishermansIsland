@@ -1,21 +1,43 @@
 extends Sprite2D
 
-const TEXTURES := [
-	preload("res://assets/sprites/fish/fish_0_classic.png"),
-	preload("res://assets/sprites/fish/fish_1_puffer.png"),
-	preload("res://assets/sprites/fish/fish_2_eel.png"),
-	preload("res://assets/sprites/fish/fish_3_shark.png"),
-	preload("res://assets/sprites/fish/fish_4_ray.png"),
-	preload("res://assets/sprites/fish/fish_5_bigeye.png"),
-	preload("res://assets/sprites/fish/fish_6_swordfish.png"),
-	preload("res://assets/sprites/fish/fish_7_finned.png"),
-	preload("res://assets/sprites/fish/fish_8_fancy.png"),
-	preload("res://assets/sprites/fish/fish_9_serpent.png"),
-]
+## Fish models live in two aligned atlases: a full-colour body and a white
+## outline ring. Splitting them lets the card tint the outline with the
+## fish's rarity colour without multiplying that colour through the body
+## art, which is why the body itself is no longer modulated by tier.
+## Regenerate both with tools/generate_fish_sprites.py.
+const BODY_ATLAS := preload("res://assets/sprites/fish/fish_atlas.png")
+const OUTLINE_ATLAS := preload("res://assets/sprites/fish/fish_atlas_outline.png")
+const COLUMNS := 8
+const ROWS := 4
+const MODEL_COUNT := COLUMNS * ROWS
 
-const UNDISCOVERED_COLOR := Color(0.28, 0.28, 0.28)
+## Undiscovered fish flatten to a dark silhouette. Applied as
+## self_modulate, not modulate, so it doesn't propagate to the outline
+## child and swallow the rarity colour with it.
+const UNDISCOVERED_COLOR := Color(0.22, 0.22, 0.24)
+
+var _outline: Sprite2D = null
+
+func _ready() -> void:
+	_ensure_layers()
+
+func _ensure_layers() -> void:
+	if _outline != null:
+		return
+	texture = BODY_ATLAS
+	hframes = COLUMNS
+	vframes = ROWS
+	_outline = Sprite2D.new()
+	_outline.texture = OUTLINE_ATLAS
+	_outline.hframes = COLUMNS
+	_outline.vframes = ROWS
+	_outline.show_behind_parent = true
+	add_child(_outline)
 
 func set_species(species_name: String, discovered: bool, tier_color: Color) -> void:
-	var index: int = abs(species_name.hash()) % TEXTURES.size()
-	texture = TEXTURES[index]
-	modulate = tier_color if discovered else UNDISCOVERED_COLOR
+	_ensure_layers()
+	var index: int = abs(species_name.hash()) % MODEL_COUNT
+	frame = index
+	_outline.frame = index
+	self_modulate = Color.WHITE if discovered else UNDISCOVERED_COLOR
+	_outline.modulate = tier_color
