@@ -19,22 +19,26 @@ const MIN_OFFLINE_SECONDS_TO_SHOW := 60.0
 @onready var shop_button: Button = $CanvasLayer/NavRow/ShopButton
 @onready var meta_button: Button = $CanvasLayer/NavRow/MetaButton
 @onready var dock_button: Button = $CanvasLayer/NavRow/DockButton
+@onready var stats_button: Button = $CanvasLayer/NavRow/StatsButton
 @onready var menu_button: Button = $CanvasLayer/NavRow/MenuButton
 @onready var fishermen_panel: FishermenPanelController = $CanvasLayer/FishermenPanel
 @onready var album_panel: AlbumPanelController = $CanvasLayer/AlbumPanel
 @onready var shop_panel: ShopPanelController = $CanvasLayer/ShopPanel
 @onready var meta_panel: MetaPanelController = $CanvasLayer/MetaPanel
 @onready var dock_panel: DockPanelController = $CanvasLayer/DockPanel
+@onready var stats_panel: StatsPanelController = $CanvasLayer/StatsPanel
 @onready var profile_panel: FishermanProfilePanelController = $CanvasLayer/FishermanProfilePanel
 @onready var equip_panel: EquipPanelController = $CanvasLayer/EquipPanel
 @onready var welcome_back_panel: WelcomeBackPanelController = $CanvasLayer/WelcomeBackPanel
 @onready var autosave_timer: Timer = $AutosaveTimer
 
 var fishermen: Array = []
+var _zone_a_panels: Array = []
 
 func _ready() -> void:
 	get_viewport().physics_object_picking = true
 	DevConsole.register_main(self)
+	_zone_a_panels = [fishermen_panel, album_panel, shop_panel, meta_panel, dock_panel, stats_panel]
 
 	if SaveManager.has_save():
 		_load_game()
@@ -52,6 +56,7 @@ func _ready() -> void:
 	shop_button.pressed.connect(_on_shop_button_pressed)
 	meta_button.pressed.connect(_on_meta_button_pressed)
 	dock_button.pressed.connect(_on_dock_button_pressed)
+	stats_button.pressed.connect(_on_stats_button_pressed)
 	menu_button.pressed.connect(_on_menu_button_pressed)
 
 	fishermen_panel.fisherman_selected.connect(_show_profile)
@@ -76,7 +81,7 @@ func _load_game() -> void:
 	var data := SaveManager.load_data()
 	Economy.load_state(int(data.get("coins", 0)), int(data.get("scales", 0)))
 	var album_data: Dictionary = data.get("album", {})
-	Album.load_state(album_data.get("caught_counts", {}), album_data.get("best_weights", {}))
+	Album.load_state(album_data.get("caught_counts", {}), album_data.get("best_weights", {}), album_data.get("record_holders", {}))
 	WorldClock.load_state(float(data.get("elapsed_time", 0.0)))
 	Inventory.load_state(data.get("inventory", []))
 	DockInventory.load_state(data.get("dock", []))
@@ -95,7 +100,7 @@ func _apply_offline_progress(data: Dictionary) -> void:
 		return
 	var real_elapsed := maxf(0.0, float(Time.get_unix_time_from_system()) - saved_at)
 	var capped_elapsed := minf(real_elapsed, OFFLINE_CAP_SECONDS)
-	var effective_seconds := capped_elapsed * OFFLINE_EFFICIENCY
+	var effective_seconds := capped_elapsed * (OFFLINE_EFFICIENCY + MetaProgress.get_offline_efficiency_bonus())
 	if effective_seconds < MIN_OFFLINE_SECONDS_TO_SHOW:
 		return
 
@@ -143,6 +148,18 @@ func _spawn_fisherman(saved_data: Dictionary = {}) -> Node:
 		fisherman.luck_xp = float(saved_data.get("luck_xp", 0.0))
 		fisherman.power_xp = float(saved_data.get("power_xp", 0.0))
 		fisherman.perks = saved_data.get("perks", [])
+		fisherman.total_catches = int(saved_data.get("total_catches", 0))
+		var raw_history: Array = saved_data.get("catch_history", [])
+		var loaded_history: Array = []
+		for raw in raw_history:
+			if raw is Dictionary and raw.has("species") and raw.has("tier") and raw.has("weight") and raw.has("day"):
+				loaded_history.append({
+					"species": raw.species,
+					"tier": int(raw.tier),
+					"weight": float(raw.weight),
+					"day": int(raw.day),
+				})
+		fisherman.catch_history = loaded_history
 		var equipped: Dictionary = saved_data.get("equipped_items", {})
 		for slot in equipped:
 			var item_name = equipped[slot]
@@ -184,40 +201,37 @@ func _update_hire_button() -> void:
 		hire_button.text = "Hire (%d)" % cost
 		hire_button.disabled = Economy.coins < cost
 
+## All zone-A panels (Fishermen/Album/Shop/Meta/Dock/Stats) share the same
+## screen rect and are mutually exclusive — this hides every one of them
+## except whichever the caller is about to toggle.
+func _hide_other_zone_a_panels(except_panel: Node) -> void:
+	for panel in _zone_a_panels:
+		if panel != except_panel:
+			panel.visible = false
+
 func _on_fishermen_button_pressed() -> void:
-	album_panel.visible = false
-	shop_panel.visible = false
-	meta_panel.visible = false
-	dock_panel.visible = false
+	_hide_other_zone_a_panels(fishermen_panel)
 	fishermen_panel.toggle(fishermen)
 
 func _on_album_button_pressed() -> void:
-	fishermen_panel.visible = false
-	shop_panel.visible = false
-	meta_panel.visible = false
-	dock_panel.visible = false
+	_hide_other_zone_a_panels(album_panel)
 	album_panel.toggle()
 
 func _on_shop_button_pressed() -> void:
-	fishermen_panel.visible = false
-	album_panel.visible = false
-	meta_panel.visible = false
-	dock_panel.visible = false
+	_hide_other_zone_a_panels(shop_panel)
 	shop_panel.toggle()
 
 func _on_meta_button_pressed() -> void:
-	fishermen_panel.visible = false
-	album_panel.visible = false
-	shop_panel.visible = false
-	dock_panel.visible = false
+	_hide_other_zone_a_panels(meta_panel)
 	meta_panel.toggle()
 
 func _on_dock_button_pressed() -> void:
-	fishermen_panel.visible = false
-	album_panel.visible = false
-	shop_panel.visible = false
-	meta_panel.visible = false
+	_hide_other_zone_a_panels(dock_panel)
 	dock_panel.toggle()
+
+func _on_stats_button_pressed() -> void:
+	_hide_other_zone_a_panels(stats_panel)
+	stats_panel.toggle(fishermen)
 
 func _on_menu_button_pressed() -> void:
 	SaveManager.save_game(fishermen)

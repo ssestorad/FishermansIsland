@@ -12,6 +12,7 @@ const LIST_ROW_SCENE := preload("res://scenes/ui/ListRow.tscn")
 @onready var species_name_label: Label = $MarginContainer/VBoxContainer/CardScroll/CardArea/SpeciesNameLabel
 @onready var tier_label: Label = $MarginContainer/VBoxContainer/CardScroll/CardArea/TierLabel
 @onready var stats_label: Label = $MarginContainer/VBoxContainer/CardScroll/CardArea/StatsLabel
+@onready var detail_label: Label = $MarginContainer/VBoxContainer/CardScroll/CardArea/DetailLabel
 @onready var stats_area: VBoxContainer = $MarginContainer/VBoxContainer/StatsArea
 @onready var stat_rows_container: VBoxContainer = $MarginContainer/VBoxContainer/StatsArea/StatsScroll/StatRows
 @onready var prev_button: Button = $MarginContainer/VBoxContainer/NavRow/PrevButton
@@ -124,10 +125,17 @@ func refresh() -> void:
 	if discovered:
 		var key: String = species.species_name
 		species_name_label.text = key
-		stats_label.text = "Caught %d, best %.1f kg" % [Album.caught_counts[key], Album.best_weights[key]]
+		var record_holder := Album.get_record_holder(key)
+		var record_text := " · record: %s" % record_holder if record_holder != "" else ""
+		stats_label.text = "Caught %d, best %.1f kg%s" % [Album.caught_counts[key], Album.best_weights[key], record_text]
+		var weight_range: Vector2 = FishRarity.WEIGHT_RANGES[species.tier]
+		detail_label.text = "≈%.1f%% of catches before Luck · %.1f–%.1f kg · %s" % [
+			FishRarity.base_chance_percent(species.tier), weight_range.x, weight_range.y, species.condition_text()
+		]
 	else:
 		species_name_label.text = "???"
 		stats_label.text = "Not yet discovered"
+		detail_label.text = ""
 
 func _refresh_stats() -> void:
 	for tier in FishRarity.Tier.values():

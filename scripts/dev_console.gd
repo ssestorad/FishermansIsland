@@ -106,7 +106,7 @@ func _on_simulate_offline() -> void:
 	if hours <= 0.0:
 		_log("Enter a positive number of hours.")
 		return
-	var effective_seconds: float = hours * 3600.0 * _main.OFFLINE_EFFICIENCY
+	var effective_seconds: float = hours * 3600.0 * (_main.OFFLINE_EFFICIENCY + MetaProgress.get_offline_efficiency_bonus())
 	var total_catches := 0
 	var total_coins := 0
 	var total_scales := 0

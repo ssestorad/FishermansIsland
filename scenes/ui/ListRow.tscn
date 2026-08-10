@@ -27,6 +27,12 @@ size_flags_vertical = 3
 mouse_filter = 2
 color = Color(0.7, 0.7, 0.7, 1)
 
+[node name="IconSlot" type="Control" parent="Content"]
+custom_minimum_size = Vector2(0, 0)
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+
 [node name="TextStack" type="VBoxContainer" parent="Content"]
 layout_mode = 2
 size_flags_horizontal = 3

@@ -4,18 +4,25 @@ signal updated
 
 var caught_counts: Dictionary = {}
 var best_weights: Dictionary = {}
+var record_holders: Dictionary = {}  # species_name -> fisherman display_name for the best_weights entry
 
-func record_catch(species: FishSpecies, weight: float) -> void:
+func record_catch(species: FishSpecies, weight: float, caught_by: String = "") -> void:
 	var key: String = species.species_name
 	caught_counts[key] = caught_counts.get(key, 0) + 1
 	if weight > best_weights.get(key, 0.0):
 		best_weights[key] = weight
+		if caught_by != "":
+			record_holders[key] = caught_by
 	updated.emit()
 
 func is_discovered(species_name: String) -> bool:
 	return caught_counts.get(species_name, 0) > 0
 
-func load_state(new_caught_counts: Dictionary, new_best_weights: Dictionary) -> void:
+func get_record_holder(species_name: String) -> String:
+	return record_holders.get(species_name, "")
+
+func load_state(new_caught_counts: Dictionary, new_best_weights: Dictionary, new_record_holders: Dictionary = {}) -> void:
 	caught_counts = new_caught_counts
 	best_weights = new_best_weights
+	record_holders = new_record_holders
 	updated.emit()

@@ -10,10 +10,17 @@ const LUCK_GROWTH := 1.25
 const DISCOUNT_BASE_COST := 15
 const DISCOUNT_GROWTH := 1.3
 const DISCOUNT_MAX_LEVEL := 15
+const COIN_GAIN_BASE_COST := 12
+const COIN_GAIN_GROWTH := 1.25
+const OFFLINE_BASE_COST := 18
+const OFFLINE_GROWTH := 1.3
+const OFFLINE_MAX_LEVEL := 15
 
 const SLOT_COLOR := Color(0.3, 0.5, 0.65)
 const LUCK_COLOR := Color(0.45, 0.75, 0.4)
 const DISCOUNT_COLOR := Color(0.85, 0.6, 0.25)
+const COIN_GAIN_COLOR := Color(0.95, 0.78, 0.25)
+const OFFLINE_COLOR := Color(0.55, 0.45, 0.85)
 
 @onready var rows_container: VBoxContainer = $MarginContainer/VBoxContainer/MetaScroll/MetaRows
 @onready var close_button: Button = $MarginContainer/VBoxContainer/HeaderRow/CloseButton
@@ -21,6 +28,8 @@ const DISCOUNT_COLOR := Color(0.85, 0.6, 0.25)
 var _slot_row: ListRow
 var _luck_row: ListRow
 var _discount_row: ListRow
+var _coin_gain_row: ListRow
+var _offline_row: ListRow
 
 func _ready() -> void:
 	close_button.pressed.connect(_on_close_pressed)
@@ -43,6 +52,8 @@ func _build() -> void:
 	_slot_row = _make_row(_on_buy_slot)
 	_luck_row = _make_row(_on_buy_luck)
 	_discount_row = _make_row(_on_buy_discount)
+	_coin_gain_row = _make_row(_on_buy_coin_gain)
+	_offline_row = _make_row(_on_buy_offline_efficiency)
 
 	refresh()
 
@@ -92,6 +103,33 @@ func refresh() -> void:
 		)
 		_discount_row.disabled = Economy.scales < discount_cost
 
+	var coin_gain_cost := _coin_gain_cost()
+	_coin_gain_row.setup(
+		"Global Coin Gain +%.0f%%" % [MetaProgress.get_global_coin_gain_bonus() * 100.0],
+		"Level %d" % MetaProgress.coin_gain_level,
+		"%d Scales" % coin_gain_cost,
+		COIN_GAIN_COLOR
+	)
+	_coin_gain_row.disabled = Economy.scales < coin_gain_cost
+
+	if MetaProgress.offline_efficiency_level >= OFFLINE_MAX_LEVEL:
+		_offline_row.setup(
+			"Offline Efficiency +%.0f%%" % [MetaProgress.get_offline_efficiency_bonus() * 100.0],
+			"Maxed out",
+			"MAX",
+			OFFLINE_COLOR
+		)
+		_offline_row.disabled = true
+	else:
+		var offline_cost := _offline_cost()
+		_offline_row.setup(
+			"Offline Efficiency +%.0f%%" % [MetaProgress.get_offline_efficiency_bonus() * 100.0],
+			"Level %d" % MetaProgress.offline_efficiency_level,
+			"%d Scales" % offline_cost,
+			OFFLINE_COLOR
+		)
+		_offline_row.disabled = Economy.scales < offline_cost
+
 func _slot_cost() -> int:
 	return int(round(SLOT_BASE_COST * pow(SLOT_GROWTH, MetaProgress.extra_slots)))
 
@@ -100,6 +138,12 @@ func _luck_cost() -> int:
 
 func _discount_cost() -> int:
 	return int(round(DISCOUNT_BASE_COST * pow(DISCOUNT_GROWTH, MetaProgress.discount_level)))
+
+func _coin_gain_cost() -> int:
+	return int(round(COIN_GAIN_BASE_COST * pow(COIN_GAIN_GROWTH, MetaProgress.coin_gain_level)))
+
+func _offline_cost() -> int:
+	return int(round(OFFLINE_BASE_COST * pow(OFFLINE_GROWTH, MetaProgress.offline_efficiency_level)))
 
 func _on_buy_slot() -> void:
 	if Economy.spend_scales(_slot_cost()):
@@ -114,6 +158,16 @@ func _on_buy_discount() -> void:
 		return
 	if Economy.spend_scales(_discount_cost()):
 		MetaProgress.buy_discount()
+
+func _on_buy_coin_gain() -> void:
+	if Economy.spend_scales(_coin_gain_cost()):
+		MetaProgress.buy_coin_gain()
+
+func _on_buy_offline_efficiency() -> void:
+	if MetaProgress.offline_efficiency_level >= OFFLINE_MAX_LEVEL:
+		return
+	if Economy.spend_scales(_offline_cost()):
+		MetaProgress.buy_offline_efficiency()
 
 func _on_close_pressed() -> void:
 	visible = false

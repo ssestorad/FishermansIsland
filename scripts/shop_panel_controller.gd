@@ -13,6 +13,7 @@ const POTION_COLORS := {
 }
 
 const TICK_INTERVAL := 0.2  # 5/sec, just for the restock/potion countdown text
+const POTION_ICON_SCRIPT := preload("res://scripts/potion_icon.gd")
 
 @onready var restock_label: Label = $MarginContainer/VBoxContainer/RestockLabel
 @onready var gear_tab_button: Button = $MarginContainer/VBoxContainer/TabRow/GearTabButton
@@ -80,6 +81,10 @@ func _build_potion_rows() -> void:
 		var row: ListRow = LIST_ROW_SCENE.instantiate()
 		row.pressed.connect(_on_drink_potion.bind(axis))
 		potions_container.add_child(row)
+		var icon := Control.new()
+		icon.set_script(POTION_ICON_SCRIPT)
+		icon.axis = axis
+		row.set_icon(icon)
 		_potion_rows[axis] = row
 
 func _process(delta: float) -> void:

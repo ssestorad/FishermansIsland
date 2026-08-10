@@ -65,6 +65,13 @@ var equipped_items: Dictionary = {
 ## for the fisherman's lifetime — never re-rolled or changed after hire.
 var perks: Array = []
 
+## Lifetime catch count (uncapped) and a bounded recent-catches log for
+## display. total_catches keeps counting past CATCH_HISTORY_CAP even once
+## the log itself starts dropping the oldest entries.
+const CATCH_HISTORY_CAP := 50
+var total_catches: int = 0
+var catch_history: Array = []  # [{species, tier, weight, day}, ...] oldest first
+
 @onready var click_area: Area2D = $ClickArea
 @onready var sprite: Sprite2D = $Sprite2D
 
@@ -156,13 +163,14 @@ func _roll_and_apply_catch(catch_duration: float = -1.0, forced_rarity: int = -1
 	var amount := 0
 	var docked := false
 	if caught_rarity in Economy.COIN_TIERS:
-		var earned := Economy.add_currency_for_catch(caught_rarity, caught_weight, get_equipment_bonus("coin_gain"), get_equipment_bonus("scale_gain"))
+		var coin_bonus := get_equipment_bonus("coin_gain") + MetaProgress.get_global_coin_gain_bonus()
+		var earned := Economy.add_currency_for_catch(caught_rarity, caught_weight, coin_bonus, get_equipment_bonus("scale_gain"))
 		currency = earned.currency
 		amount = earned.amount
 	else:
 		DockInventory.add_catch(caught_species, caught_weight, caught_rarity)
 		docked = true
-	Album.record_catch(caught_species, caught_weight)
+	Album.record_catch(caught_species, caught_weight, display_name)
 
 	var speed_range := _catch_time_range()
 	var normalized_speed := 1.0 - inverse_lerp(speed_range.x, speed_range.y, catch_duration)
@@ -174,6 +182,17 @@ func _roll_and_apply_catch(catch_duration: float = -1.0, forced_rarity: int = -1
 	speed_xp += normalized_speed * XP_PER_CATCH * xp_multiplier
 	luck_xp += normalized_luck * XP_PER_CATCH * xp_multiplier
 	power_xp += normalized_power * XP_PER_CATCH * xp_multiplier
+
+	total_catches += 1
+	catch_history.append({
+		"species": caught_species.species_name,
+		"tier": caught_rarity,
+		"weight": caught_weight,
+		"day": WorldClock.get_day_number(),
+	})
+	if catch_history.size() > CATCH_HISTORY_CAP:
+		catch_history.pop_front()
+
 	stats_changed.emit()
 
 	return {
@@ -356,6 +375,17 @@ func get_stats_text() -> String:
 func get_slot_display(slot_name: String) -> String:
 	var item = equipped_items.get(slot_name)
 	return item.item_name if item != null else "—"
+
+func get_recent_catches_text(count: int = 5) -> String:
+	if catch_history.is_empty():
+		return "No catches yet."
+	var lines: Array = []
+	var start := maxi(0, catch_history.size() - count)
+	for i in range(catch_history.size() - 1, start - 1, -1):
+		var entry: Dictionary = catch_history[i]
+		lines.append("Day %d: %s (%s, %.1f kg)" % [entry.day, entry.species, FishRarity.name_for(entry.tier), entry.weight])
+	return "
+".join(lines)
 
 func _draw() -> void:
 	if state == State.FISHING:

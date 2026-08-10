@@ -41,6 +41,14 @@ static func roll(luck: float = 0.0) -> Tier:
 static func name_for(tier: Tier) -> String:
 	return NAMES[tier]
 
+## Share of catches this tier would get with 0 Luck — the un-skewed base
+## rate before roll()'s luck bias pushes toward rarer tiers.
+static func base_chance_percent(tier: Tier) -> float:
+	var total := 0.0
+	for w in WEIGHTS.values():
+		total += w
+	return (WEIGHTS[tier] / total) * 100.0
+
 const WEIGHT_RANGES := {
 	Tier.COMMON: Vector2(0.3, 2.0),
 	Tier.UNCOMMON: Vector2(1.0, 4.0),

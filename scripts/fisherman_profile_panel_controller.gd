@@ -13,6 +13,7 @@ signal slot_clicked(fisherman, slot_name)
 @onready var power_bar: ProgressBar = $MarginContainer/VBoxContainer/StatsScroll/StatsBlock/PowerBar
 @onready var equipment_slots: HBoxContainer = $MarginContainer/VBoxContainer/StatsScroll/StatsBlock/EquipmentSlots
 @onready var perks_label: Label = $MarginContainer/VBoxContainer/StatsScroll/StatsBlock/PerksLabel
+@onready var history_label: Label = $MarginContainer/VBoxContainer/StatsScroll/StatsBlock/HistoryLabel
 @onready var dismiss_button: Button = $MarginContainer/VBoxContainer/DismissButton
 @onready var close_button: Button = $MarginContainer/VBoxContainer/HeaderRow/CloseButton
 
@@ -73,6 +74,7 @@ func refresh() -> void:
 	for slot_button in equipment_slots.get_children():
 		var slot_name: String = slot_button.name.trim_suffix("Slot")
 		slot_button.text = "%s\n%s" % [slot_name, _fisherman.get_slot_display(slot_name)]
+	history_label.text = _fisherman.get_recent_catches_text()
 
 func _on_slot_pressed(slot_name: String) -> void:
 	if _fisherman != null:
