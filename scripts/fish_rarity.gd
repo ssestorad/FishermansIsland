@@ -1,7 +1,20 @@
 class_name FishRarity
 extends RefCounted
 
-enum Tier { COMMON, UNCOMMON, RARE, EPIC, LEGENDARY, MYTHIC }
+## SECRET is deliberately last and absent from WEIGHTS: roll() only ever
+## iterates WEIGHTS' keys, so a normal Luck roll can never produce it. It's
+## granted through its own condition-gated chance in Fisherman instead.
+enum Tier { COMMON, UNCOMMON, RARE, EPIC, LEGENDARY, MYTHIC, SECRET }
+
+## The rarest tier reachable through a normal Luck roll — used to normalize
+## luck-XP gain so adding SECRET above it doesn't shift that math.
+const MAX_ROLLABLE_TIER := Tier.MYTHIC
+
+## The six tiers that make up the generated fish grid. Code that means
+## "every ordinary tier" (building the catalog, Album tabs before Secret
+## is unlocked) should iterate this instead of Tier.values(), which also
+## includes SECRET.
+const NORMAL_TIERS := [Tier.COMMON, Tier.UNCOMMON, Tier.RARE, Tier.EPIC, Tier.LEGENDARY, Tier.MYTHIC]
 
 const WEIGHTS := {
 	Tier.COMMON: 50.0,
@@ -19,6 +32,7 @@ const NAMES := {
 	Tier.EPIC: "Epic",
 	Tier.LEGENDARY: "Legendary",
 	Tier.MYTHIC: "Mythic",
+	Tier.SECRET: "Secret",
 }
 
 ## Rolls a rarity tier. `luck` in [0, 1] biases the roll toward rarer
@@ -42,12 +56,13 @@ static func name_for(tier: Tier) -> String:
 	return NAMES[tier]
 
 ## Share of catches this tier would get with 0 Luck — the un-skewed base
-## rate before roll()'s luck bias pushes toward rarer tiers.
+## rate before roll()'s luck bias pushes toward rarer tiers. Always 0 for
+## SECRET: it's never part of the rollable pool in the first place.
 static func base_chance_percent(tier: Tier) -> float:
 	var total := 0.0
 	for w in WEIGHTS.values():
 		total += w
-	return (WEIGHTS[tier] / total) * 100.0
+	return (WEIGHTS.get(tier, 0.0) / total) * 100.0
 
 const WEIGHT_RANGES := {
 	Tier.COMMON: Vector2(0.3, 2.0),
@@ -56,6 +71,7 @@ const WEIGHT_RANGES := {
 	Tier.EPIC: Vector2(4.0, 15.0),
 	Tier.LEGENDARY: Vector2(8.0, 25.0),
 	Tier.MYTHIC: Vector2(15.0, 50.0),
+	Tier.SECRET: Vector2(20.0, 60.0),
 }
 
 ## Rolls a weight (kg) within the tier's range. `power` in [0, 1] biases

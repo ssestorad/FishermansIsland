@@ -13,6 +13,7 @@ const RARITY_VALUES := {
 	FishRarity.Tier.EPIC: 20,
 	FishRarity.Tier.LEGENDARY: 50,
 	FishRarity.Tier.MYTHIC: 150,
+	FishRarity.Tier.SECRET: 400,
 }
 
 const COIN_TIERS := [FishRarity.Tier.COMMON, FishRarity.Tier.UNCOMMON]

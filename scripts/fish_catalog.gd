@@ -34,12 +34,22 @@ const SEASON_EXCLUSIVE_SPECIES := [
 	{"name": "Icebound Sturgeon", "tier": FishRarity.Tier.LEGENDARY, "season": "Winter"},
 ]
 
+## The Secret tier's entire roster. Unlike every other tier these are never
+## reachable through FishRarity.roll() — Fisherman grants them through a
+## separate, independent chance that only applies while a species' combo
+## of weather/season/time-of-day is actually in effect.
+const SECRET_SPECIES := [
+	{"name": "The Drowned King", "weather": "Stormy", "season": "Winter", "night": true},
+	{"name": "Glassfin Wraith", "weather": "Foggy", "night": true},
+	{"name": "Sunlit Mirage", "weather": "Sunny", "season": "Summer", "night": false},
+]
+
 static var _catalog_by_tier: Dictionary = {}
 
 static func _build_catalog() -> void:
 	if not _catalog_by_tier.is_empty():
 		return
-	for tier in FishRarity.Tier.values():
+	for tier in FishRarity.NORMAL_TIERS:
 		var species_list: Array = []
 		for adjective in ADJECTIVES[tier]:
 			for base_name in BASE_NAMES[tier]:
@@ -53,19 +63,31 @@ static func _build_catalog() -> void:
 		_catalog_by_tier[entry["tier"]].append(
 			FishSpecies.new(entry["name"], entry["tier"], "", entry["season"])
 		)
+	var secret_list: Array = []
+	for entry in SECRET_SPECIES:
+		secret_list.append(FishSpecies.new(
+			entry["name"], FishRarity.Tier.SECRET,
+			entry.get("weather", ""), entry.get("season", ""), entry.get("night")
+		))
+	_catalog_by_tier[FishRarity.Tier.SECRET] = secret_list
 
 static func species_for_tier(tier: FishRarity.Tier) -> Array:
 	_build_catalog()
 	return _catalog_by_tier[tier]
 
+## Picks a random species of `tier` eligible under the current weather/
+## season/time-of-day. Returns null if none qualify right now — routine
+## for SECRET (which is condition-only), rare for every other tier (which
+## always has at least a few ungated entries in the base grid).
 static func roll_species(tier: FishRarity.Tier) -> FishSpecies:
 	var species_list: Array = species_for_tier(tier)
 	var current_weather: String = WorldClock.get_weather()
 	var current_season: String = WorldClock.get_season_name()
+	var is_night: bool = WorldClock.get_night_factor() >= 0.5
 	var eligible: Array = []
 	for species in species_list:
-		var weather_ok: bool = species.required_weather == "" or species.required_weather == current_weather
-		var season_ok: bool = species.required_season == "" or species.required_season == current_season
-		if weather_ok and season_ok:
+		if species.conditions_met(current_weather, current_season, is_night):
 			eligible.append(species)
+	if eligible.is_empty():
+		return null
 	return eligible.pick_random()

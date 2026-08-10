@@ -90,6 +90,16 @@ func _weighted_pick(weights: Dictionary) -> String:
 func get_weather() -> String:
 	return _current_weather
 
+## Dev-console hook: pins the weather until the next scheduled reroll
+## (WEATHER_CHANGE_INTERVAL) picks a new one. Silently ignores unknown
+## weather names.
+func debug_force_weather(weather_name: String) -> bool:
+	if weather_name not in WEATHER_TYPES:
+		return false
+	_current_weather = weather_name
+	_weather_timer = 0.0
+	return true
+
 func get_weather_luck_bonus() -> float:
 	return WEATHER_LUCK_BONUS[_current_weather]
 

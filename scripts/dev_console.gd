@@ -1,12 +1,13 @@
 extends CanvasLayer
 
-const RARITY_NAMES := ["Common", "Uncommon", "Rare", "Epic", "Legendary", "Mythic"]
+const RARITY_NAMES := ["Common", "Uncommon", "Rare", "Epic", "Legendary", "Mythic", "Secret"]
 
 @onready var panel: Panel = $Panel
 @onready var time_input: LineEdit = $Panel/MarginContainer/VBoxContainer/TimeRow/TimeInput
 @onready var coins_input: LineEdit = $Panel/MarginContainer/VBoxContainer/CoinsRow/CoinsInput
 @onready var scales_input: LineEdit = $Panel/MarginContainer/VBoxContainer/ScalesRow/ScalesInput
 @onready var rarity_option: OptionButton = $Panel/MarginContainer/VBoxContainer/CatchRow/RarityOption
+@onready var weather_option: OptionButton = $Panel/MarginContainer/VBoxContainer/WeatherRow/WeatherOption
 @onready var offline_input: LineEdit = $Panel/MarginContainer/VBoxContainer/OfflineRow/OfflineInput
 @onready var log_label: Label = $Panel/MarginContainer/VBoxContainer/LogLabel
 
@@ -19,10 +20,13 @@ func _ready() -> void:
 	panel.visible = false
 	for rarity_name in RARITY_NAMES:
 		rarity_option.add_item(rarity_name)
+	for weather_name in WorldClock.WEATHER_TYPES:
+		weather_option.add_item(weather_name)
 	$Panel/MarginContainer/VBoxContainer/TimeRow/TimeButton.pressed.connect(_on_advance_time)
 	$Panel/MarginContainer/VBoxContainer/CoinsRow/CoinsButton.pressed.connect(_on_add_coins)
 	$Panel/MarginContainer/VBoxContainer/ScalesRow/ScalesButton.pressed.connect(_on_add_scales)
 	$Panel/MarginContainer/VBoxContainer/CatchRow/CatchButton.pressed.connect(_on_force_catch)
+	$Panel/MarginContainer/VBoxContainer/WeatherRow/WeatherButton.pressed.connect(_on_force_weather)
 	$Panel/MarginContainer/VBoxContainer/OfflineRow/OfflineButton.pressed.connect(_on_simulate_offline)
 	$Panel/CloseButton.pressed.connect(_on_close_pressed)
 
@@ -98,6 +102,11 @@ func _on_force_catch() -> void:
 		fisherman.display_name, RARITY_NAMES[tier], result.species.species_name,
 		result.weight, outcome
 	])
+
+func _on_force_weather() -> void:
+	var weather_name: String = WorldClock.WEATHER_TYPES[weather_option.selected]
+	WorldClock.debug_force_weather(weather_name)
+	_log("Weather forced to %s until the next reroll." % weather_name)
 
 func _on_simulate_offline() -> void:
 	if not _has_main():

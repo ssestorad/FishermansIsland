@@ -8,6 +8,7 @@ const BY_TIER := {
 	FishRarity.Tier.EPIC: Color(0.6, 0.35, 0.85),
 	FishRarity.Tier.LEGENDARY: Color(0.9, 0.65, 0.15),
 	FishRarity.Tier.MYTHIC: Color(0.85, 0.2, 0.25),
+	FishRarity.Tier.SECRET: Color(0.12, 0.08, 0.2),
 }
 
 const BY_NAME := {
@@ -17,6 +18,7 @@ const BY_NAME := {
 	"Epic": Color(0.6, 0.35, 0.85),
 	"Legendary": Color(0.9, 0.65, 0.15),
 	"Mythic": Color(0.85, 0.2, 0.25),
+	"Secret": Color(0.12, 0.08, 0.2),
 }
 
 static func for_tier(tier: FishRarity.Tier) -> Color:

@@ -20,6 +20,11 @@ const LEVEL_CAP := 10.0
 const XP_PER_CATCH := 2.0
 const WALK_ANIM_FPS := 6.0
 
+## Base chance per catch to land a Secret-tier fish instead, checked only
+## when a Secret species' weather/season/night combo is currently met.
+## Scales up with the fisherman's Luck stat, same as get_effective_stat().
+const SECRET_CATCH_BASE_CHANCE := 0.05
+
 ## One pre-baked sheet per look (shirt/hair/beard/hat combo), laid out as
 ## a 3x3 grid of 16x24 frames: columns are stand/walk-A/walk-B, rows are
 ## the facing direction (see DIRECTION_ROWS). A new fisherman picks a
@@ -172,14 +177,31 @@ func _resolve_catch() -> void:
 ## Rolls and applies one catch (currency, album, XP). `catch_duration` feeds
 ## the speed-XP shaping; pass -1 (default) to have one rolled on the spot,
 ## which is what offline batch catches do since they skip the real timer.
-## `forced_rarity` skips the luck roll entirely (used by the dev console).
+## `forced_rarity` skips the luck roll and the Secret check entirely (used
+## by the dev console).
 func _roll_and_apply_catch(catch_duration: float = -1.0, forced_rarity: int = -1) -> Dictionary:
 	if catch_duration < 0.0:
 		catch_duration = _rolled_catch_time()
-	var caught_rarity: FishRarity.Tier = forced_rarity if forced_rarity >= 0 else FishRarity.roll(get_effective_stat(luck_xp, "luck"))
-	if forced_rarity < 0 and caught_rarity < FishRarity.Tier.RARE and get_equipment_bonus("guarantee_rare") > 0.0:
-		caught_rarity = FishRarity.Tier.RARE
-	var caught_species := FishCatalog.roll_species(caught_rarity)
+	var caught_rarity: FishRarity.Tier
+	var caught_species: FishSpecies = null
+	if forced_rarity >= 0:
+		caught_rarity = forced_rarity
+	else:
+		# Secret catches sit outside the normal Luck roll: they only become
+		# possible when a hidden species' weather/season/time-of-day combo
+		# is currently in effect, and even then only a small independent
+		# chance actually lands one instead of a normal-tier catch.
+		var secret_species := FishCatalog.roll_species(FishRarity.Tier.SECRET)
+		var secret_chance := SECRET_CATCH_BASE_CHANCE * (1.0 + get_effective_stat(luck_xp, "luck"))
+		if secret_species != null and randf() < secret_chance:
+			caught_rarity = FishRarity.Tier.SECRET
+			caught_species = secret_species
+		else:
+			caught_rarity = FishRarity.roll(get_effective_stat(luck_xp, "luck"))
+			if caught_rarity < FishRarity.Tier.RARE and get_equipment_bonus("guarantee_rare") > 0.0:
+				caught_rarity = FishRarity.Tier.RARE
+	if caught_species == null:
+		caught_species = FishCatalog.roll_species(caught_rarity)
 	var caught_weight := FishRarity.roll_weight(caught_rarity, get_effective_stat(power_xp, "power"))
 
 	# Common/Uncommon auto-sell for Coins on the spot, same as always. Rare+
@@ -200,7 +222,7 @@ func _roll_and_apply_catch(catch_duration: float = -1.0, forced_rarity: int = -1
 
 	var speed_range := _catch_time_range()
 	var normalized_speed := 1.0 - inverse_lerp(speed_range.x, speed_range.y, catch_duration)
-	var normalized_luck := float(caught_rarity) / float(FishRarity.Tier.size() - 1)
+	var normalized_luck := float(caught_rarity) / float(FishRarity.MAX_ROLLABLE_TIER)
 	var weight_range: Vector2 = FishRarity.WEIGHT_RANGES[caught_rarity]
 	var normalized_power := inverse_lerp(weight_range.x, weight_range.y, caught_weight)
 
