@@ -5,6 +5,7 @@ const POTION_COST := 8
 const POTION_AXES := ["speed", "luck", "power"]
 const POTION_LABELS := {"speed": "Speed Potion", "luck": "Luck Potion", "power": "Power Potion"}
 
+@onready var restock_label: Label = $MarginContainer/VBoxContainer/RestockLabel
 @onready var gear_tab_button: Button = $MarginContainer/VBoxContainer/TabRow/GearTabButton
 @onready var potions_tab_button: Button = $MarginContainer/VBoxContainer/TabRow/PotionsTabButton
 @onready var gear_scroll: ScrollContainer = $MarginContainer/VBoxContainer/ShopScroll
@@ -20,7 +21,12 @@ func _ready() -> void:
 	close_button.pressed.connect(_on_close_button_pressed)
 	gear_tab_button.pressed.connect(_on_gear_tab_pressed)
 	potions_tab_button.pressed.connect(_on_potions_tab_pressed)
+	ShopRotation.rotated.connect(_on_shop_rotated)
 	_build_potion_rows()
+
+func _on_shop_rotated() -> void:
+	if visible and not _showing_potions:
+		build()
 
 func toggle() -> void:
 	visible = not visible
@@ -45,7 +51,7 @@ func _update_tabs() -> void:
 
 func build() -> void:
 	UiListUtils.clear_children(rows_container)
-	_items = ShopCatalog.available_items()
+	_items = ShopRotation.current_items
 	for item in _items:
 		var row := Button.new()
 		row.flat = true
@@ -68,6 +74,7 @@ func _process(_delta: float) -> void:
 		refresh()
 
 func refresh() -> void:
+	restock_label.text = "Restocks in %ds" % ceili(ShopRotation.get_time_until_rotation())
 	for i in range(rows_container.get_child_count()):
 		var button: Button = rows_container.get_child(i)
 		var item: Item = _items[i]
