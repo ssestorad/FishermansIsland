@@ -121,18 +121,26 @@ func _update_sprite_animation(delta: float) -> void:
 		sprite.texture = APPEARANCE_VARIANTS[appearance_variant][0]
 
 func _resolve_catch() -> void:
-	var caught_rarity := FishRarity.roll(get_effective_stat(luck_xp, "luck"))
-	var caught_species := FishCatalog.roll_species(caught_rarity)
-	var caught_weight := FishRarity.roll_weight(caught_rarity, get_effective_stat(power_xp, "power"))
-	Economy.add_currency_for_catch(caught_rarity, caught_weight, get_equipment_bonus("coin_gain"), get_equipment_bonus("scale_gain"))
-	Album.record_catch(caught_species, caught_weight)
+	var result := _roll_and_apply_catch(current_catch_duration)
 	print("%s caught a %s (%s, %.1f kg)! [Spd %d / Lck %d / Pwr %d]" % [
-		display_name, caught_species.species_name, FishRarity.name_for(caught_rarity), caught_weight,
+		display_name, result.species.species_name, FishRarity.name_for(result.rarity), result.weight,
 		get_level(speed_xp), get_level(luck_xp), get_level(power_xp)
 	])
 
+## Rolls and applies one catch (currency, album, XP). `catch_duration` feeds
+## the speed-XP shaping; pass -1 (default) to have one rolled on the spot,
+## which is what offline batch catches do since they skip the real timer.
+func _roll_and_apply_catch(catch_duration: float = -1.0) -> Dictionary:
+	if catch_duration < 0.0:
+		catch_duration = _rolled_catch_time()
+	var caught_rarity := FishRarity.roll(get_effective_stat(luck_xp, "luck"))
+	var caught_species := FishCatalog.roll_species(caught_rarity)
+	var caught_weight := FishRarity.roll_weight(caught_rarity, get_effective_stat(power_xp, "power"))
+	var earned := Economy.add_currency_for_catch(caught_rarity, caught_weight, get_equipment_bonus("coin_gain"), get_equipment_bonus("scale_gain"))
+	Album.record_catch(caught_species, caught_weight)
+
 	var speed_range := _catch_time_range()
-	var normalized_speed := 1.0 - inverse_lerp(speed_range.x, speed_range.y, current_catch_duration)
+	var normalized_speed := 1.0 - inverse_lerp(speed_range.x, speed_range.y, catch_duration)
 	var normalized_luck := float(caught_rarity) / float(FishRarity.Tier.size() - 1)
 	var weight_range: Vector2 = FishRarity.WEIGHT_RANGES[caught_rarity]
 	var normalized_power := inverse_lerp(weight_range.x, weight_range.y, caught_weight)
@@ -141,6 +149,56 @@ func _resolve_catch() -> void:
 	speed_xp += normalized_speed * XP_PER_CATCH * xp_multiplier
 	luck_xp += normalized_luck * XP_PER_CATCH * xp_multiplier
 	power_xp += normalized_power * XP_PER_CATCH * xp_multiplier
+
+	return {
+		"species": caught_species,
+		"rarity": caught_rarity,
+		"weight": caught_weight,
+		"currency": earned.currency,
+		"amount": earned.amount,
+	}
+
+## Simulates `duration` seconds of offline fishing without moving the
+## fisherman: estimates how many walk/catch/rest cycles would have fit and
+## rolls that many catches on the spot. Returns aggregate totals for the
+## "while you were away" summary.
+func resolve_offline_catches(duration: float) -> Dictionary:
+	var summary := {"catches": 0, "coins": 0, "scales": 0, "best_species": "", "best_rarity": FishRarity.Tier.COMMON, "best_weight": 0.0}
+	if duration <= 0.0:
+		return summary
+	var cycle_time := _estimate_cycle_time()
+	if cycle_time <= 0.0:
+		return summary
+	var cycles_f := duration / cycle_time
+	var cycles := int(cycles_f)
+	if randf() < fmod(cycles_f, 1.0):
+		cycles += 1
+	for i in range(cycles):
+		var result := _roll_and_apply_catch()
+		summary.catches += 1
+		if result.currency == "Coins":
+			summary.coins += result.amount
+		else:
+			summary.scales += result.amount
+		if summary.catches == 1 or result.rarity > summary.best_rarity or (result.rarity == summary.best_rarity and result.weight > summary.best_weight):
+			summary.best_species = result.species.species_name
+			summary.best_rarity = result.rarity
+			summary.best_weight = result.weight
+	return summary
+
+## Average time for one full walk-to-dock/catch/walk-home/rest cycle, used
+## to estimate how many catches fit in an offline duration.
+func _estimate_cycle_time() -> float:
+	var catch_range := _catch_time_range()
+	var avg_catch := (catch_range.x + catch_range.y) / 2.0
+	var rest_reduction := clampf(get_equipment_bonus("rest_time"), 0.0, 0.9)
+	var avg_rest := (min_rest_time + max_rest_time) / 2.0 * (1.0 - rest_reduction)
+	var effective_speed := move_speed * (1.0 + get_equipment_bonus("walk_speed"))
+	if effective_speed <= 0.0:
+		return avg_catch + avg_rest
+	var round_trip_distance := absf(dock_position.x - home_position.x) * 2.0
+	var avg_walk := round_trip_distance / effective_speed
+	return avg_catch + avg_rest + avg_walk
 
 func _move_toward(target: Vector2, delta: float) -> void:
 	var direction: Vector2 = (target - position).normalized()

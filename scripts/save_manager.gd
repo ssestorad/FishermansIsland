@@ -13,6 +13,7 @@ func save_game(fishermen: Array) -> void:
 	var data := {
 		"coins": Economy.coins,
 		"scales": Economy.scales,
+		"saved_at": Time.get_unix_time_from_system(),
 		"elapsed_time": WorldClock.elapsed_time,
 		"album": {
 			"caught_counts": Album.caught_counts,

@@ -7,6 +7,10 @@ const ROW_SPACING := 35.0
 const BASE_HIRE_COST := 5
 const HIRE_COST_GROWTH := 1.25
 
+const OFFLINE_EFFICIENCY := 0.5
+const OFFLINE_CAP_SECONDS := 12.0 * 3600.0
+const MIN_OFFLINE_SECONDS_TO_SHOW := 60.0
+
 @onready var coins_label: Label = $CanvasLayer/CoinsLabel
 @onready var scales_label: Label = $CanvasLayer/ScalesLabel
 @onready var fishermen_button: Button = $CanvasLayer/NavRow/FishermenButton
@@ -21,6 +25,7 @@ const HIRE_COST_GROWTH := 1.25
 @onready var meta_panel: MetaPanelController = $CanvasLayer/MetaPanel
 @onready var profile_panel: FishermanProfilePanelController = $CanvasLayer/FishermanProfilePanel
 @onready var equip_panel: EquipPanelController = $CanvasLayer/EquipPanel
+@onready var welcome_back_panel: WelcomeBackPanelController = $CanvasLayer/WelcomeBackPanel
 @onready var autosave_timer: Timer = $AutosaveTimer
 
 var fishermen: Array = []
@@ -74,6 +79,40 @@ func _load_game() -> void:
 		return
 	for fisherman_data in saved_fishermen:
 		_spawn_fisherman(fisherman_data)
+	_apply_offline_progress(data)
+
+func _apply_offline_progress(data: Dictionary) -> void:
+	var saved_at := float(data.get("saved_at", 0.0))
+	if saved_at <= 0.0:
+		return
+	var real_elapsed := maxf(0.0, float(Time.get_unix_time_from_system()) - saved_at)
+	var capped_elapsed := minf(real_elapsed, OFFLINE_CAP_SECONDS)
+	var effective_seconds := capped_elapsed * OFFLINE_EFFICIENCY
+	if effective_seconds < MIN_OFFLINE_SECONDS_TO_SHOW:
+		return
+
+	var total_catches := 0
+	var total_coins := 0
+	var total_scales := 0
+	var best_summary: Dictionary = {}
+	for fisherman in fishermen:
+		var summary: Dictionary = fisherman.resolve_offline_catches(effective_seconds)
+		total_catches += summary.catches
+		total_coins += summary.coins
+		total_scales += summary.scales
+		if summary.catches > 0 and (
+			best_summary.is_empty()
+			or summary.best_rarity > best_summary.best_rarity
+			or (summary.best_rarity == best_summary.best_rarity and summary.best_weight > best_summary.best_weight)
+		):
+			best_summary = {
+				"best_species": summary.best_species,
+				"best_rarity": summary.best_rarity,
+				"best_weight": summary.best_weight,
+			}
+
+	if total_catches > 0:
+		welcome_back_panel.show_summary(real_elapsed, total_catches, total_coins, total_scales, best_summary)
 
 func _spawn_starting_fishermen() -> void:
 	for i in range(STARTING_FISHERMEN_COUNT):

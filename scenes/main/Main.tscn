@@ -1,6 +1,7 @@
-[gd_scene load_steps=15 format=3]
+[gd_scene load_steps=16 format=3]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
+[ext_resource type="Script" path="res://scripts/welcome_back_panel_controller.gd" id="15_welcome_back_panel"]
 [ext_resource type="Script" path="res://scripts/coin_icon.gd" id="13_coin_icon"]
 [ext_resource type="Script" path="res://scripts/scale_icon.gd" id="14_scale_icon"]
 [ext_resource type="Script" path="res://scripts/night_tint.gd" id="2_night_tint"]
@@ -740,3 +741,86 @@ text = "◀ Prev"
 [node name="NextButton" type="Button" parent="CanvasLayer/AlbumPanel/MarginContainer/VBoxContainer/NavRow"]
 layout_mode = 2
 text = "Next ▶"
+
+[node name="WelcomeBackPanel" type="Panel" parent="CanvasLayer"]
+visible = false
+offset_left = 90.0
+offset_top = 60.0
+offset_right = 550.0
+offset_bottom = 300.0
+script = ExtResource("15_welcome_back_panel")
+
+[node name="MarginContainer" type="MarginContainer" parent="CanvasLayer/WelcomeBackPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 8.0
+offset_top = 8.0
+offset_right = -8.0
+offset_bottom = -8.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="CanvasLayer/WelcomeBackPanel/MarginContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+alignment = 1
+theme_override_constants/separation = 8
+
+[node name="TitleLabel" type="Label" parent="CanvasLayer/WelcomeBackPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_type_variation = &"TitleLabel"
+theme_override_font_sizes/font_size = 22
+horizontal_alignment = 1
+text = "Welcome back!"
+
+[node name="DurationLabel" type="Label" parent="CanvasLayer/WelcomeBackPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_type_variation = &"MutedLabel"
+horizontal_alignment = 1
+text = "You were away for 0m"
+
+[node name="CatchesLabel" type="Label" parent="CanvasLayer/WelcomeBackPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+horizontal_alignment = 1
+text = "0 fish caught while you were gone"
+
+[node name="CurrencyRow" type="HBoxContainer" parent="CanvasLayer/WelcomeBackPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+alignment = 1
+theme_override_constants/separation = 8
+
+[node name="CoinIcon" type="Control" parent="CanvasLayer/WelcomeBackPanel/MarginContainer/VBoxContainer/CurrencyRow"]
+custom_minimum_size = Vector2(16, 16)
+layout_mode = 2
+size_flags_vertical = 4
+script = ExtResource("13_coin_icon")
+
+[node name="CoinsEarnedLabel" type="Label" parent="CanvasLayer/WelcomeBackPanel/MarginContainer/VBoxContainer/CurrencyRow"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "+0"
+
+[node name="ScaleIcon" type="Control" parent="CanvasLayer/WelcomeBackPanel/MarginContainer/VBoxContainer/CurrencyRow"]
+custom_minimum_size = Vector2(20, 20)
+layout_mode = 2
+size_flags_vertical = 4
+script = ExtResource("14_scale_icon")
+
+[node name="ScalesEarnedLabel" type="Label" parent="CanvasLayer/WelcomeBackPanel/MarginContainer/VBoxContainer/CurrencyRow"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "+0"
+
+[node name="BestCatchLabel" type="Label" parent="CanvasLayer/WelcomeBackPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+horizontal_alignment = 1
+text = "Best catch: —"
+
+[node name="OkButton" type="Button" parent="CanvasLayer/WelcomeBackPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 4
+custom_minimum_size = Vector2(120, 0)
+theme_type_variation = &"PrimaryButton"
+text = "Nice!"

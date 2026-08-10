@@ -17,16 +17,20 @@ const RARITY_VALUES := {
 
 const COIN_TIERS := [FishRarity.Tier.COMMON, FishRarity.Tier.UNCOMMON]
 
-func add_currency_for_catch(rarity: FishRarity.Tier, weight: float, coin_bonus: float = 0.0, scale_bonus: float = 0.0) -> void:
+func add_currency_for_catch(rarity: FishRarity.Tier, weight: float, coin_bonus: float = 0.0, scale_bonus: float = 0.0) -> Dictionary:
 	var base_value: float = RARITY_VALUES[rarity]
 	var weight_multiplier: float = weight / FishRarity.average_weight(rarity)
 	var amount := base_value * weight_multiplier
 	if rarity in COIN_TIERS:
-		coins += roundi(amount * (1.0 + coin_bonus))
+		var gained := roundi(amount * (1.0 + coin_bonus))
+		coins += gained
 		coins_changed.emit(coins)
+		return {"currency": "Coins", "amount": gained}
 	else:
-		scales += roundi(amount * (1.0 + scale_bonus))
+		var gained := roundi(amount * (1.0 + scale_bonus))
+		scales += gained
 		scales_changed.emit(scales)
+		return {"currency": "Scales", "amount": gained}
 
 func spend_coins(amount: int) -> bool:
 	if coins < amount:
