@@ -66,6 +66,10 @@ func _ready() -> void:
 
 	autosave_timer.timeout.connect(_on_autosave_timeout)
 	MetaProgress.updated.connect(_update_hire_button)
+	# The bench count in the world drawing depends on the meta upgrade —
+	# without this, buying more benches wouldn't visually show up until
+	# something else happened to trigger a redraw.
+	MetaProgress.updated.connect(func(): queue_redraw())
 
 	_update_hire_button()
 
@@ -280,3 +284,30 @@ func _draw() -> void:
 		var y := 130.0 + i * 45.0
 		draw_line(Vector2(320, y), Vector2(580, y), Color(0.35, 0.58, 0.75, 0.5), 2.0)
 	draw_rect(Rect2(305, 95, 22, 210), Color(0.5, 0.35, 0.2))
+	_draw_need_stations()
+
+## Flat-rect markers for the storage/grill/beer/bench points, matching the
+## rest of this placeholder world's style — no new art assets, per the
+## "mechanic only for now" scope of the needs system.
+func _draw_need_stations() -> void:
+	# Storage: a small shed near the top of the home lane column (x=80),
+	# where every catch gets carried regardless of which row a fisherman
+	# is on.
+	draw_rect(Rect2(72, 84, 16, 14), Color(0.45, 0.32, 0.2))
+	draw_rect(Rect2(70, 80, 20, 6), Color(0.32, 0.22, 0.14))
+
+	# Grill: dark base + a warm coal glow on top.
+	var grill_pos := NeedStations.GRILL_POSITION
+	draw_rect(Rect2(grill_pos + Vector2(-6, -4), Vector2(12, 8)), Color(0.25, 0.25, 0.28))
+	draw_rect(Rect2(grill_pos + Vector2(-4, -6), Vector2(8, 4)), Color(0.85, 0.4, 0.15))
+
+	# Beer crate: a wooden box with a couple of bottle caps peeking out.
+	var beer_pos := NeedStations.BEER_POSITION
+	draw_rect(Rect2(beer_pos + Vector2(-7, -6), Vector2(14, 12)), Color(0.55, 0.38, 0.2))
+	draw_rect(Rect2(beer_pos + Vector2(-4, -9), Vector2(3, 4)), Color(0.75, 0.65, 0.2))
+	draw_rect(Rect2(beer_pos + Vector2(1, -9), Vector2(3, 4)), Color(0.75, 0.65, 0.2))
+
+	# Benches: one small plank per currently-available slot, so the drawn
+	# count always matches what the meta-shop upgrade actually grants.
+	for bench_pos in NeedStations.bench_positions():
+		draw_rect(Rect2(bench_pos + Vector2(-7, -2), Vector2(14, 4)), Color(0.55, 0.4, 0.24))

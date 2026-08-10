@@ -8,8 +8,6 @@ signal stats_changed
 @export var move_speed: float = 80.0
 @export var min_catch_time: float = 2.0
 @export var max_catch_time: float = 5.0
-@export var min_rest_time: float = 1.0
-@export var max_rest_time: float = 3.0
 @export var dock_wander_range: float = 14.0
 @export var home_wander_range: float = 14.0
 @export var dock_y_bounds: Vector2 = Vector2(105.0, 295.0)
@@ -28,6 +26,19 @@ const WALK_ANIM_FPS := 6.0
 ## when a Secret species' weather/season/night combo is currently met.
 ## Scales up with the fisherman's Luck stat, same as get_effective_stat().
 const SECRET_CATCH_BASE_CHANCE := 0.05
+
+## How often each need becomes due, in seconds of active work (accumulated
+## only while WALK_TO_DOCK/FISHING/WALK_TO_STORAGE — not while already
+## servicing a need). Tunable; not a balance decision that's been locked in.
+const HUNGER_INTERVAL := 240.0
+const THIRST_INTERVAL := 300.0
+const REST_INTERVAL := 200.0
+
+## How long a need takes to service once the fisherman arrives at its
+## station. Rest is additionally reduced by the Endurance stat (see
+## _service_duration()); hunger/thirst stay flat so Endurance doesn't end
+## up mattering for everything.
+const NEED_SERVICE_TIME := Vector2(2.0, 4.0)
 
 ## One pre-baked sheet per look (shirt/hair/beard/hat combo), laid out as
 ## a 3x3 grid of 16x24 frames: columns are stand/walk-A/walk-B, rows are
@@ -56,13 +67,29 @@ const DIRECTION_ROWS := {"down": 0, "right": 1, "left": 1, "up": 2}
 const WALK_FRAME_SEQUENCE := [1, 0, 2, 0]
 const STAND_FRAME := 0
 
-enum State { WALK_TO_DOCK, FISHING, WALK_HOME, RESTING }
+## RESTING is gone: rest is now one of three independent periodic needs
+## (see current_need below), not a guaranteed step after every catch.
+## WALK_TO_STORAGE is what WALK_HOME used to be — the fisherman always
+## carries a catch to the storage point; needs are a separate detour from
+## there, not folded into this leg.
+enum State { WALK_TO_DOCK, FISHING, WALK_TO_STORAGE, WALK_TO_NEED, SERVICING_NEED }
 
 var display_name: String = ""
 var state: State = State.WALK_TO_DOCK
 var wait_timer: float = 0.0
 var current_target: Vector2
 var current_catch_duration: float = 0.0
+
+## "hunger" / "thirst" / "rest" while WALK_TO_NEED/SERVICING_NEED; ignored
+## otherwise. Determines both the station to walk to and which timer to
+## reset once serviced.
+var current_need: String = ""
+var hunger_timer: float = 0.0
+var thirst_timer: float = 0.0
+var rest_timer: float = 0.0
+## Set only while current_need == "rest" and a bench slot is held, so it
+## can be released back to NeedStations when servicing finishes.
+var _claimed_bench_index: int = -1
 
 var speed_xp: float = 0.0
 var luck_xp: float = 0.0
@@ -123,6 +150,15 @@ func set_appearance_variant(variant: int) -> void:
 		appearance_variant = variant
 
 func _process(delta: float) -> void:
+	# Needs build up from real working time only — not while already off
+	# servicing a need — so a hungry fisherman doesn't also rack up thirst
+	# credit while standing at the grill.
+	var working := state == State.WALK_TO_DOCK or state == State.FISHING or state == State.WALK_TO_STORAGE
+	if working:
+		hunger_timer += delta
+		thirst_timer += delta
+		rest_timer += delta
+
 	match state:
 		State.WALK_TO_DOCK:
 			_move_toward(current_target, delta)
@@ -135,30 +171,106 @@ func _process(delta: float) -> void:
 			if wait_timer <= 0.0:
 				_resolve_catch()
 				current_target = _random_home_point()
-				state = State.WALK_HOME
-		State.WALK_HOME:
+				state = State.WALK_TO_STORAGE
+		State.WALK_TO_STORAGE:
 			_move_toward(current_target, delta)
 			if position.distance_to(current_target) < 2.0:
-				if randf() < get_equipment_bonus("skip_rest_chance"):
-					current_target = _random_dock_point()
-					state = State.WALK_TO_DOCK
-				else:
-					state = State.RESTING
-					# Resting is the one idle pose that isn't aimed at the
-					# water, so turn to face the camera while standing around.
-					facing = "down"
-					var rest_reduction := clampf(get_effective_stat(endurance_xp, "endurance") + get_equipment_bonus("rest_time") + get_perk_bonus("rest_time"), 0.0, 0.9)
-					wait_timer = randf_range(min_rest_time, max_rest_time) * (1.0 - rest_reduction)
-		State.RESTING:
+				_start_next_leg()
+		State.WALK_TO_NEED:
+			_move_toward(current_target, delta)
+			if position.distance_to(current_target) < 2.0:
+				state = State.SERVICING_NEED
+				# Servicing a need is the one idle pose that isn't aimed at
+				# the water, so turn to face the camera while it happens.
+				facing = "down"
+				wait_timer = _service_duration(current_need)
+		State.SERVICING_NEED:
 			wait_timer -= delta
 			if wait_timer <= 0.0:
+				_finish_servicing_need()
 				current_target = _random_dock_point()
 				state = State.WALK_TO_DOCK
 	_update_sprite_animation(delta)
 	queue_redraw()
 
+## Called on arrival at the storage point (every catch passes through
+## here): dispatches to the highest-priority due need, or heads straight
+## back to the dock if nothing's due. Only ever starts one need per visit —
+## a second due need just waits for the next storage trip.
+func _start_next_leg() -> void:
+	var need := _due_need()
+	if need == "":
+		current_target = _random_dock_point()
+		state = State.WALK_TO_DOCK
+		return
+	var station = _claim_need_station(need)
+	if station == null:
+		# Couldn't get a station (bench cluster full) — try again next
+		# storage visit instead of blocking the fisherman here.
+		current_target = _random_dock_point()
+		state = State.WALK_TO_DOCK
+		return
+	current_need = need
+	current_target = station
+	state = State.WALK_TO_NEED
+
+## Priority order: Hunger, then Thirst, then Rest. A fisherman with several
+## needs due at once resolves them one storage visit at a time rather than
+## chaining several detours into one long trip.
+func _due_need() -> String:
+	if hunger_timer >= HUNGER_INTERVAL:
+		return "hunger"
+	if thirst_timer >= THIRST_INTERVAL:
+		return "thirst"
+	if rest_timer >= REST_INTERVAL:
+		# Existing unique-item axis, repurposed: it used to mean "skip the
+		# guaranteed rest after this catch"; now that rest is periodic
+		# rather than guaranteed, it means "skip servicing it just this
+		# once" — rest_timer is left as-is so it's still due next visit.
+		if randf() < get_equipment_bonus("skip_rest_chance"):
+			return ""
+		return "rest"
+	return ""
+
+## Returns the world position to walk to for `need`, claiming a bench slot
+## for "rest" (released in _finish_servicing_need()). Null if the need
+## can't be serviced right now (only possible for "rest", when every bench
+## is occupied).
+func _claim_need_station(need: String):
+	match need:
+		"hunger":
+			return NeedStations.GRILL_POSITION
+		"thirst":
+			return NeedStations.BEER_POSITION
+		"rest":
+			var claim: Dictionary = NeedStations.claim_bench()
+			if claim.is_empty():
+				return null
+			_claimed_bench_index = claim.index
+			return claim.position
+	return null
+
+func _service_duration(need: String) -> float:
+	if need == "rest":
+		var rest_reduction := clampf(get_effective_stat(endurance_xp, "endurance") + get_equipment_bonus("rest_time") + get_perk_bonus("rest_time"), 0.0, 0.9)
+		return randf_range(NEED_SERVICE_TIME.x, NEED_SERVICE_TIME.y) * (1.0 - rest_reduction)
+	return randf_range(NEED_SERVICE_TIME.x, NEED_SERVICE_TIME.y)
+
+func _finish_servicing_need() -> void:
+	match current_need:
+		"hunger":
+			hunger_timer = 0.0
+		"thirst":
+			thirst_timer = 0.0
+		"rest":
+			rest_timer = 0.0
+			if _claimed_bench_index >= 0:
+				NeedStations.release_bench(_claimed_bench_index)
+				_claimed_bench_index = -1
+	current_need = ""
+
 func _update_sprite_animation(delta: float) -> void:
-	var moving := state == State.WALK_TO_DOCK or state == State.WALK_HOME
+	var moving := state == State.WALK_TO_DOCK or state == State.WALK_TO_STORAGE or state == State.WALK_TO_NEED
 	if moving:
 		_walk_anim_timer += delta
 		if _walk_anim_timer >= 1.0 / WALK_ANIM_FPS:
@@ -307,20 +419,39 @@ func resolve_offline_catches(duration: float) -> Dictionary:
 			summary.best_weight = result.weight
 	return summary
 
-## Average time for one full walk-to-dock/catch/walk-home/rest cycle, used
-## to estimate how many catches fit in an offline duration.
+## Average time for one walk-to-dock/catch/walk-to-storage cycle, plus the
+## amortized cost of the three periodic needs, used to estimate how many
+## catches fit in an offline duration. Needs are periodic rather than
+## per-cycle now, so their cost is spread across the cycles between
+## visits rather than added to every single one.
 func _estimate_cycle_time() -> float:
 	var catch_range := _catch_time_range()
 	var avg_catch := (catch_range.x + catch_range.y) / 2.0
+	var effective_speed := move_speed * (1.0 + get_equipment_bonus("walk_speed") + get_perk_bonus("walk_speed"))
+	var avg_walk := 0.0
+	if effective_speed > 0.0:
+		var round_trip_distance := absf(dock_position.x - home_position.x) * 2.0
+		avg_walk = round_trip_distance / effective_speed
+	var base_cycle := avg_catch + avg_walk
+	return base_cycle + _average_needs_overhead(base_cycle)
+
+## Expected extra seconds per cycle from the three periodic needs: each
+## costs its average service time (plus a flat approximation of the extra
+## detour walk, since exact station geometry isn't worth modeling here)
+## roughly once every interval/base_cycle cycles.
+func _average_needs_overhead(base_cycle: float) -> float:
+	if base_cycle <= 0.0:
+		return 0.0
+	const DETOUR_WALK_APPROX := 1.5
+	var avg_service := (NEED_SERVICE_TIME.x + NEED_SERVICE_TIME.y) / 2.0 + DETOUR_WALK_APPROX
 	var rest_reduction := clampf(get_effective_stat(endurance_xp, "endurance") + get_equipment_bonus("rest_time") + get_perk_bonus("rest_time"), 0.0, 0.9)
 	var skip_rest_chance := clampf(get_equipment_bonus("skip_rest_chance"), 0.0, 1.0)
-	var avg_rest := (min_rest_time + max_rest_time) / 2.0 * (1.0 - rest_reduction) * (1.0 - skip_rest_chance)
-	var effective_speed := move_speed * (1.0 + get_equipment_bonus("walk_speed") + get_perk_bonus("walk_speed"))
-	if effective_speed <= 0.0:
-		return avg_catch + avg_rest
-	var round_trip_distance := absf(dock_position.x - home_position.x) * 2.0
-	var avg_walk := round_trip_distance / effective_speed
-	return avg_catch + avg_rest + avg_walk
+	var avg_rest_service := avg_service * (1.0 - rest_reduction) * (1.0 - skip_rest_chance)
+	var overhead := 0.0
+	overhead += avg_service * (base_cycle / HUNGER_INTERVAL)
+	overhead += avg_service * (base_cycle / THIRST_INTERVAL)
+	overhead += avg_rest_service * (base_cycle / REST_INTERVAL)
+	return overhead
 
 func _move_toward(target: Vector2, delta: float) -> void:
 	var direction: Vector2 = (target - position).normalized()
@@ -373,6 +504,24 @@ func get_level_progress(xp: float) -> float:
 	if get_level(xp) >= LEVEL_CAP:
 		return 1.0
 	return fmod(xp, XP_PER_LEVEL) / XP_PER_LEVEL
+
+## 0..1 progress toward a need becoming due, for UI display. 1.0 means due
+## (or overdue — the timer keeps climbing past the interval while a bench
+## is unavailable or skip_rest_chance procs, but this stays clamped).
+func get_need_progress(need: String) -> float:
+	match need:
+		"hunger":
+			return clampf(hunger_timer / HUNGER_INTERVAL, 0.0, 1.0)
+		"thirst":
+			return clampf(thirst_timer / THIRST_INTERVAL, 0.0, 1.0)
+		"rest":
+			return clampf(rest_timer / REST_INTERVAL, 0.0, 1.0)
+	return 0.0
+
+## True once get_need_progress() would show full — used to flag "due" in
+## the UI without every caller re-deriving the same threshold check.
+func is_need_due(need: String) -> bool:
+	return get_need_progress(need) >= 1.0
 
 func get_equipment_bonus(axis: String) -> float:
 	var total := 0.0

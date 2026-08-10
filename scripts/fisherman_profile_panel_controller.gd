@@ -13,14 +13,27 @@ signal slot_clicked(fisherman, slot_name)
 @onready var power_bar: ProgressBar = $MarginContainer/VBoxContainer/StatsScroll/StatsBlock/PowerBar
 @onready var endurance_label: Label = $MarginContainer/VBoxContainer/StatsScroll/StatsBlock/EnduranceLabel
 @onready var endurance_bar: ProgressBar = $MarginContainer/VBoxContainer/StatsScroll/StatsBlock/EnduranceBar
+@onready var hunger_label: Label = $MarginContainer/VBoxContainer/StatsScroll/StatsBlock/HungerLabel
+@onready var hunger_bar: ProgressBar = $MarginContainer/VBoxContainer/StatsScroll/StatsBlock/HungerBar
+@onready var thirst_label: Label = $MarginContainer/VBoxContainer/StatsScroll/StatsBlock/ThirstLabel
+@onready var thirst_bar: ProgressBar = $MarginContainer/VBoxContainer/StatsScroll/StatsBlock/ThirstBar
+@onready var rest_label: Label = $MarginContainer/VBoxContainer/StatsScroll/StatsBlock/RestLabel
+@onready var rest_bar: ProgressBar = $MarginContainer/VBoxContainer/StatsScroll/StatsBlock/RestBar
 @onready var equipment_slots: HBoxContainer = $MarginContainer/VBoxContainer/StatsScroll/StatsBlock/EquipmentSlots
 @onready var perks_label: Label = $MarginContainer/VBoxContainer/StatsScroll/StatsBlock/PerksLabel
 @onready var history_label: Label = $MarginContainer/VBoxContainer/StatsScroll/StatsBlock/HistoryLabel
 @onready var dismiss_button: Button = $MarginContainer/VBoxContainer/DismissButton
 @onready var close_button: Button = $MarginContainer/VBoxContainer/HeaderRow/CloseButton
 
+## Needs tick continuously (not just on a catch, unlike the XP bars above),
+## so they need their own lightweight poll while the panel is open — same
+## throttled-ticker pattern as the Shop's restock/potion countdowns
+## (shop_panel_controller.gd), not a naive full-speed _process.
+const NEEDS_TICK_INTERVAL := 0.2  # 5/sec
+
 var _fisherman: Node = null
 var _dismiss_armed: bool = false
+var _needs_tick_accumulator: float = 0.0
 
 func _ready() -> void:
 	for slot_button in equipment_slots.get_children():
@@ -29,6 +42,14 @@ func _ready() -> void:
 	dismiss_button.pressed.connect(_on_dismiss_button_pressed)
 	close_button.pressed.connect(_on_close_button_pressed)
 	visibility_changed.connect(_on_visibility_changed)
+
+func _process(delta: float) -> void:
+	if not visible or _fisherman == null or not is_instance_valid(_fisherman):
+		return
+	_needs_tick_accumulator += delta
+	if _needs_tick_accumulator >= NEEDS_TICK_INTERVAL:
+		_needs_tick_accumulator = 0.0
+		_refresh_needs()
 
 ## Any code path that hides this panel — the close/dismiss buttons, or
 ## main.gd switching to a different panel — ends up here, so the stats
@@ -79,6 +100,24 @@ func refresh() -> void:
 		var slot_name: String = slot_button.name.trim_suffix("Slot")
 		slot_button.text = "%s\n%s" % [slot_name, _fisherman.get_slot_display(slot_name)]
 	history_label.text = _fisherman.get_recent_catches_text()
+	_refresh_needs()
+
+## Separate from refresh() because needs change every frame (not just on a
+## catch) — called both here for an immediate value on open/catch, and
+## from the throttled _process ticker above while the panel stays open.
+func _refresh_needs() -> void:
+	_set_need_row(hunger_label, hunger_bar, "Hunger", "hunger")
+	_set_need_row(thirst_label, thirst_bar, "Thirst", "thirst")
+	_set_need_row(rest_label, rest_bar, "Rest", "rest")
+
+func _set_need_row(label: Label, bar: ProgressBar, title: String, need: String) -> void:
+	bar.value = _fisherman.get_need_progress(need)
+	var status := "OK"
+	if _fisherman.current_need == need:
+		status = "Handling..."
+	elif _fisherman.is_need_due(need):
+		status = "Due"
+	label.text = "%s: %s" % [title, status]
 
 func _on_slot_pressed(slot_name: String) -> void:
 	if _fisherman != null:

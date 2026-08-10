@@ -28,6 +28,7 @@ func save_game(fishermen: Array) -> void:
 			"discount_level": MetaProgress.discount_level,
 			"coin_gain_level": MetaProgress.coin_gain_level,
 			"offline_efficiency_level": MetaProgress.offline_efficiency_level,
+			"bench_capacity_level": MetaProgress.bench_capacity_level,
 		},
 		"fishermen": fishermen_data,
 	}

@@ -15,12 +15,15 @@ const COIN_GAIN_GROWTH := 1.25
 const OFFLINE_BASE_COST := 18
 const OFFLINE_GROWTH := 1.3
 const OFFLINE_MAX_LEVEL := 15
+const BENCH_BASE_COST := 14
+const BENCH_GROWTH := 1.3
 
 const SLOT_COLOR := Color(0.3, 0.5, 0.65)
 const LUCK_COLOR := Color(0.45, 0.75, 0.4)
 const DISCOUNT_COLOR := Color(0.85, 0.6, 0.25)
 const COIN_GAIN_COLOR := Color(0.95, 0.78, 0.25)
 const OFFLINE_COLOR := Color(0.55, 0.45, 0.85)
+const BENCH_COLOR := Color(0.5, 0.62, 0.35)
 
 @onready var rows_container: VBoxContainer = $MarginContainer/VBoxContainer/MetaScroll/MetaRows
 @onready var close_button: Button = $MarginContainer/VBoxContainer/HeaderRow/CloseButton
@@ -30,6 +33,7 @@ var _luck_row: ListRow
 var _discount_row: ListRow
 var _coin_gain_row: ListRow
 var _offline_row: ListRow
+var _bench_row: ListRow
 
 func _ready() -> void:
 	close_button.pressed.connect(_on_close_pressed)
@@ -54,6 +58,7 @@ func _build() -> void:
 	_discount_row = _make_row(_on_buy_discount)
 	_coin_gain_row = _make_row(_on_buy_coin_gain)
 	_offline_row = _make_row(_on_buy_offline_efficiency)
+	_bench_row = _make_row(_on_buy_bench_capacity)
 
 	refresh()
 
@@ -130,6 +135,15 @@ func refresh() -> void:
 		)
 		_offline_row.disabled = Economy.scales < offline_cost
 
+	var bench_cost := _bench_cost()
+	_bench_row.setup(
+		"Folding Benches",
+		"%d benches" % MetaProgress.get_bench_capacity(),
+		"%d Scales" % bench_cost,
+		BENCH_COLOR
+	)
+	_bench_row.disabled = Economy.scales < bench_cost
+
 func _slot_cost() -> int:
 	return int(round(SLOT_BASE_COST * pow(SLOT_GROWTH, MetaProgress.extra_slots)))
 
@@ -144,6 +158,9 @@ func _coin_gain_cost() -> int:
 
 func _offline_cost() -> int:
 	return int(round(OFFLINE_BASE_COST * pow(OFFLINE_GROWTH, MetaProgress.offline_efficiency_level)))
+
+func _bench_cost() -> int:
+	return int(round(BENCH_BASE_COST * pow(BENCH_GROWTH, MetaProgress.bench_capacity_level)))
 
 func _on_buy_slot() -> void:
 	if Economy.spend_scales(_slot_cost()):
@@ -168,6 +185,10 @@ func _on_buy_offline_efficiency() -> void:
 		return
 	if Economy.spend_scales(_offline_cost()):
 		MetaProgress.buy_offline_efficiency()
+
+func _on_buy_bench_capacity() -> void:
+	if Economy.spend_scales(_bench_cost()):
+		MetaProgress.buy_bench_capacity()
 
 func _on_close_pressed() -> void:
 	visible = false
