@@ -9,12 +9,12 @@ const HIRE_COST_GROWTH := 1.25
 
 @onready var coins_label: Label = $CanvasLayer/CoinsLabel
 @onready var scales_label: Label = $CanvasLayer/ScalesLabel
-@onready var fishermen_button: Button = $CanvasLayer/FishermenButton
-@onready var hire_button: Button = $CanvasLayer/HireButton
-@onready var album_button: Button = $CanvasLayer/AlbumButton
-@onready var shop_button: Button = $CanvasLayer/ShopButton
-@onready var meta_button: Button = $CanvasLayer/MetaButton
-@onready var menu_button: Button = $CanvasLayer/MenuButton
+@onready var fishermen_button: Button = $CanvasLayer/NavRow/FishermenButton
+@onready var hire_button: Button = $CanvasLayer/NavRow/HireButton
+@onready var album_button: Button = $CanvasLayer/NavRow/AlbumButton
+@onready var shop_button: Button = $CanvasLayer/NavRow/ShopButton
+@onready var meta_button: Button = $CanvasLayer/NavRow/MetaButton
+@onready var menu_button: Button = $CanvasLayer/NavRow/MenuButton
 @onready var fishermen_panel: FishermenPanelController = $CanvasLayer/FishermenPanel
 @onready var album_panel: AlbumPanelController = $CanvasLayer/AlbumPanel
 @onready var shop_panel: ShopPanelController = $CanvasLayer/ShopPanel
@@ -48,6 +48,7 @@ func _ready() -> void:
 	fishermen_panel.fisherman_selected.connect(_show_profile)
 	profile_panel.dismiss_requested.connect(_on_dismiss_requested)
 	profile_panel.slot_clicked.connect(_on_slot_clicked)
+	equip_panel.back_requested.connect(_on_equip_back_requested)
 
 	autosave_timer.timeout.connect(_on_autosave_timeout)
 	MetaProgress.updated.connect(_update_hire_button)
@@ -126,11 +127,11 @@ func _hire_cost_for_next_slot() -> int:
 func _update_hire_button() -> void:
 	var max_slots := _max_fishermen_slots()
 	if fishermen.size() >= max_slots:
-		hire_button.text = "Slots full (%d/%d)" % [fishermen.size(), max_slots]
+		hire_button.text = "Full (%d/%d)" % [fishermen.size(), max_slots]
 		hire_button.disabled = true
 	else:
 		var cost := _hire_cost_for_next_slot()
-		hire_button.text = "Hire (%d coins)" % cost
+		hire_button.text = "Hire (%d)" % cost
 		hire_button.disabled = Economy.coins < cost
 
 func _on_fishermen_button_pressed() -> void:
@@ -170,6 +171,11 @@ func _on_slot_clicked(fisherman: Node, slot_name: String) -> void:
 	profile_panel.visible = false
 	equip_panel.open_for(fisherman, slot_name)
 
+func _on_equip_back_requested(fisherman: Node) -> void:
+	equip_panel.visible = false
+	if fisherman != null and is_instance_valid(fisherman):
+		profile_panel.show_fisherman(fisherman)
+
 func _on_dismiss_requested(fisherman: Node) -> void:
 	for slot in fisherman.equipped_items:
 		var item = fisherman.equipped_items[slot]
@@ -183,11 +189,11 @@ func _on_autosave_timeout() -> void:
 	SaveManager.save_game(fishermen)
 
 func _update_coins_label(new_total: int) -> void:
-	coins_label.text = "Coins: %d" % new_total
+	coins_label.text = "%d" % new_total
 	_update_hire_button()
 
 func _update_scales_label(new_total: int) -> void:
-	scales_label.text = "Scales: %d" % new_total
+	scales_label.text = "%d" % new_total
 
 func _draw() -> void:
 	draw_rect(Rect2(0, 0, 640, 360), Color(0.55, 0.72, 0.38))

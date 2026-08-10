@@ -4,16 +4,16 @@ extends Panel
 signal dismiss_requested(fisherman)
 signal slot_clicked(fisherman, slot_name)
 
-@onready var name_label: Label = $MarginContainer/VBoxContainer/NameLabel
-@onready var speed_label: Label = $MarginContainer/VBoxContainer/SpeedLabel
-@onready var speed_bar: ProgressBar = $MarginContainer/VBoxContainer/SpeedBar
-@onready var luck_label: Label = $MarginContainer/VBoxContainer/LuckLabel
-@onready var luck_bar: ProgressBar = $MarginContainer/VBoxContainer/LuckBar
-@onready var power_label: Label = $MarginContainer/VBoxContainer/PowerLabel
-@onready var power_bar: ProgressBar = $MarginContainer/VBoxContainer/PowerBar
-@onready var equipment_slots: HBoxContainer = $MarginContainer/VBoxContainer/EquipmentSlots
-@onready var dismiss_button: Button = $MarginContainer/VBoxContainer/ActionsRow/DismissButton
-@onready var close_button: Button = $MarginContainer/VBoxContainer/ActionsRow/CloseButton
+@onready var name_label: Label = $MarginContainer/VBoxContainer/HeaderRow/NameLabel
+@onready var speed_label: Label = $MarginContainer/VBoxContainer/StatsScroll/StatsBlock/SpeedLabel
+@onready var speed_bar: ProgressBar = $MarginContainer/VBoxContainer/StatsScroll/StatsBlock/SpeedBar
+@onready var luck_label: Label = $MarginContainer/VBoxContainer/StatsScroll/StatsBlock/LuckLabel
+@onready var luck_bar: ProgressBar = $MarginContainer/VBoxContainer/StatsScroll/StatsBlock/LuckBar
+@onready var power_label: Label = $MarginContainer/VBoxContainer/StatsScroll/StatsBlock/PowerLabel
+@onready var power_bar: ProgressBar = $MarginContainer/VBoxContainer/StatsScroll/StatsBlock/PowerBar
+@onready var equipment_slots: HBoxContainer = $MarginContainer/VBoxContainer/StatsScroll/StatsBlock/EquipmentSlots
+@onready var dismiss_button: Button = $MarginContainer/VBoxContainer/DismissButton
+@onready var close_button: Button = $MarginContainer/VBoxContainer/HeaderRow/CloseButton
 
 var _fisherman: Node = null
 var _dismiss_armed: bool = false

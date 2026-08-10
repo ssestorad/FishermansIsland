@@ -1,6 +1,8 @@
 class_name MetaPanelController
 extends Panel
 
+const LIST_ROW_SCENE := preload("res://scenes/ui/ListRow.tscn")
+
 const SLOT_BASE_COST := 20
 const SLOT_GROWTH := 1.3
 const LUCK_BASE_COST := 10
@@ -9,12 +11,16 @@ const DISCOUNT_BASE_COST := 15
 const DISCOUNT_GROWTH := 1.3
 const DISCOUNT_MAX_LEVEL := 15
 
-@onready var rows_container: VBoxContainer = $MarginContainer/VBoxContainer/MetaScroll/MetaRows
-@onready var close_button: Button = $MarginContainer/VBoxContainer/CloseButton
+const SLOT_COLOR := Color(0.3, 0.5, 0.65)
+const LUCK_COLOR := Color(0.45, 0.75, 0.4)
+const DISCOUNT_COLOR := Color(0.85, 0.6, 0.25)
 
-var _slot_button: Button
-var _luck_button: Button
-var _discount_button: Button
+@onready var rows_container: VBoxContainer = $MarginContainer/VBoxContainer/MetaScroll/MetaRows
+@onready var close_button: Button = $MarginContainer/VBoxContainer/HeaderRow/CloseButton
+
+var _slot_row: ListRow
+var _luck_row: ListRow
+var _discount_row: ListRow
 
 func _ready() -> void:
 	close_button.pressed.connect(_on_close_pressed)
@@ -32,48 +38,57 @@ func _process(_delta: float) -> void:
 func _build() -> void:
 	UiListUtils.clear_children(rows_container)
 
-	var header := Label.new()
-	header.add_theme_font_size_override("font_size", 14)
-	header.text = "Permanent Upgrades (Scales)"
-	rows_container.add_child(header)
-
-	_slot_button = _make_row(_on_buy_slot)
-	_luck_button = _make_row(_on_buy_luck)
-	_discount_button = _make_row(_on_buy_discount)
+	_slot_row = _make_row(_on_buy_slot)
+	_luck_row = _make_row(_on_buy_luck)
+	_discount_row = _make_row(_on_buy_discount)
 
 	refresh()
 
-func _make_row(callback: Callable) -> Button:
-	var button := Button.new()
-	button.flat = true
-	button.alignment = HORIZONTAL_ALIGNMENT_LEFT
-	button.pressed.connect(callback)
-	rows_container.add_child(button)
-	return button
+func _make_row(callback: Callable) -> ListRow:
+	var row: ListRow = LIST_ROW_SCENE.instantiate()
+	row.pressed.connect(callback)
+	rows_container.add_child(row)
+	return row
 
 func refresh() -> void:
-	if _slot_button == null:
+	if _slot_row == null:
 		return
 
 	var slot_cost := _slot_cost()
-	_slot_button.text = "Extra Fisherman Slot (Lvl %d) — %d Scales" % [MetaProgress.extra_slots, slot_cost]
-	_slot_button.disabled = Economy.scales < slot_cost
+	_slot_row.setup(
+		"Extra Fisherman Slot",
+		"Level %d" % MetaProgress.extra_slots,
+		"%d Scales" % slot_cost,
+		SLOT_COLOR
+	)
+	_slot_row.disabled = Economy.scales < slot_cost
 
 	var luck_cost := _luck_cost()
-	_luck_button.text = "Global Luck +%.0f%% (Lvl %d) — %d Scales" % [
-		MetaProgress.get_global_luck_bonus() * 100.0, MetaProgress.luck_level, luck_cost
-	]
-	_luck_button.disabled = Economy.scales < luck_cost
+	_luck_row.setup(
+		"Global Luck +%.0f%%" % [MetaProgress.get_global_luck_bonus() * 100.0],
+		"Level %d" % MetaProgress.luck_level,
+		"%d Scales" % luck_cost,
+		LUCK_COLOR
+	)
+	_luck_row.disabled = Economy.scales < luck_cost
 
 	if MetaProgress.discount_level >= DISCOUNT_MAX_LEVEL:
-		_discount_button.text = "Shop Discount %.0f%% (MAX)" % [MetaProgress.get_shop_discount() * 100.0]
-		_discount_button.disabled = true
+		_discount_row.setup(
+			"Shop Discount %.0f%%" % [MetaProgress.get_shop_discount() * 100.0],
+			"Maxed out",
+			"MAX",
+			DISCOUNT_COLOR
+		)
+		_discount_row.disabled = true
 	else:
 		var discount_cost := _discount_cost()
-		_discount_button.text = "Shop Discount -%.0f%% (Lvl %d) — %d Scales" % [
-			MetaProgress.get_shop_discount() * 100.0, MetaProgress.discount_level, discount_cost
-		]
-		_discount_button.disabled = Economy.scales < discount_cost
+		_discount_row.setup(
+			"Shop Discount -%.0f%%" % [MetaProgress.get_shop_discount() * 100.0],
+			"Level %d" % MetaProgress.discount_level,
+			"%d Scales" % discount_cost,
+			DISCOUNT_COLOR
+		)
+		_discount_row.disabled = Economy.scales < discount_cost
 
 func _slot_cost() -> int:
 	return int(round(SLOT_BASE_COST * pow(SLOT_GROWTH, MetaProgress.extra_slots)))

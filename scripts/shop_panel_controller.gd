@@ -1,9 +1,16 @@
 class_name ShopPanelController
 extends Panel
 
+const LIST_ROW_SCENE := preload("res://scenes/ui/ListRow.tscn")
+
 const POTION_COST := 8
 const POTION_AXES := ["speed", "luck", "power"]
 const POTION_LABELS := {"speed": "Speed Potion", "luck": "Luck Potion", "power": "Power Potion"}
+const POTION_COLORS := {
+	"speed": Color(0.35, 0.55, 0.85),
+	"luck": Color(0.45, 0.75, 0.4),
+	"power": Color(0.85, 0.45, 0.3),
+}
 
 @onready var restock_label: Label = $MarginContainer/VBoxContainer/RestockLabel
 @onready var gear_tab_button: Button = $MarginContainer/VBoxContainer/TabRow/GearTabButton
@@ -11,10 +18,10 @@ const POTION_LABELS := {"speed": "Speed Potion", "luck": "Luck Potion", "power":
 @onready var gear_scroll: ScrollContainer = $MarginContainer/VBoxContainer/ShopScroll
 @onready var rows_container: VBoxContainer = $MarginContainer/VBoxContainer/ShopScroll/ShopRows
 @onready var potions_container: VBoxContainer = $MarginContainer/VBoxContainer/PotionRows
-@onready var close_button: Button = $MarginContainer/VBoxContainer/CloseButton
+@onready var close_button: Button = $MarginContainer/VBoxContainer/HeaderRow/CloseButton
 
 var _items: Array = []
-var _potion_buttons: Dictionary = {}
+var _potion_rows: Dictionary = {}
 var _showing_potions: bool = false
 
 func _ready() -> void:
@@ -53,21 +60,17 @@ func build() -> void:
 	UiListUtils.clear_children(rows_container)
 	_items = ShopRotation.current_items
 	for item in _items:
-		var row := Button.new()
-		row.flat = true
-		row.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		var row: ListRow = LIST_ROW_SCENE.instantiate()
 		rows_container.add_child(row)
 		row.pressed.connect(_on_buy_item.bind(item))
 	refresh()
 
 func _build_potion_rows() -> void:
 	for axis in POTION_AXES:
-		var button := Button.new()
-		button.flat = true
-		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
-		button.pressed.connect(_on_drink_potion.bind(axis))
-		potions_container.add_child(button)
-		_potion_buttons[axis] = button
+		var row: ListRow = LIST_ROW_SCENE.instantiate()
+		row.pressed.connect(_on_drink_potion.bind(axis))
+		potions_container.add_child(row)
+		_potion_rows[axis] = row
 
 func _process(_delta: float) -> void:
 	if visible:
@@ -76,24 +79,27 @@ func _process(_delta: float) -> void:
 func refresh() -> void:
 	restock_label.text = "Restocks in %ds" % ceili(ShopRotation.get_time_until_rotation())
 	for i in range(rows_container.get_child_count()):
-		var button: Button = rows_container.get_child(i)
+		var row: ListRow = rows_container.get_child(i)
 		var item: Item = _items[i]
 		var cost := _discounted_cost(item)
-		button.text = "%s (%s) [%s] — %s — %d %s" % [
-			item.item_name, item.slot, item.rarity, item.effects_text(), cost, item.currency
-		]
+		row.setup(
+			item.item_name,
+			"%s · %s · %s" % [item.slot, item.rarity, item.effects_text()],
+			"%d %s" % [cost, item.currency],
+			RarityColors.for_name(item.rarity)
+		)
 		var balance: int = Economy.coins if item.currency == "Coins" else Economy.scales
-		button.disabled = balance < cost
+		row.disabled = balance < cost
 
 	for axis in POTION_AXES:
-		var button: Button = _potion_buttons[axis]
+		var row: ListRow = _potion_rows[axis]
 		var remaining := PotionManager.get_remaining(axis)
 		if remaining > 0.0:
-			button.text = "%s — active (%ds left)" % [POTION_LABELS[axis], ceili(remaining)]
-			button.disabled = false
+			row.setup(POTION_LABELS[axis], "Active", "%ds left" % ceili(remaining), POTION_COLORS[axis])
+			row.disabled = false
 		else:
-			button.text = "%s — %d Coins" % [POTION_LABELS[axis], POTION_COST]
-			button.disabled = Economy.coins < POTION_COST
+			row.setup(POTION_LABELS[axis], "Temporary buff", "%d Coins" % POTION_COST, POTION_COLORS[axis])
+			row.disabled = Economy.coins < POTION_COST
 
 func _discounted_cost(item: Item) -> int:
 	return int(round(item.cost * (1.0 - MetaProgress.get_shop_discount())))

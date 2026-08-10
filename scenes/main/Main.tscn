@@ -1,6 +1,8 @@
-[gd_scene load_steps=13 format=3]
+[gd_scene load_steps=15 format=3]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
+[ext_resource type="Script" path="res://scripts/coin_icon.gd" id="13_coin_icon"]
+[ext_resource type="Script" path="res://scripts/scale_icon.gd" id="14_scale_icon"]
 [ext_resource type="Script" path="res://scripts/night_tint.gd" id="2_night_tint"]
 [ext_resource type="Script" path="res://scripts/clock_label.gd" id="3_clock_label"]
 [ext_resource type="Script" path="res://scripts/season_timeline.gd" id="4_season_timeline"]
@@ -44,87 +46,120 @@ script = ExtResource("2_night_tint")
 [node name="CanvasLayer" type="CanvasLayer" parent="."]
 layer = 2
 
-[node name="ClockLabel" type="Label" parent="CanvasLayer"]
-offset_left = 460.0
+[node name="HudStrip" type="ColorRect" parent="CanvasLayer"]
+offset_left = 0.0
+offset_top = 0.0
+offset_right = 640.0
+offset_bottom = 32.0
+mouse_filter = 2
+color = Color(0.08, 0.2, 0.28, 0.6)
+
+[node name="CoinIcon" type="Control" parent="CanvasLayer"]
+offset_left = 8.0
 offset_top = 8.0
-offset_right = 628.0
-offset_bottom = 40.0
-theme_override_font_sizes/font_size = 14
+offset_right = 24.0
+offset_bottom = 24.0
+mouse_filter = 2
+script = ExtResource("13_coin_icon")
+
+[node name="CoinsLabel" type="Label" parent="CanvasLayer"]
+offset_left = 28.0
+offset_top = 6.0
+offset_right = 118.0
+offset_bottom = 26.0
+theme_type_variation = &"HudLabel"
+theme_override_font_sizes/font_size = 15
+text = "0"
+
+[node name="ScaleIcon" type="Control" parent="CanvasLayer"]
+offset_left = 128.0
+offset_top = 10.0
+offset_right = 140.0
+offset_bottom = 22.0
+mouse_filter = 2
+script = ExtResource("14_scale_icon")
+
+[node name="ScalesLabel" type="Label" parent="CanvasLayer"]
+offset_left = 146.0
+offset_top = 6.0
+offset_right = 236.0
+offset_bottom = 26.0
+theme_type_variation = &"HudLabel"
+theme_override_font_sizes/font_size = 15
+text = "0"
+
+[node name="ClockLabel" type="Label" parent="CanvasLayer"]
+offset_left = 380.0
+offset_top = 6.0
+offset_right = 632.0
+offset_bottom = 26.0
+theme_type_variation = &"HudLabel"
+theme_override_font_sizes/font_size = 12
 horizontal_alignment = 2
 text = "Day 1 — 00:00 (Spring)"
 script = ExtResource("3_clock_label")
 
 [node name="SeasonTimeline" type="Control" parent="CanvasLayer"]
-offset_left = 460.0
-offset_top = 44.0
-offset_right = 628.0
-offset_bottom = 58.0
+offset_left = 380.0
+offset_top = 33.0
+offset_right = 632.0
+offset_bottom = 41.0
 script = ExtResource("4_season_timeline")
 
-[node name="MenuButton" type="Button" parent="CanvasLayer"]
-offset_left = 470.0
-offset_top = 60.0
-offset_right = 628.0
-offset_bottom = 84.0
+[node name="NavRow" type="HBoxContainer" parent="CanvasLayer"]
+offset_left = 8.0
+offset_top = 44.0
+offset_right = 632.0
+offset_bottom = 70.0
+theme_override_constants/separation = 4
+
+[node name="FishermenButton" type="Button" parent="CanvasLayer/NavRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = &"NavButton"
 theme_override_font_sizes/font_size = 12
-text = "Menu"
-
-[node name="CoinsLabel" type="Label" parent="CanvasLayer"]
-offset_left = 12.0
-offset_top = 8.0
-offset_right = 220.0
-offset_bottom = 40.0
-theme_override_font_sizes/font_size = 20
-text = "Coins: 0"
-
-[node name="ScalesLabel" type="Label" parent="CanvasLayer"]
-offset_left = 230.0
-offset_top = 8.0
-offset_right = 440.0
-offset_bottom = 40.0
-theme_override_font_sizes/font_size = 20
-text = "Scales: 0"
-
-[node name="FishermenButton" type="Button" parent="CanvasLayer"]
-offset_left = 12.0
-offset_top = 48.0
-offset_right = 96.0
-offset_bottom = 80.0
-theme_override_font_sizes/font_size = 13
 text = "Fishermen"
 
-[node name="HireButton" type="Button" parent="CanvasLayer"]
-offset_left = 102.0
-offset_top = 48.0
-offset_right = 232.0
-offset_bottom = 80.0
-text = "Hire (5 coins)"
+[node name="HireButton" type="Button" parent="CanvasLayer/NavRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 1.4
+theme_type_variation = &"PrimaryButton"
+theme_override_font_sizes/font_size = 12
+text = "Hire (5)"
 
-[node name="AlbumButton" type="Button" parent="CanvasLayer"]
-offset_left = 238.0
-offset_top = 48.0
-offset_right = 300.0
-offset_bottom = 80.0
+[node name="AlbumButton" type="Button" parent="CanvasLayer/NavRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = &"NavButton"
+theme_override_font_sizes/font_size = 12
 text = "Album"
 
-[node name="ShopButton" type="Button" parent="CanvasLayer"]
-offset_left = 306.0
-offset_top = 48.0
-offset_right = 368.0
-offset_bottom = 80.0
+[node name="ShopButton" type="Button" parent="CanvasLayer/NavRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = &"NavButton"
+theme_override_font_sizes/font_size = 12
 text = "Shop"
 
-[node name="MetaButton" type="Button" parent="CanvasLayer"]
-offset_left = 374.0
-offset_top = 48.0
-offset_right = 436.0
-offset_bottom = 80.0
+[node name="MetaButton" type="Button" parent="CanvasLayer/NavRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = &"NavButton"
+theme_override_font_sizes/font_size = 12
 text = "Meta"
+
+[node name="MenuButton" type="Button" parent="CanvasLayer/NavRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = &"NavButton"
+theme_override_font_sizes/font_size = 12
+text = "Menu"
 
 [node name="FishermenPanel" type="Panel" parent="CanvasLayer"]
 visible = false
 offset_left = 12.0
-offset_top = 88.0
+offset_top = 76.0
 offset_right = 320.0
 offset_bottom = 340.0
 script = ExtResource("6_fishermen_panel")
@@ -143,19 +178,39 @@ grow_vertical = 2
 
 [node name="VBoxContainer" type="VBoxContainer" parent="CanvasLayer/FishermenPanel/MarginContainer"]
 layout_mode = 2
+theme_override_constants/separation = 6
 
-[node name="TitleLabel" type="Label" parent="CanvasLayer/FishermenPanel/MarginContainer/VBoxContainer"]
+[node name="HeaderRow" type="HBoxContainer" parent="CanvasLayer/FishermenPanel/MarginContainer/VBoxContainer"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 18
+
+[node name="TitleLabel" type="Label" parent="CanvasLayer/FishermenPanel/MarginContainer/VBoxContainer/HeaderRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = &"TitleLabel"
+clip_text = true
+text_overrun_behavior = 3
 text = "Your Fishermen"
 
-[node name="FishermenRows" type="VBoxContainer" parent="CanvasLayer/FishermenPanel/MarginContainer/VBoxContainer"]
+[node name="CloseButton" type="Button" parent="CanvasLayer/FishermenPanel/MarginContainer/VBoxContainer/HeaderRow"]
 layout_mode = 2
+custom_minimum_size = Vector2(24, 24)
+theme_type_variation = &"GhostButton"
+theme_override_font_sizes/font_size = 12
+text = "✕"
+
+[node name="FishermenScroll" type="ScrollContainer" parent="CanvasLayer/FishermenPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="FishermenRows" type="VBoxContainer" parent="CanvasLayer/FishermenPanel/MarginContainer/VBoxContainer/FishermenScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 4
 
 [node name="FishermanProfilePanel" type="Panel" parent="CanvasLayer"]
 visible = false
 offset_left = 340.0
-offset_top = 88.0
+offset_top = 76.0
 offset_right = 620.0
 offset_bottom = 320.0
 script = ExtResource("7_profile_panel")
@@ -176,50 +231,79 @@ grow_vertical = 2
 layout_mode = 2
 theme_override_constants/separation = 6
 
-[node name="NameLabel" type="Label" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer"]
+[node name="HeaderRow" type="HBoxContainer" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer"]
 layout_mode = 2
+
+[node name="NameLabel" type="Label" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer/HeaderRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = &"TitleLabel"
 theme_override_font_sizes/font_size = 20
+clip_text = true
+text_overrun_behavior = 3
 text = "Name"
 
-[node name="SpeedLabel" type="Label" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer"]
+[node name="CloseButton" type="Button" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer/HeaderRow"]
 layout_mode = 2
+custom_minimum_size = Vector2(24, 24)
+theme_type_variation = &"GhostButton"
+theme_override_font_sizes/font_size = 12
+text = "✕"
+
+[node name="StatsScroll" type="ScrollContainer" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="StatsBlock" type="VBoxContainer" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer/StatsScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 6
+
+[node name="SpeedLabel" type="Label" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer/StatsScroll/StatsBlock"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.25, 0.4, 0.6, 1)
 text = "Speed: Lvl 0"
 
-[node name="SpeedBar" type="ProgressBar" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer"]
+[node name="SpeedBar" type="ProgressBar" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer/StatsScroll/StatsBlock"]
 layout_mode = 2
 custom_minimum_size = Vector2(0, 8)
+theme_type_variation = &"SpeedBar"
 max_value = 1.0
 step = 0.01
 show_percentage = false
 
-[node name="LuckLabel" type="Label" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer"]
+[node name="LuckLabel" type="Label" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer/StatsScroll/StatsBlock"]
 layout_mode = 2
+theme_override_colors/font_color = Color(0.3, 0.55, 0.28, 1)
 text = "Luck: Lvl 0"
 
-[node name="LuckBar" type="ProgressBar" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer"]
+[node name="LuckBar" type="ProgressBar" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer/StatsScroll/StatsBlock"]
 layout_mode = 2
 custom_minimum_size = Vector2(0, 8)
+theme_type_variation = &"LuckBar"
 max_value = 1.0
 step = 0.01
 show_percentage = false
 
-[node name="PowerLabel" type="Label" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer"]
+[node name="PowerLabel" type="Label" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer/StatsScroll/StatsBlock"]
 layout_mode = 2
+theme_override_colors/font_color = Color(0.6, 0.3, 0.2, 1)
 text = "Power: Lvl 0"
 
-[node name="PowerBar" type="ProgressBar" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer"]
+[node name="PowerBar" type="ProgressBar" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer/StatsScroll/StatsBlock"]
 layout_mode = 2
 custom_minimum_size = Vector2(0, 8)
+theme_type_variation = &"PowerBar"
 max_value = 1.0
 step = 0.01
 show_percentage = false
 
-[node name="EquipmentSlots" type="HBoxContainer" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer"]
+[node name="EquipmentSlots" type="HBoxContainer" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer/StatsScroll/StatsBlock"]
 layout_mode = 2
 theme_override_constants/separation = 6
 alignment = 1
 
-[node name="RodSlot" type="Button" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer/EquipmentSlots"]
+[node name="RodSlot" type="Button" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer/StatsScroll/StatsBlock/EquipmentSlots"]
 layout_mode = 2
 custom_minimum_size = Vector2(48, 44)
 size_flags_horizontal = 0
@@ -228,7 +312,7 @@ theme_override_font_sizes/font_size = 10
 text = "Rod
 —"
 
-[node name="HatSlot" type="Button" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer/EquipmentSlots"]
+[node name="HatSlot" type="Button" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer/StatsScroll/StatsBlock/EquipmentSlots"]
 layout_mode = 2
 custom_minimum_size = Vector2(48, 44)
 size_flags_horizontal = 0
@@ -237,7 +321,7 @@ theme_override_font_sizes/font_size = 10
 text = "Hat
 —"
 
-[node name="OutfitSlot" type="Button" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer/EquipmentSlots"]
+[node name="OutfitSlot" type="Button" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer/StatsScroll/StatsBlock/EquipmentSlots"]
 layout_mode = 2
 custom_minimum_size = Vector2(48, 44)
 size_flags_horizontal = 0
@@ -246,7 +330,7 @@ theme_override_font_sizes/font_size = 10
 text = "Outfit
 —"
 
-[node name="CharmSlot" type="Button" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer/EquipmentSlots"]
+[node name="CharmSlot" type="Button" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer/StatsScroll/StatsBlock/EquipmentSlots"]
 layout_mode = 2
 custom_minimum_size = Vector2(48, 44)
 size_flags_horizontal = 0
@@ -255,7 +339,7 @@ theme_override_font_sizes/font_size = 10
 text = "Charm
 —"
 
-[node name="BaitSlot" type="Button" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer/EquipmentSlots"]
+[node name="BaitSlot" type="Button" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer/StatsScroll/StatsBlock/EquipmentSlots"]
 layout_mode = 2
 custom_minimum_size = Vector2(48, 44)
 size_flags_horizontal = 0
@@ -264,25 +348,15 @@ theme_override_font_sizes/font_size = 10
 text = "Bait
 —"
 
-[node name="ActionsRow" type="HBoxContainer" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer"]
+[node name="DismissButton" type="Button" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer"]
 layout_mode = 2
-theme_override_constants/separation = 8
-
-[node name="DismissButton" type="Button" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer/ActionsRow"]
-layout_mode = 2
-size_flags_horizontal = 3
-modulate = Color(0.85, 0.35, 0.3, 1)
+theme_type_variation = &"DangerButton"
 text = "Dismiss"
-
-[node name="CloseButton" type="Button" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer/ActionsRow"]
-layout_mode = 2
-size_flags_horizontal = 3
-text = "Close"
 
 [node name="EquipPanel" type="Panel" parent="CanvasLayer"]
 visible = false
 offset_left = 340.0
-offset_top = 88.0
+offset_top = 76.0
 offset_right = 620.0
 offset_bottom = 320.0
 script = ExtResource("11_equip_panel")
@@ -302,11 +376,33 @@ grow_vertical = 2
 [node name="VBoxContainer" type="VBoxContainer" parent="CanvasLayer/EquipPanel/MarginContainer"]
 layout_mode = 2
 size_flags_vertical = 3
+theme_override_constants/separation = 6
 
-[node name="TitleLabel" type="Label" parent="CanvasLayer/EquipPanel/MarginContainer/VBoxContainer"]
+[node name="HeaderRow" type="HBoxContainer" parent="CanvasLayer/EquipPanel/MarginContainer/VBoxContainer"]
 layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="BackButton" type="Button" parent="CanvasLayer/EquipPanel/MarginContainer/VBoxContainer/HeaderRow"]
+layout_mode = 2
+theme_type_variation = &"GhostButton"
+theme_override_font_sizes/font_size = 12
+text = "‹ Back"
+
+[node name="TitleLabel" type="Label" parent="CanvasLayer/EquipPanel/MarginContainer/VBoxContainer/HeaderRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = &"TitleLabel"
 theme_override_font_sizes/font_size = 16
+clip_text = true
+text_overrun_behavior = 3
 text = "Slot"
+
+[node name="CloseButton" type="Button" parent="CanvasLayer/EquipPanel/MarginContainer/VBoxContainer/HeaderRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(24, 24)
+theme_type_variation = &"GhostButton"
+theme_override_font_sizes/font_size = 12
+text = "✕"
 
 [node name="EquipScroll" type="ScrollContainer" parent="CanvasLayer/EquipPanel/MarginContainer/VBoxContainer"]
 layout_mode = 2
@@ -320,14 +416,10 @@ size_flags_horizontal = 3
 layout_mode = 2
 text = "Unequip"
 
-[node name="CloseButton" type="Button" parent="CanvasLayer/EquipPanel/MarginContainer/VBoxContainer"]
-layout_mode = 2
-text = "Close"
-
 [node name="ShopPanel" type="Panel" parent="CanvasLayer"]
 visible = false
 offset_left = 12.0
-offset_top = 88.0
+offset_top = 76.0
 offset_right = 320.0
 offset_bottom = 340.0
 script = ExtResource("8_shop_panel")
@@ -347,30 +439,46 @@ grow_vertical = 2
 [node name="VBoxContainer" type="VBoxContainer" parent="CanvasLayer/ShopPanel/MarginContainer"]
 layout_mode = 2
 size_flags_vertical = 3
+theme_override_constants/separation = 6
 
-[node name="TitleLabel" type="Label" parent="CanvasLayer/ShopPanel/MarginContainer/VBoxContainer"]
+[node name="HeaderRow" type="HBoxContainer" parent="CanvasLayer/ShopPanel/MarginContainer/VBoxContainer"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 18
+
+[node name="TitleLabel" type="Label" parent="CanvasLayer/ShopPanel/MarginContainer/VBoxContainer/HeaderRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = &"TitleLabel"
+clip_text = true
+text_overrun_behavior = 3
 text = "Shop"
+
+[node name="CloseButton" type="Button" parent="CanvasLayer/ShopPanel/MarginContainer/VBoxContainer/HeaderRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(24, 24)
+theme_type_variation = &"GhostButton"
+theme_override_font_sizes/font_size = 12
+text = "✕"
 
 [node name="RestockLabel" type="Label" parent="CanvasLayer/ShopPanel/MarginContainer/VBoxContainer"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 11
+theme_type_variation = &"MutedLabel"
 text = "Restocks in 0s"
 
 [node name="TabRow" type="HBoxContainer" parent="CanvasLayer/ShopPanel/MarginContainer/VBoxContainer"]
 layout_mode = 2
-theme_override_constants/separation = 6
+theme_override_constants/separation = 4
 
 [node name="GearTabButton" type="Button" parent="CanvasLayer/ShopPanel/MarginContainer/VBoxContainer/TabRow"]
 layout_mode = 2
 size_flags_horizontal = 3
+theme_type_variation = &"TabButton"
 disabled = true
 text = "Gear"
 
 [node name="PotionsTabButton" type="Button" parent="CanvasLayer/ShopPanel/MarginContainer/VBoxContainer/TabRow"]
 layout_mode = 2
 size_flags_horizontal = 3
+theme_type_variation = &"TabButton"
 text = "Potions"
 
 [node name="ShopScroll" type="ScrollContainer" parent="CanvasLayer/ShopPanel/MarginContainer/VBoxContainer"]
@@ -386,14 +494,10 @@ visible = false
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="CloseButton" type="Button" parent="CanvasLayer/ShopPanel/MarginContainer/VBoxContainer"]
-layout_mode = 2
-text = "Close"
-
 [node name="MetaPanel" type="Panel" parent="CanvasLayer"]
 visible = false
 offset_left = 12.0
-offset_top = 88.0
+offset_top = 76.0
 offset_right = 320.0
 offset_bottom = 340.0
 script = ExtResource("12_meta_panel")
@@ -413,11 +517,25 @@ grow_vertical = 2
 [node name="VBoxContainer" type="VBoxContainer" parent="CanvasLayer/MetaPanel/MarginContainer"]
 layout_mode = 2
 size_flags_vertical = 3
+theme_override_constants/separation = 6
 
-[node name="TitleLabel" type="Label" parent="CanvasLayer/MetaPanel/MarginContainer/VBoxContainer"]
+[node name="HeaderRow" type="HBoxContainer" parent="CanvasLayer/MetaPanel/MarginContainer/VBoxContainer"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 18
+
+[node name="TitleLabel" type="Label" parent="CanvasLayer/MetaPanel/MarginContainer/VBoxContainer/HeaderRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = &"TitleLabel"
+clip_text = true
+text_overrun_behavior = 3
 text = "Meta"
+
+[node name="CloseButton" type="Button" parent="CanvasLayer/MetaPanel/MarginContainer/VBoxContainer/HeaderRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(24, 24)
+theme_type_variation = &"GhostButton"
+theme_override_font_sizes/font_size = 12
+text = "✕"
 
 [node name="MetaScroll" type="ScrollContainer" parent="CanvasLayer/MetaPanel/MarginContainer/VBoxContainer"]
 layout_mode = 2
@@ -426,15 +544,12 @@ size_flags_vertical = 3
 [node name="MetaRows" type="VBoxContainer" parent="CanvasLayer/MetaPanel/MarginContainer/VBoxContainer/MetaScroll"]
 layout_mode = 2
 size_flags_horizontal = 3
-
-[node name="CloseButton" type="Button" parent="CanvasLayer/MetaPanel/MarginContainer/VBoxContainer"]
-layout_mode = 2
-text = "Close"
+theme_override_constants/separation = 4
 
 [node name="AlbumPanel" type="Panel" parent="CanvasLayer"]
 visible = false
 offset_left = 12.0
-offset_top = 88.0
+offset_top = 76.0
 offset_right = 320.0
 offset_bottom = 340.0
 script = ExtResource("9_album_panel")
@@ -456,11 +571,24 @@ layout_mode = 2
 size_flags_vertical = 3
 theme_override_constants/separation = 6
 
-[node name="TitleLabel" type="Label" parent="CanvasLayer/AlbumPanel/MarginContainer/VBoxContainer"]
+[node name="HeaderRow" type="HBoxContainer" parent="CanvasLayer/AlbumPanel/MarginContainer/VBoxContainer"]
 layout_mode = 2
+
+[node name="TitleLabel" type="Label" parent="CanvasLayer/AlbumPanel/MarginContainer/VBoxContainer/HeaderRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = &"TitleLabel"
 theme_override_font_sizes/font_size = 16
-horizontal_alignment = 1
+clip_text = true
+text_overrun_behavior = 3
 text = "Fish Album (0/155)"
+
+[node name="CloseButton" type="Button" parent="CanvasLayer/AlbumPanel/MarginContainer/VBoxContainer/HeaderRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(24, 24)
+theme_type_variation = &"GhostButton"
+theme_override_font_sizes/font_size = 12
+text = "✕"
 
 [node name="TierTabs" type="HBoxContainer" parent="CanvasLayer/AlbumPanel/MarginContainer/VBoxContainer"]
 layout_mode = 2
@@ -470,12 +598,14 @@ theme_override_constants/separation = 4
 [node name="OverviewTab" type="Button" parent="CanvasLayer/AlbumPanel/MarginContainer/VBoxContainer/TierTabs"]
 layout_mode = 2
 custom_minimum_size = Vector2(38, 28)
+theme_type_variation = &"TabButton"
 theme_override_font_sizes/font_size = 11
 text = "All"
 
 [node name="CommonTab" type="Button" parent="CanvasLayer/AlbumPanel/MarginContainer/VBoxContainer/TierTabs"]
 layout_mode = 2
 custom_minimum_size = Vector2(38, 28)
+theme_type_variation = &"TabButton"
 theme_override_font_sizes/font_size = 11
 modulate = Color(0.7, 0.7, 0.7, 1)
 text = "Com"
@@ -483,6 +613,7 @@ text = "Com"
 [node name="UncommonTab" type="Button" parent="CanvasLayer/AlbumPanel/MarginContainer/VBoxContainer/TierTabs"]
 layout_mode = 2
 custom_minimum_size = Vector2(38, 28)
+theme_type_variation = &"TabButton"
 theme_override_font_sizes/font_size = 11
 modulate = Color(0.4, 0.75, 0.4, 1)
 text = "Unc"
@@ -490,6 +621,7 @@ text = "Unc"
 [node name="RareTab" type="Button" parent="CanvasLayer/AlbumPanel/MarginContainer/VBoxContainer/TierTabs"]
 layout_mode = 2
 custom_minimum_size = Vector2(38, 28)
+theme_type_variation = &"TabButton"
 theme_override_font_sizes/font_size = 11
 modulate = Color(0.3, 0.5, 0.9, 1)
 text = "Rare"
@@ -497,6 +629,7 @@ text = "Rare"
 [node name="EpicTab" type="Button" parent="CanvasLayer/AlbumPanel/MarginContainer/VBoxContainer/TierTabs"]
 layout_mode = 2
 custom_minimum_size = Vector2(38, 28)
+theme_type_variation = &"TabButton"
 theme_override_font_sizes/font_size = 11
 modulate = Color(0.6, 0.35, 0.85, 1)
 text = "Epic"
@@ -504,6 +637,7 @@ text = "Epic"
 [node name="LegendaryTab" type="Button" parent="CanvasLayer/AlbumPanel/MarginContainer/VBoxContainer/TierTabs"]
 layout_mode = 2
 custom_minimum_size = Vector2(38, 28)
+theme_type_variation = &"TabButton"
 theme_override_font_sizes/font_size = 11
 modulate = Color(0.9, 0.65, 0.15, 1)
 text = "Leg"
@@ -511,32 +645,37 @@ text = "Leg"
 [node name="MythicTab" type="Button" parent="CanvasLayer/AlbumPanel/MarginContainer/VBoxContainer/TierTabs"]
 layout_mode = 2
 custom_minimum_size = Vector2(38, 28)
+theme_type_variation = &"TabButton"
 theme_override_font_sizes/font_size = 11
 modulate = Color(0.85, 0.2, 0.25, 1)
 text = "Myth"
 
-[node name="CardArea" type="VBoxContainer" parent="CanvasLayer/AlbumPanel/MarginContainer/VBoxContainer"]
+[node name="CardScroll" type="ScrollContainer" parent="CanvasLayer/AlbumPanel/MarginContainer/VBoxContainer"]
 layout_mode = 2
 size_flags_vertical = 3
+
+[node name="CardArea" type="VBoxContainer" parent="CanvasLayer/AlbumPanel/MarginContainer/VBoxContainer/CardScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
 alignment = 1
 theme_override_constants/separation = 4
 
-[node name="PageLabel" type="Label" parent="CanvasLayer/AlbumPanel/MarginContainer/VBoxContainer/CardArea"]
+[node name="PageLabel" type="Label" parent="CanvasLayer/AlbumPanel/MarginContainer/VBoxContainer/CardScroll/CardArea"]
 layout_mode = 2
 horizontal_alignment = 1
 text = "1 / 155"
 
-[node name="IconPanel" type="Control" parent="CanvasLayer/AlbumPanel/MarginContainer/VBoxContainer/CardArea"]
+[node name="IconPanel" type="Control" parent="CanvasLayer/AlbumPanel/MarginContainer/VBoxContainer/CardScroll/CardArea"]
 layout_mode = 2
 custom_minimum_size = Vector2(100, 80)
 size_flags_horizontal = 4
 
-[node name="FishIcon" type="Sprite2D" parent="CanvasLayer/AlbumPanel/MarginContainer/VBoxContainer/CardArea/IconPanel"]
+[node name="FishIcon" type="Sprite2D" parent="CanvasLayer/AlbumPanel/MarginContainer/VBoxContainer/CardScroll/CardArea/IconPanel"]
 position = Vector2(50, 40)
 scale = Vector2(2.5, 2.5)
 script = ExtResource("10_fish_icon")
 
-[node name="QuestionMark" type="Label" parent="CanvasLayer/AlbumPanel/MarginContainer/VBoxContainer/CardArea/IconPanel"]
+[node name="QuestionMark" type="Label" parent="CanvasLayer/AlbumPanel/MarginContainer/VBoxContainer/CardScroll/CardArea/IconPanel"]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -551,18 +690,18 @@ theme_override_font_sizes/font_size = 28
 horizontal_alignment = 1
 text = "?"
 
-[node name="SpeciesNameLabel" type="Label" parent="CanvasLayer/AlbumPanel/MarginContainer/VBoxContainer/CardArea"]
+[node name="SpeciesNameLabel" type="Label" parent="CanvasLayer/AlbumPanel/MarginContainer/VBoxContainer/CardScroll/CardArea"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
 horizontal_alignment = 1
 text = "???"
 
-[node name="TierLabel" type="Label" parent="CanvasLayer/AlbumPanel/MarginContainer/VBoxContainer/CardArea"]
+[node name="TierLabel" type="Label" parent="CanvasLayer/AlbumPanel/MarginContainer/VBoxContainer/CardScroll/CardArea"]
 layout_mode = 2
 horizontal_alignment = 1
 text = "Common"
 
-[node name="StatsLabel" type="Label" parent="CanvasLayer/AlbumPanel/MarginContainer/VBoxContainer/CardArea"]
+[node name="StatsLabel" type="Label" parent="CanvasLayer/AlbumPanel/MarginContainer/VBoxContainer/CardScroll/CardArea"]
 layout_mode = 2
 horizontal_alignment = 1
 text = "Not yet discovered"
@@ -571,44 +710,23 @@ text = "Not yet discovered"
 visible = false
 layout_mode = 2
 size_flags_vertical = 3
-alignment = 1
 theme_override_constants/separation = 4
 
 [node name="OverviewTitle" type="Label" parent="CanvasLayer/AlbumPanel/MarginContainer/VBoxContainer/StatsArea"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 16
+theme_type_variation = &"MutedLabel"
+theme_override_font_sizes/font_size = 13
 horizontal_alignment = 1
 text = "Discovery by Rarity"
 
-[node name="CommonStat" type="Label" parent="CanvasLayer/AlbumPanel/MarginContainer/VBoxContainer/StatsArea"]
+[node name="StatsScroll" type="ScrollContainer" parent="CanvasLayer/AlbumPanel/MarginContainer/VBoxContainer/StatsArea"]
 layout_mode = 2
-horizontal_alignment = 1
-text = "Common — 0/25"
+size_flags_vertical = 3
 
-[node name="UncommonStat" type="Label" parent="CanvasLayer/AlbumPanel/MarginContainer/VBoxContainer/StatsArea"]
+[node name="StatRows" type="VBoxContainer" parent="CanvasLayer/AlbumPanel/MarginContainer/VBoxContainer/StatsArea/StatsScroll"]
 layout_mode = 2
-horizontal_alignment = 1
-text = "Uncommon — 0/25"
-
-[node name="RareStat" type="Label" parent="CanvasLayer/AlbumPanel/MarginContainer/VBoxContainer/StatsArea"]
-layout_mode = 2
-horizontal_alignment = 1
-text = "Rare — 0/25"
-
-[node name="EpicStat" type="Label" parent="CanvasLayer/AlbumPanel/MarginContainer/VBoxContainer/StatsArea"]
-layout_mode = 2
-horizontal_alignment = 1
-text = "Epic — 0/25"
-
-[node name="LegendaryStat" type="Label" parent="CanvasLayer/AlbumPanel/MarginContainer/VBoxContainer/StatsArea"]
-layout_mode = 2
-horizontal_alignment = 1
-text = "Legendary — 0/29"
-
-[node name="MythicStat" type="Label" parent="CanvasLayer/AlbumPanel/MarginContainer/VBoxContainer/StatsArea"]
-layout_mode = 2
-horizontal_alignment = 1
-text = "Mythic — 0/26"
+size_flags_horizontal = 3
+theme_override_constants/separation = 4
 
 [node name="NavRow" type="HBoxContainer" parent="CanvasLayer/AlbumPanel/MarginContainer/VBoxContainer"]
 layout_mode = 2

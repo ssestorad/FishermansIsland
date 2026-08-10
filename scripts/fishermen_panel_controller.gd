@@ -3,9 +3,19 @@ extends Panel
 
 signal fisherman_selected(fisherman)
 
-@onready var rows_container: VBoxContainer = $MarginContainer/VBoxContainer/FishermenRows
+const LIST_ROW_SCENE := preload("res://scenes/ui/ListRow.tscn")
+const ROW_SWATCH_COLOR := Color(0.24, 0.45, 0.55)
+
+@onready var rows_container: VBoxContainer = $MarginContainer/VBoxContainer/FishermenScroll/FishermenRows
+@onready var close_button: Button = $MarginContainer/VBoxContainer/HeaderRow/CloseButton
 
 var _row_by_fisherman: Dictionary = {}
+
+func _ready() -> void:
+	close_button.pressed.connect(_on_close_button_pressed)
+
+func _on_close_button_pressed() -> void:
+	visible = false
 
 func toggle(fishermen: Array) -> void:
 	visible = not visible
@@ -16,9 +26,7 @@ func build(fishermen: Array) -> void:
 	UiListUtils.clear_children(rows_container)
 	_row_by_fisherman.clear()
 	for fisherman in fishermen:
-		var row := Button.new()
-		row.flat = true
-		row.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		var row: ListRow = LIST_ROW_SCENE.instantiate()
 		row.pressed.connect(_on_row_pressed.bind(fisherman))
 		rows_container.add_child(row)
 		_row_by_fisherman[fisherman] = row
@@ -35,5 +43,5 @@ func refresh() -> void:
 	for fisherman in _row_by_fisherman:
 		if not is_instance_valid(fisherman):
 			continue
-		var row: Button = _row_by_fisherman[fisherman]
-		row.text = "%s — %s" % [fisherman.display_name, fisherman.get_stats_text()]
+		var row: ListRow = _row_by_fisherman[fisherman]
+		row.setup(fisherman.display_name, fisherman.get_stats_text(), "", ROW_SWATCH_COLOR)
