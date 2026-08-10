@@ -165,6 +165,7 @@ grow_vertical = 2
 
 [node name="VBoxContainer" type="VBoxContainer" parent="CanvasLayer/FishermanProfilePanel/MarginContainer"]
 layout_mode = 2
+theme_override_constants/separation = 6
 
 [node name="NameLabel" type="Label" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer"]
 layout_mode = 2
@@ -175,59 +176,98 @@ text = "Name"
 layout_mode = 2
 text = "Speed: Lvl 0"
 
+[node name="SpeedBar" type="ProgressBar" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 8)
+max_value = 1.0
+step = 0.01
+show_percentage = false
+
 [node name="LuckLabel" type="Label" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer"]
 layout_mode = 2
 text = "Luck: Lvl 0"
+
+[node name="LuckBar" type="ProgressBar" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 8)
+max_value = 1.0
+step = 0.01
+show_percentage = false
 
 [node name="PowerLabel" type="Label" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer"]
 layout_mode = 2
 text = "Power: Lvl 0"
 
+[node name="PowerBar" type="ProgressBar" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 8)
+max_value = 1.0
+step = 0.01
+show_percentage = false
+
 [node name="EquipmentSlots" type="HBoxContainer" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer"]
 layout_mode = 2
-theme_override_constants/separation = 8
+theme_override_constants/separation = 6
+alignment = 1
 
 [node name="RodSlot" type="Button" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer/EquipmentSlots"]
 layout_mode = 2
-custom_minimum_size = Vector2(50, 40)
-theme_override_font_sizes/font_size = 11
+custom_minimum_size = Vector2(48, 44)
+size_flags_horizontal = 0
+clip_text = true
+theme_override_font_sizes/font_size = 10
 text = "Rod
 —"
 
 [node name="HatSlot" type="Button" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer/EquipmentSlots"]
 layout_mode = 2
-custom_minimum_size = Vector2(50, 40)
-theme_override_font_sizes/font_size = 11
+custom_minimum_size = Vector2(48, 44)
+size_flags_horizontal = 0
+clip_text = true
+theme_override_font_sizes/font_size = 10
 text = "Hat
 —"
 
 [node name="OutfitSlot" type="Button" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer/EquipmentSlots"]
 layout_mode = 2
-custom_minimum_size = Vector2(50, 40)
-theme_override_font_sizes/font_size = 11
+custom_minimum_size = Vector2(48, 44)
+size_flags_horizontal = 0
+clip_text = true
+theme_override_font_sizes/font_size = 10
 text = "Outfit
 —"
 
 [node name="CharmSlot" type="Button" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer/EquipmentSlots"]
 layout_mode = 2
-custom_minimum_size = Vector2(50, 40)
-theme_override_font_sizes/font_size = 11
+custom_minimum_size = Vector2(48, 44)
+size_flags_horizontal = 0
+clip_text = true
+theme_override_font_sizes/font_size = 10
 text = "Charm
 —"
 
 [node name="BaitSlot" type="Button" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer/EquipmentSlots"]
 layout_mode = 2
-custom_minimum_size = Vector2(50, 40)
-theme_override_font_sizes/font_size = 11
+custom_minimum_size = Vector2(48, 44)
+size_flags_horizontal = 0
+clip_text = true
+theme_override_font_sizes/font_size = 10
 text = "Bait
 —"
 
-[node name="DismissButton" type="Button" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer"]
+[node name="ActionsRow" type="HBoxContainer" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer"]
 layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="DismissButton" type="Button" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer/ActionsRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+modulate = Color(0.85, 0.35, 0.3, 1)
 text = "Dismiss"
 
-[node name="CloseButton" type="Button" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer"]
+[node name="CloseButton" type="Button" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer/ActionsRow"]
 layout_mode = 2
+size_flags_horizontal = 3
 text = "Close"
 
 [node name="EquipPanel" type="Panel" parent="CanvasLayer"]

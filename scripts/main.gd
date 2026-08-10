@@ -96,6 +96,8 @@ func _spawn_fisherman(saved_data: Dictionary = {}) -> Node:
 				var item := SaveManager.find_item_by_name(item_name)
 				if item != null:
 					fisherman.equipped_items[slot] = item
+		if saved_data.has("appearance_variant"):
+			fisherman.set_appearance_variant(int(saved_data.get("appearance_variant")))
 
 	add_child(fisherman)
 	fishermen.append(fisherman)

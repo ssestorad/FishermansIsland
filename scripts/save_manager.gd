@@ -53,6 +53,7 @@ func _serialize_fisherman(fisherman: Node) -> Dictionary:
 		"luck_xp": fisherman.luck_xp,
 		"power_xp": fisherman.power_xp,
 		"equipped_items": equipped,
+		"appearance_variant": fisherman.appearance_variant,
 	}
 
 ## Items are looked up by name from the live catalog rather than

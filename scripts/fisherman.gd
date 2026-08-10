@@ -18,9 +18,21 @@ const XP_PER_LEVEL := 10.0
 const LEVEL_CAP := 10.0
 const XP_PER_CATCH := 2.0
 const WALK_ANIM_FPS := 6.0
-const WALK_TEXTURES := [
-	preload("res://assets/sprites/fisherman/walk_a.png"),
-	preload("res://assets/sprites/fisherman/walk_b.png"),
+
+## Each entry is a [walk_a, walk_b] texture pair for one pre-baked
+## look (shirt/hair/beard/eye combo). A new fisherman picks one at
+## random instead of recoloring a shared texture at runtime.
+const APPEARANCE_VARIANTS := [
+	[preload("res://assets/sprites/fisherman/v0_walk_a.png"), preload("res://assets/sprites/fisherman/v0_walk_b.png")],
+	[preload("res://assets/sprites/fisherman/v1_walk_a.png"), preload("res://assets/sprites/fisherman/v1_walk_b.png")],
+	[preload("res://assets/sprites/fisherman/v2_walk_a.png"), preload("res://assets/sprites/fisherman/v2_walk_b.png")],
+	[preload("res://assets/sprites/fisherman/v3_walk_a.png"), preload("res://assets/sprites/fisherman/v3_walk_b.png")],
+	[preload("res://assets/sprites/fisherman/v4_walk_a.png"), preload("res://assets/sprites/fisherman/v4_walk_b.png")],
+	[preload("res://assets/sprites/fisherman/v5_walk_a.png"), preload("res://assets/sprites/fisherman/v5_walk_b.png")],
+	[preload("res://assets/sprites/fisherman/v6_walk_a.png"), preload("res://assets/sprites/fisherman/v6_walk_b.png")],
+	[preload("res://assets/sprites/fisherman/v7_walk_a.png"), preload("res://assets/sprites/fisherman/v7_walk_b.png")],
+	[preload("res://assets/sprites/fisherman/v8_walk_a.png"), preload("res://assets/sprites/fisherman/v8_walk_b.png")],
+	[preload("res://assets/sprites/fisherman/v9_walk_a.png"), preload("res://assets/sprites/fisherman/v9_walk_b.png")],
 ]
 
 enum State { WALK_TO_DOCK, FISHING, WALK_HOME, RESTING }
@@ -38,6 +50,8 @@ var is_hovered: bool = false
 var _walk_anim_timer: float = 0.0
 var _walk_frame: int = 0
 
+var appearance_variant: int = -1
+
 var equipped_items: Dictionary = {
 	"Rod": null,
 	"Hat": null,
@@ -52,13 +66,19 @@ var equipped_items: Dictionary = {
 func _ready() -> void:
 	if display_name.is_empty():
 		display_name = NameGenerator.random_name()
+	if appearance_variant < 0:
+		appearance_variant = randi() % APPEARANCE_VARIANTS.size()
 	position = home_position
 	current_target = _random_dock_point()
 	click_area.input_event.connect(_on_click_area_input_event)
 	click_area.mouse_entered.connect(_on_mouse_entered)
 	click_area.mouse_exited.connect(_on_mouse_exited)
-	sprite.texture = WALK_TEXTURES[0]
+	sprite.texture = APPEARANCE_VARIANTS[appearance_variant][0]
 	queue_redraw()
+
+func set_appearance_variant(variant: int) -> void:
+	if variant >= 0 and variant < APPEARANCE_VARIANTS.size():
+		appearance_variant = variant
 
 func _process(delta: float) -> void:
 	match state:
@@ -95,10 +115,10 @@ func _update_sprite_animation(delta: float) -> void:
 		if _walk_anim_timer >= 1.0 / WALK_ANIM_FPS:
 			_walk_anim_timer = 0.0
 			_walk_frame = 1 - _walk_frame
-			sprite.texture = WALK_TEXTURES[_walk_frame]
+			sprite.texture = APPEARANCE_VARIANTS[appearance_variant][_walk_frame]
 	elif _walk_frame != 0:
 		_walk_frame = 0
-		sprite.texture = WALK_TEXTURES[0]
+		sprite.texture = APPEARANCE_VARIANTS[appearance_variant][0]
 
 func _resolve_catch() -> void:
 	var caught_rarity := FishRarity.roll(get_effective_stat(luck_xp, "luck"))
@@ -159,6 +179,11 @@ func get_level_fraction(xp: float) -> float:
 
 func get_level(xp: float) -> int:
 	return int(xp / XP_PER_LEVEL)
+
+func get_level_progress(xp: float) -> float:
+	if get_level(xp) >= LEVEL_CAP:
+		return 1.0
+	return fmod(xp, XP_PER_LEVEL) / XP_PER_LEVEL
 
 func get_equipment_bonus(axis: String) -> float:
 	var total := 0.0
