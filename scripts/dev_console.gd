@@ -70,7 +70,7 @@ func _on_add_coins() -> void:
 	if amount == 0:
 		_log("Enter a non-zero coin amount.")
 		return
-	Economy.load_state(Economy.coins + amount, Economy.scales)
+	Economy.add_coins(amount)
 	_log("Added %d coins." % amount)
 
 func _on_add_scales() -> void:
@@ -78,7 +78,7 @@ func _on_add_scales() -> void:
 	if amount == 0:
 		_log("Enter a non-zero scale amount.")
 		return
-	Economy.load_state(Economy.coins, Economy.scales + amount)
+	Economy.add_scales(amount)
 	_log("Added %d scales." % amount)
 
 func _on_force_catch() -> void:
@@ -93,9 +93,10 @@ func _on_force_catch() -> void:
 	if result.is_empty():
 		_log("No %s species eligible under current weather/season." % RARITY_NAMES[tier])
 		return
-	_log("%s caught a forced %s %s (%.1f kg) — +%d %s." % [
+	var outcome: String = "+%d %s" % [result.amount, result.currency] if not result.docked else "sent to dock"
+	_log("%s caught a forced %s %s (%.1f kg) — %s." % [
 		fisherman.display_name, RARITY_NAMES[tier], result.species.species_name,
-		result.weight, result.amount, result.currency
+		result.weight, outcome
 	])
 
 func _on_simulate_offline() -> void:

@@ -12,6 +12,7 @@ signal slot_clicked(fisherman, slot_name)
 @onready var power_label: Label = $MarginContainer/VBoxContainer/StatsScroll/StatsBlock/PowerLabel
 @onready var power_bar: ProgressBar = $MarginContainer/VBoxContainer/StatsScroll/StatsBlock/PowerBar
 @onready var equipment_slots: HBoxContainer = $MarginContainer/VBoxContainer/StatsScroll/StatsBlock/EquipmentSlots
+@onready var perks_label: Label = $MarginContainer/VBoxContainer/StatsScroll/StatsBlock/PerksLabel
 @onready var dismiss_button: Button = $MarginContainer/VBoxContainer/DismissButton
 @onready var close_button: Button = $MarginContainer/VBoxContainer/HeaderRow/CloseButton
 
@@ -40,7 +41,19 @@ func show_fisherman(fisherman: Node) -> void:
 	_dismiss_armed = false
 	dismiss_button.text = "Dismiss"
 	visible = true
+	_update_perks_label()
 	refresh()
+
+## Perks never change after hire, so this only needs to run once per
+## fisherman shown, not on every refresh().
+func _update_perks_label() -> void:
+	if _fisherman.perks.is_empty():
+		perks_label.text = "No perks"
+		return
+	var parts: Array = []
+	for perk_name in _fisherman.perks:
+		parts.append("%s (%s)" % [perk_name, _fisherman.get_perk_description(perk_name)])
+	perks_label.text = "Perks: " + ", ".join(parts)
 
 func _unsubscribe() -> void:
 	if _fisherman != null and is_instance_valid(_fisherman) and _fisherman.stats_changed.is_connected(refresh):

@@ -61,6 +61,10 @@ var equipped_items: Dictionary = {
 	"Bait": null,
 }
 
+## Perk names rolled at hire time (1-2), looked up in PerkCatalog. Fixed
+## for the fisherman's lifetime — never re-rolled or changed after hire.
+var perks: Array = []
+
 @onready var click_area: Area2D = $ClickArea
 @onready var sprite: Sprite2D = $Sprite2D
 
@@ -98,9 +102,13 @@ func _process(delta: float) -> void:
 		State.WALK_HOME:
 			_move_toward(current_target, delta)
 			if position.distance_to(current_target) < 2.0:
-				state = State.RESTING
-				var rest_reduction := clampf(get_equipment_bonus("rest_time"), 0.0, 0.9)
-				wait_timer = randf_range(min_rest_time, max_rest_time) * (1.0 - rest_reduction)
+				if randf() < get_equipment_bonus("skip_rest_chance"):
+					current_target = _random_dock_point()
+					state = State.WALK_TO_DOCK
+				else:
+					state = State.RESTING
+					var rest_reduction := clampf(get_equipment_bonus("rest_time") + get_perk_bonus("rest_time"), 0.0, 0.9)
+					wait_timer = randf_range(min_rest_time, max_rest_time) * (1.0 - rest_reduction)
 		State.RESTING:
 			wait_timer -= delta
 			if wait_timer <= 0.0:
@@ -136,9 +144,24 @@ func _roll_and_apply_catch(catch_duration: float = -1.0, forced_rarity: int = -1
 	if catch_duration < 0.0:
 		catch_duration = _rolled_catch_time()
 	var caught_rarity: FishRarity.Tier = forced_rarity if forced_rarity >= 0 else FishRarity.roll(get_effective_stat(luck_xp, "luck"))
+	if forced_rarity < 0 and caught_rarity < FishRarity.Tier.RARE and get_equipment_bonus("guarantee_rare") > 0.0:
+		caught_rarity = FishRarity.Tier.RARE
 	var caught_species := FishCatalog.roll_species(caught_rarity)
 	var caught_weight := FishRarity.roll_weight(caught_rarity, get_effective_stat(power_xp, "power"))
-	var earned := Economy.add_currency_for_catch(caught_rarity, caught_weight, get_equipment_bonus("coin_gain"), get_equipment_bonus("scale_gain"))
+
+	# Common/Uncommon auto-sell for Coins on the spot, same as always. Rare+
+	# no longer auto-sells for Scales — it lands in the dock so the player
+	# can choose to sell it or keep it.
+	var currency := ""
+	var amount := 0
+	var docked := false
+	if caught_rarity in Economy.COIN_TIERS:
+		var earned := Economy.add_currency_for_catch(caught_rarity, caught_weight, get_equipment_bonus("coin_gain"), get_equipment_bonus("scale_gain"))
+		currency = earned.currency
+		amount = earned.amount
+	else:
+		DockInventory.add_catch(caught_species, caught_weight, caught_rarity)
+		docked = true
 	Album.record_catch(caught_species, caught_weight)
 
 	var speed_range := _catch_time_range()
@@ -157,8 +180,9 @@ func _roll_and_apply_catch(catch_duration: float = -1.0, forced_rarity: int = -1
 		"species": caught_species,
 		"rarity": caught_rarity,
 		"weight": caught_weight,
-		"currency": earned.currency,
-		"amount": earned.amount,
+		"currency": currency,
+		"amount": amount,
+		"docked": docked,
 	}
 
 ## Dev-console hook: forces a catch of the given rarity (skips the luck
@@ -174,7 +198,7 @@ func debug_force_catch(tier: FishRarity.Tier) -> Dictionary:
 ## rolls that many catches on the spot. Returns aggregate totals for the
 ## "while you were away" summary.
 func resolve_offline_catches(duration: float) -> Dictionary:
-	var summary := {"catches": 0, "coins": 0, "scales": 0, "best_species": "", "best_rarity": FishRarity.Tier.COMMON, "best_weight": 0.0}
+	var summary := {"catches": 0, "coins": 0, "docked": 0, "best_species": "", "best_rarity": FishRarity.Tier.COMMON, "best_weight": 0.0}
 	if duration <= 0.0:
 		return summary
 	var cycle_time := _estimate_cycle_time()
@@ -187,10 +211,10 @@ func resolve_offline_catches(duration: float) -> Dictionary:
 	for i in range(cycles):
 		var result := _roll_and_apply_catch()
 		summary.catches += 1
-		if result.currency == "Coins":
+		if result.docked:
+			summary.docked += 1
+		elif result.currency == "Coins":
 			summary.coins += result.amount
-		else:
-			summary.scales += result.amount
 		if summary.catches == 1 or result.rarity > summary.best_rarity or (result.rarity == summary.best_rarity and result.weight > summary.best_weight):
 			summary.best_species = result.species.species_name
 			summary.best_rarity = result.rarity
@@ -202,9 +226,10 @@ func resolve_offline_catches(duration: float) -> Dictionary:
 func _estimate_cycle_time() -> float:
 	var catch_range := _catch_time_range()
 	var avg_catch := (catch_range.x + catch_range.y) / 2.0
-	var rest_reduction := clampf(get_equipment_bonus("rest_time"), 0.0, 0.9)
-	var avg_rest := (min_rest_time + max_rest_time) / 2.0 * (1.0 - rest_reduction)
-	var effective_speed := move_speed * (1.0 + get_equipment_bonus("walk_speed"))
+	var rest_reduction := clampf(get_equipment_bonus("rest_time") + get_perk_bonus("rest_time"), 0.0, 0.9)
+	var skip_rest_chance := clampf(get_equipment_bonus("skip_rest_chance"), 0.0, 1.0)
+	var avg_rest := (min_rest_time + max_rest_time) / 2.0 * (1.0 - rest_reduction) * (1.0 - skip_rest_chance)
+	var effective_speed := move_speed * (1.0 + get_equipment_bonus("walk_speed") + get_perk_bonus("walk_speed"))
 	if effective_speed <= 0.0:
 		return avg_catch + avg_rest
 	var round_trip_distance := absf(dock_position.x - home_position.x) * 2.0
@@ -213,7 +238,7 @@ func _estimate_cycle_time() -> float:
 
 func _move_toward(target: Vector2, delta: float) -> void:
 	var direction: Vector2 = (target - position).normalized()
-	var effective_speed := move_speed * (1.0 + get_equipment_bonus("walk_speed"))
+	var effective_speed := move_speed * (1.0 + get_equipment_bonus("walk_speed") + get_perk_bonus("walk_speed"))
 	position += direction * effective_speed * delta
 
 func _random_dock_point() -> Vector2:
@@ -261,6 +286,53 @@ func get_equipment_bonus(axis: String) -> float:
 			total += item.get_bonus(axis)
 	return total
 
+## Multi-piece set bonuses (e.g. 2x "Storm Chaser" pieces equipped). Only the
+## highest piece-count threshold met applies, not every threshold stacked.
+func get_set_bonus(axis: String) -> float:
+	var set_counts: Dictionary = {}
+	for item in equipped_items.values():
+		if item != null and item.set_name != "":
+			set_counts[item.set_name] = set_counts.get(item.set_name, 0) + 1
+	var total := 0.0
+	for set_name in set_counts:
+		var count: int = set_counts[set_name]
+		var thresholds: Dictionary = ShopCatalog.SET_BONUSES.get(set_name, {})
+		var best_threshold := 0
+		for threshold in thresholds:
+			if count >= threshold and threshold > best_threshold:
+				best_threshold = threshold
+		if best_threshold > 0:
+			for effect in thresholds[best_threshold]:
+				if effect[0] == axis:
+					total += effect[1]
+	return total
+
+func get_perk_bonus(axis: String) -> float:
+	var total := 0.0
+	for perk_name in perks:
+		var perk := PerkCatalog.find(perk_name)
+		if perk.is_empty() or not _perk_condition_met(perk.get("condition", {})):
+			continue
+		for effect in perk.effects:
+			if effect[0] == axis:
+				total += effect[1]
+	return total
+
+func _perk_condition_met(condition: Dictionary) -> bool:
+	if condition.is_empty():
+		return true
+	if condition.has("weather") and WorldClock.get_weather() != condition["weather"]:
+		return false
+	if condition.has("season") and WorldClock.get_season_name() != condition["season"]:
+		return false
+	if condition.has("night") and WorldClock.get_night_factor() < 0.5:
+		return false
+	return true
+
+func get_perk_description(perk_name: String) -> String:
+	var perk := PerkCatalog.find(perk_name)
+	return perk.get("description", "") if not perk.is_empty() else ""
+
 func get_effective_stat(xp: float, axis: String) -> float:
 	var environment_bonus := 0.0
 	match axis:
@@ -271,6 +343,8 @@ func get_effective_stat(xp: float, axis: String) -> float:
 		"power":
 			environment_bonus = WorldClock.get_season_power_bonus()
 	environment_bonus += PotionManager.get_bonus(axis)
+	environment_bonus += get_perk_bonus(axis)
+	environment_bonus += get_set_bonus(axis)
 	return clampf(get_level_fraction(xp) + get_equipment_bonus(axis) + environment_bonus, 0.0, 1.0)
 
 func equip_item(item) -> void:

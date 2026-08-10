@@ -18,11 +18,13 @@ const MIN_OFFLINE_SECONDS_TO_SHOW := 60.0
 @onready var album_button: Button = $CanvasLayer/NavRow/AlbumButton
 @onready var shop_button: Button = $CanvasLayer/NavRow/ShopButton
 @onready var meta_button: Button = $CanvasLayer/NavRow/MetaButton
+@onready var dock_button: Button = $CanvasLayer/NavRow/DockButton
 @onready var menu_button: Button = $CanvasLayer/NavRow/MenuButton
 @onready var fishermen_panel: FishermenPanelController = $CanvasLayer/FishermenPanel
 @onready var album_panel: AlbumPanelController = $CanvasLayer/AlbumPanel
 @onready var shop_panel: ShopPanelController = $CanvasLayer/ShopPanel
 @onready var meta_panel: MetaPanelController = $CanvasLayer/MetaPanel
+@onready var dock_panel: DockPanelController = $CanvasLayer/DockPanel
 @onready var profile_panel: FishermanProfilePanelController = $CanvasLayer/FishermanProfilePanel
 @onready var equip_panel: EquipPanelController = $CanvasLayer/EquipPanel
 @onready var welcome_back_panel: WelcomeBackPanelController = $CanvasLayer/WelcomeBackPanel
@@ -49,6 +51,7 @@ func _ready() -> void:
 	album_button.pressed.connect(_on_album_button_pressed)
 	shop_button.pressed.connect(_on_shop_button_pressed)
 	meta_button.pressed.connect(_on_meta_button_pressed)
+	dock_button.pressed.connect(_on_dock_button_pressed)
 	menu_button.pressed.connect(_on_menu_button_pressed)
 
 	fishermen_panel.fisherman_selected.connect(_show_profile)
@@ -76,6 +79,7 @@ func _load_game() -> void:
 	Album.load_state(album_data.get("caught_counts", {}), album_data.get("best_weights", {}))
 	WorldClock.load_state(float(data.get("elapsed_time", 0.0)))
 	Inventory.load_state(data.get("inventory", []))
+	DockInventory.load_state(data.get("dock", []))
 	MetaProgress.load_state(data.get("meta_progress", {}))
 	var saved_fishermen: Array = data.get("fishermen", [])
 	if saved_fishermen.is_empty():
@@ -97,13 +101,13 @@ func _apply_offline_progress(data: Dictionary) -> void:
 
 	var total_catches := 0
 	var total_coins := 0
-	var total_scales := 0
+	var total_docked := 0
 	var best_summary: Dictionary = {}
 	for fisherman in fishermen:
 		var summary: Dictionary = fisherman.resolve_offline_catches(effective_seconds)
 		total_catches += summary.catches
 		total_coins += summary.coins
-		total_scales += summary.scales
+		total_docked += summary.docked
 		if summary.catches > 0 and (
 			best_summary.is_empty()
 			or summary.best_rarity > best_summary.best_rarity
@@ -116,7 +120,7 @@ func _apply_offline_progress(data: Dictionary) -> void:
 			}
 
 	if total_catches > 0:
-		welcome_back_panel.show_summary(real_elapsed, total_catches, total_coins, total_scales, best_summary)
+		welcome_back_panel.show_summary(real_elapsed, total_catches, total_coins, total_docked, best_summary)
 
 func _spawn_starting_fishermen() -> void:
 	for i in range(STARTING_FISHERMEN_COUNT):
@@ -138,6 +142,7 @@ func _spawn_fisherman(saved_data: Dictionary = {}) -> Node:
 		fisherman.speed_xp = float(saved_data.get("speed_xp", 0.0))
 		fisherman.luck_xp = float(saved_data.get("luck_xp", 0.0))
 		fisherman.power_xp = float(saved_data.get("power_xp", 0.0))
+		fisherman.perks = saved_data.get("perks", [])
 		var equipped: Dictionary = saved_data.get("equipped_items", {})
 		for slot in equipped:
 			var item_name = equipped[slot]
@@ -147,6 +152,8 @@ func _spawn_fisherman(saved_data: Dictionary = {}) -> Node:
 					fisherman.equipped_items[slot] = item
 		if saved_data.has("appearance_variant"):
 			fisherman.set_appearance_variant(int(saved_data.get("appearance_variant")))
+	else:
+		fisherman.perks = PerkCatalog.roll_perk_names(randi_range(1, 2))
 
 	add_child(fisherman)
 	fishermen.append(fisherman)
@@ -181,25 +188,36 @@ func _on_fishermen_button_pressed() -> void:
 	album_panel.visible = false
 	shop_panel.visible = false
 	meta_panel.visible = false
+	dock_panel.visible = false
 	fishermen_panel.toggle(fishermen)
 
 func _on_album_button_pressed() -> void:
 	fishermen_panel.visible = false
 	shop_panel.visible = false
 	meta_panel.visible = false
+	dock_panel.visible = false
 	album_panel.toggle()
 
 func _on_shop_button_pressed() -> void:
 	fishermen_panel.visible = false
 	album_panel.visible = false
 	meta_panel.visible = false
+	dock_panel.visible = false
 	shop_panel.toggle()
 
 func _on_meta_button_pressed() -> void:
 	fishermen_panel.visible = false
 	album_panel.visible = false
 	shop_panel.visible = false
+	dock_panel.visible = false
 	meta_panel.toggle()
+
+func _on_dock_button_pressed() -> void:
+	fishermen_panel.visible = false
+	album_panel.visible = false
+	shop_panel.visible = false
+	meta_panel.visible = false
+	dock_panel.toggle()
 
 func _on_menu_button_pressed() -> void:
 	SaveManager.save_game(fishermen)

@@ -4,18 +4,19 @@ extends Panel
 @onready var duration_label: Label = $MarginContainer/VBoxContainer/DurationLabel
 @onready var catches_label: Label = $MarginContainer/VBoxContainer/CatchesLabel
 @onready var coins_label: Label = $MarginContainer/VBoxContainer/CurrencyRow/CoinsEarnedLabel
-@onready var scales_label: Label = $MarginContainer/VBoxContainer/CurrencyRow/ScalesEarnedLabel
+@onready var docked_label: Label = $MarginContainer/VBoxContainer/DockedLabel
 @onready var best_catch_label: Label = $MarginContainer/VBoxContainer/BestCatchLabel
 @onready var ok_button: Button = $MarginContainer/VBoxContainer/OkButton
 
 func _ready() -> void:
 	ok_button.pressed.connect(_on_ok_pressed)
 
-func show_summary(away_seconds: float, catches: int, coins: int, scales: int, best: Dictionary) -> void:
+func show_summary(away_seconds: float, catches: int, coins: int, docked: int, best: Dictionary) -> void:
 	duration_label.text = "You were away for %s" % _format_duration(away_seconds)
 	catches_label.text = "%d fish caught while you were gone" % catches
 	coins_label.text = "+%d" % coins
-	scales_label.text = "+%d" % scales
+	docked_label.visible = docked > 0
+	docked_label.text = "%d fish added to your dock" % docked
 
 	if best.is_empty():
 		best_catch_label.visible = false

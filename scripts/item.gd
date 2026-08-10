@@ -10,6 +10,8 @@ const AXIS_LABELS := {
 	"coin_gain": "Coin Gain",
 	"scale_gain": "Scale Gain",
 	"xp_gain": "XP Gain",
+	"guarantee_rare": "Guaranteed Rare+ Catch",
+	"skip_rest_chance": "Chance to Skip Resting",
 }
 
 var item_name: String
@@ -19,8 +21,9 @@ var effects: Array  # Array of [axis: String, amount: float]
 var condition: Dictionary  # {} = always available; may contain "weather", "season", "night"
 var cost: int
 var currency: String  # "Coins" or "Scales"
+var set_name: String  # "" = not part of a themed set
 
-func _init(p_name: String, p_slot: String, p_rarity: String, p_effects: Array, p_condition: Dictionary, p_cost: int, p_currency: String) -> void:
+func _init(p_name: String, p_slot: String, p_rarity: String, p_effects: Array, p_condition: Dictionary, p_cost: int, p_currency: String, p_set_name: String = "") -> void:
 	item_name = p_name
 	slot = p_slot
 	rarity = p_rarity
@@ -28,6 +31,7 @@ func _init(p_name: String, p_slot: String, p_rarity: String, p_effects: Array, p
 	condition = p_condition
 	cost = p_cost
 	currency = p_currency
+	set_name = p_set_name
 
 func get_bonus(axis: String) -> float:
 	var total := 0.0

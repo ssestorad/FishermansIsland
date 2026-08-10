@@ -211,7 +211,26 @@ const RAW_ITEMS := [
 		{"n": "Siren's Lure", "s": "Bait", "r": "Mythic", "e": [["luck", 0.55], ["power", -0.15]], "c": {"weather": "Foggy"}, "cost": 55, "cur": "Scales"},
 		{"n": "Leviathan's Chum", "s": "Bait", "r": "Mythic", "e": [["power", 0.45], ["luck", 0.2]], "c": {"weather": "Blizzard"}, "cost": 75, "cur": "Scales"},
 		{"n": "Bait of a Thousand Tides", "s": "Bait", "r": "Mythic", "e": [["luck", 0.4], ["speed", 0.4], ["power", -0.2]], "c": {"weather": "Stormy", "season": "Winter"}, "cost": 70, "cur": "Scales"},
+
+	# --- Standout items: themed sets + a couple of unique-effect pieces,
+	# layered on top of the flat-bonus catalog above rather than replacing it.
+	{"n": "Chaser's Longrod", "s": "Rod", "r": "Rare", "e": [["speed", 0.15], ["luck", 0.08]], "c": {"weather": "Stormy"}, "cost": 34, "cur": "Coins", "set": "Storm Chaser"},
+	{"n": "Chaser's Hood", "s": "Hat", "r": "Rare", "e": [["luck", 0.14]], "c": {"weather": "Stormy"}, "cost": 30, "cur": "Coins", "set": "Storm Chaser"},
+	{"n": "Chaser's Talisman", "s": "Charm", "r": "Rare", "e": [["luck", 0.1]], "c": {"weather": "Stormy"}, "cost": 32, "cur": "Coins", "set": "Storm Chaser"},
+	{"n": "Frostbound Rod", "s": "Rod", "r": "Legendary", "e": [["speed", 0.3]], "c": {"season": "Winter"}, "cost": 30, "cur": "Scales", "set": "Frostbound"},
+	{"n": "Frostbound Coat", "s": "Outfit", "r": "Legendary", "e": [["rest_time", 0.15]], "c": {"season": "Winter"}, "cost": 28, "cur": "Scales", "set": "Frostbound"},
+	{"n": "Frostbound Lure", "s": "Bait", "r": "Legendary", "e": [["power", 0.2]], "c": {"season": "Winter"}, "cost": 30, "cur": "Scales", "set": "Frostbound"},
+	{"n": "Rare-Seeking Lure", "s": "Bait", "r": "Epic", "e": [["guarantee_rare", 1.0]], "c": {}, "cost": 20, "cur": "Scales"},
+	{"n": "Tireless Charm", "s": "Charm", "r": "Epic", "e": [["skip_rest_chance", 0.2]], "c": {}, "cost": 16, "cur": "Scales"},
 ]
+
+## Themed multi-piece equip bonuses, keyed by Item.set_name. Each entry maps
+## a piece-count threshold to the [axis, amount] bonus granted at that count
+## (only the highest threshold met applies, not all of them stacked).
+const SET_BONUSES := {
+	"Storm Chaser": {2: [["luck", 0.05]], 3: [["luck", 0.1]]},
+	"Frostbound": {2: [["speed", 0.08]], 3: [["speed", 0.15]]},
+}
 
 static var _catalog: Array = []
 
@@ -219,7 +238,7 @@ static func _build_catalog() -> void:
 	if not _catalog.is_empty():
 		return
 	for raw in RAW_ITEMS:
-		_catalog.append(Item.new(raw["n"], raw["s"], raw["r"], raw["e"], raw["c"], raw["cost"], raw["cur"]))
+		_catalog.append(Item.new(raw["n"], raw["s"], raw["r"], raw["e"], raw["c"], raw["cost"], raw["cur"], raw.get("set", "")))
 
 static func all_items() -> Array:
 	_build_catalog()

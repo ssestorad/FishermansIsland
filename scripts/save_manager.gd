@@ -20,6 +20,7 @@ func save_game(fishermen: Array) -> void:
 			"best_weights": Album.best_weights,
 		},
 		"inventory": Inventory.items.map(func(item): return item.item_name),
+		"dock": DockInventory.entries,
 		"meta_progress": {
 			"extra_slots": MetaProgress.extra_slots,
 			"luck_level": MetaProgress.luck_level,
@@ -60,6 +61,7 @@ func _serialize_fisherman(fisherman: Node) -> Dictionary:
 		"power_xp": fisherman.power_xp,
 		"equipped_items": equipped,
 		"appearance_variant": fisherman.appearance_variant,
+		"perks": fisherman.perks,
 	}
 
 ## Items are looked up by name from the live catalog rather than
