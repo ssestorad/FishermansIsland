@@ -18,3 +18,10 @@ func add_coins_for_catch(rarity: FishRarity.Tier, weight: float) -> void:
 	var weight_multiplier: float = weight / FishRarity.average_weight(rarity)
 	coins += roundi(base_value * weight_multiplier)
 	coins_changed.emit(coins)
+
+func spend_coins(amount: int) -> bool:
+	if coins < amount:
+		return false
+	coins -= amount
+	coins_changed.emit(coins)
+	return true

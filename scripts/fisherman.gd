@@ -77,8 +77,8 @@ func _process(delta: float) -> void:
 				state = State.WALK_TO_DOCK
 
 func _resolve_catch() -> void:
-	var caught_rarity := FishRarity.roll(get_level_fraction(luck_xp))
-	var caught_weight := FishRarity.roll_weight(caught_rarity, get_level_fraction(power_xp))
+	var caught_rarity := FishRarity.roll(get_effective_stat(luck_xp, "luck"))
+	var caught_weight := FishRarity.roll_weight(caught_rarity, get_effective_stat(power_xp, "power"))
 	Economy.add_coins_for_catch(caught_rarity, caught_weight)
 	print(display_name, " caught a ", FishRarity.name_for(caught_rarity), " fish (%.1f kg)! [Spd %d / Lck %d / Pwr %d]" % [
 		caught_weight, get_level(speed_xp), get_level(luck_xp), get_level(power_xp)
@@ -106,7 +106,7 @@ func _random_home_point() -> Vector2:
 	return home_position + Vector2(randf_range(-home_wander_range, home_wander_range), randf_range(-home_wander_range, home_wander_range))
 
 func _catch_time_range() -> Vector2:
-	var reduction := get_level_fraction(speed_xp) * MAX_SPEED_REDUCTION
+	var reduction := get_effective_stat(speed_xp, "speed") * MAX_SPEED_REDUCTION
 	return Vector2(min_catch_time * (1.0 - reduction), max_catch_time * (1.0 - reduction))
 
 func _rolled_catch_time() -> float:
@@ -131,12 +131,25 @@ func get_level_fraction(xp: float) -> float:
 func get_level(xp: float) -> int:
 	return int(xp / XP_PER_LEVEL)
 
+func get_equipment_bonus(axis: String) -> float:
+	var total := 0.0
+	for item in equipped_items.values():
+		if item != null and item.axis == axis:
+			total += item.bonus
+	return total
+
+func get_effective_stat(xp: float, axis: String) -> float:
+	return clampf(get_level_fraction(xp) + get_equipment_bonus(axis), 0.0, 1.0)
+
+func equip_item(item) -> void:
+	equipped_items[item.slot] = item
+
 func get_stats_text() -> String:
 	return "Spd %d / Lck %d / Pwr %d" % [get_level(speed_xp), get_level(luck_xp), get_level(power_xp)]
 
 func get_slot_display(slot_name: String) -> String:
 	var item = equipped_items.get(slot_name)
-	return item if item != null else "—"
+	return item.item_name if item != null else "—"
 
 func _draw() -> void:
 	draw_rect(Rect2(-8, -8, 16, 16), Color.ORANGE)

@@ -22,6 +22,13 @@ offset_right = 140.0
 offset_bottom = 80.0
 text = "Fishermen"
 
+[node name="HireButton" type="Button" parent="CanvasLayer"]
+offset_left = 150.0
+offset_top = 48.0
+offset_right = 320.0
+offset_bottom = 80.0
+text = "Hire (5 coins)"
+
 [node name="FishermenPanel" type="Panel" parent="CanvasLayer"]
 visible = false
 offset_left = 12.0
@@ -130,6 +137,44 @@ horizontal_alignment = 1
 text = "Bait
 —"
 
+[node name="ShopButton" type="Button" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Shop"
+
 [node name="CloseButton" type="Button" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer"]
 layout_mode = 2
 text = "Close"
+
+[node name="ShopPanel" type="Panel" parent="CanvasLayer"]
+visible = false
+offset_left = 340.0
+offset_top = 88.0
+offset_right = 620.0
+offset_bottom = 320.0
+
+[node name="MarginContainer" type="MarginContainer" parent="CanvasLayer/ShopPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 8.0
+offset_top = 8.0
+offset_right = -8.0
+offset_bottom = -8.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="CanvasLayer/ShopPanel/MarginContainer"]
+layout_mode = 2
+
+[node name="TitleLabel" type="Label" parent="CanvasLayer/ShopPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "Shop"
+
+[node name="ShopRows" type="VBoxContainer" parent="CanvasLayer/ShopPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="BackButton" type="Button" parent="CanvasLayer/ShopPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Back"
