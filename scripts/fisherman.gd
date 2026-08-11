@@ -76,6 +76,29 @@ const DIRECTION_ROWS := {"down": 0, "right": 1, "left": 1, "up": 2}
 const WALK_FRAME_SEQUENCE := [1, 0, 2, 0]
 const STAND_FRAME := 0
 
+## Fishing bobs slowly between two near-identical rod angles. The strike
+## frame plays in the last moments *before* the catch resolves rather
+## than after it: the fisherman leaves for storage the instant a catch
+## lands, so a post-catch flourish would never be seen, and an
+## anticipation reads as the fish biting while costing no cycle time.
+const FISH_FRAME_SEQUENCE := [3, 4]
+const FISH_STRIKE_FRAME := 5
+const FISH_ANIM_FPS := 1.5
+const FISH_STRIKE_LEAD := 0.35
+
+## Eating and drinking share one two-frame pose (see the sprite
+## generator for why); resting sits still.
+const CONSUME_FRAME_SEQUENCE := [6, 7]
+const CONSUME_ANIM_FPS := 2.0
+const SIT_FRAME := 8
+
+## Where the line hangs from per fishing frame, in node-local pixels —
+## the sheet's rod tip shifted by the Sprite2D offset. The strike frame
+## is absent on purpose: the fish is out of the water by then.
+const FISH_LINE_ORIGINS := {3: Vector2(7.0, -14.0), 4: Vector2(7.0, -13.0)}
+const FISH_LINE_LENGTH := 16.0
+const FISH_LINE_COLOR := Color(0.86, 0.89, 0.93, 0.9)
+
 ## RESTING is gone: rest is now one of three independent periodic needs
 ## (see current_need below), not a guaranteed step after every catch.
 ## WALK_TO_STORAGE is what WALK_HOME used to be — the fisherman always
@@ -111,6 +134,12 @@ var endurance_xp: float = 0.0
 var is_hovered: bool = false
 var _walk_anim_timer: float = 0.0
 var _walk_frame: int = 0
+## Kept separate from the walk cycle's timer so a pose doesn't inherit
+## part of a stride's progress when the state changes.
+var _pose_anim_timer: float = 0.0
+var _pose_frame: int = 0
+## Which sheet column is showing, so _draw() knows where the rod tip is.
+var _current_frame_column: int = 0
 
 var appearance_variant: int = -1
 
@@ -210,6 +239,11 @@ func _process(delta: float) -> void:
 			_move_toward(current_target, delta)
 			if position.distance_to(current_target) < 2.0:
 				state = State.FISHING
+				# The water is east, and the fishing pose only exists in
+				# the right-facing row — without this a fisherman whose
+				# last step happened to be vertical would fall back to
+				# standing for the whole cast.
+				facing = "right"
 				current_catch_duration = _rolled_catch_time()
 				wait_timer = current_catch_duration
 		State.FISHING:
@@ -360,14 +394,43 @@ func _update_sprite_animation(delta: float) -> void:
 			_walk_anim_timer = 0.0
 			_walk_frame = (_walk_frame + 1) % WALK_FRAME_SEQUENCE.size()
 		_apply_sprite_frame(WALK_FRAME_SEQUENCE[_walk_frame])
-	else:
-		_walk_frame = 0
-		_walk_anim_timer = 0.0
-		_apply_sprite_frame(STAND_FRAME)
+		return
+	_walk_frame = 0
+	_walk_anim_timer = 0.0
+	match state:
+		State.FISHING:
+			_animate_fishing(delta)
+		State.SERVICING_NEED:
+			_animate_need(delta)
+		_:
+			_apply_sprite_frame(STAND_FRAME)
+
+func _animate_fishing(delta: float) -> void:
+	# Scaled against the actual roll so a fast fisherman on a very short
+	# countdown doesn't spend the whole cast in the strike pose.
+	var lead := minf(FISH_STRIKE_LEAD, current_catch_duration * 0.35)
+	if wait_timer <= lead:
+		_apply_sprite_frame(FISH_STRIKE_FRAME)
+		return
+	_advance_pose(delta, FISH_ANIM_FPS, FISH_FRAME_SEQUENCE)
+
+func _animate_need(delta: float) -> void:
+	if current_need == "rest":
+		_apply_sprite_frame(SIT_FRAME)
+		return
+	_advance_pose(delta, CONSUME_ANIM_FPS, CONSUME_FRAME_SEQUENCE)
+
+func _advance_pose(delta: float, fps: float, frames: Array) -> void:
+	_pose_anim_timer += delta
+	if _pose_anim_timer >= 1.0 / fps:
+		_pose_anim_timer = 0.0
+		_pose_frame = (_pose_frame + 1) % frames.size()
+	_apply_sprite_frame(frames[_pose_frame])
 
 ## Points the sprite at one cell of the appearance sheet: `column` picks
 ## the pose, the current facing picks the row.
 func _apply_sprite_frame(column: int) -> void:
+	_current_frame_column = column
 	sprite.flip_h = facing == "left"
 	sprite.frame_coords = Vector2i(column, DIRECTION_ROWS[facing])
 
@@ -720,7 +783,11 @@ func get_recent_catches_text(count: int = 5) -> String:
 	return "\n".join(lines)
 
 func _draw() -> void:
-	if state == State.FISHING:
-		draw_line(Vector2(6, -10), Vector2(17, -2), Color(0.35, 0.25, 0.15), 1.5)
+	# The rod itself is part of the sprite now; only the line is drawn,
+	# as a whole-pixel rect. It used to be an anti-aliased diagonal
+	# draw_line() — the last thing in the world ignoring the pixel grid.
+	if state == State.FISHING and FISH_LINE_ORIGINS.has(_current_frame_column):
+		var origin: Vector2 = FISH_LINE_ORIGINS[_current_frame_column]
+		draw_rect(Rect2(origin.x, origin.y, 1.0, FISH_LINE_LENGTH), FISH_LINE_COLOR)
 	if is_hovered:
-		draw_rect(Rect2(-9, -26, 18, 28), Color.WHITE, false, 2.0)
+		draw_rect(Rect2(-9, -26, 18, 28), Color.WHITE, false, 1.0)
