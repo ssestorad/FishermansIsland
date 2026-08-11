@@ -19,6 +19,18 @@ const WAVE_COLOR := Color(0.35, 0.58, 0.75, 0.5)
 const PIER_RECT := Rect2(305.0, 95.0, 22.0, 210.0)
 const PIER_COLOR := Color(0.5, 0.35, 0.2)
 
+## Inland pond, the starting fishing spot. Sits low and left of the lane
+## fishermen walk from storage to the pier, so they don't tramp through it.
+const POND_RECT := Rect2(56.0, 250.0, 116.0, 84.0)
+const POND_COLOR := Color(0.26, 0.48, 0.6)
+const POND_SHALLOW_COLOR := Color(0.34, 0.57, 0.68)
+
+## Jetty out into deep water — the offshore spot. Only drawn once bought,
+## so the meta-shop purchase visibly builds something.
+const JETTY_RECT := Rect2(327.0, 180.0, 130.0, 20.0)
+const JETTY_COLOR := Color(0.46, 0.32, 0.18)
+const JETTY_PLANK_COLOR := Color(0.38, 0.26, 0.14)
+
 ## The HUD is a CanvasLayer painted over the world, and its nav row runs
 ## to y=70 — anything placed above this is invisible in play no matter
 ## how correct it looks in the editor. The needs stations shipped at y=40
@@ -48,6 +60,8 @@ static func snap(position: Vector2) -> Vector2:
 ## it isn't movable.
 static func is_placeable(footprint: Rect2) -> bool:
 	if not placement_bounds().encloses(footprint):
+		return false
+	if footprint.intersects(POND_RECT):
 		return false
 	return not footprint.intersects(WATER_RECT)
 

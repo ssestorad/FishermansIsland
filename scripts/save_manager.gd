@@ -38,6 +38,7 @@ func save_game(fishermen: Array) -> void:
 			"hire_discount_level": MetaProgress.hire_discount_level,
 			"secret_chance_level": MetaProgress.secret_chance_level,
 			"extra_perk_slot_unlocked": MetaProgress.extra_perk_slot_unlocked,
+			"unlocked_spots": MetaProgress.unlocked_spots,
 		},
 		"stations": NeedStations.save_state(),
 		"fishermen": fishermen_data,
@@ -81,6 +82,7 @@ func _serialize_fisherman(fisherman: Node) -> Dictionary:
 		"catch_history": fisherman.catch_history,
 		"best_catch_tier": fisherman.best_catch_tier,
 		"is_favorite": fisherman.is_favorite,
+		"fishing_spot": fisherman.fishing_spot,
 	}
 
 ## Items are looked up by name from the live catalog rather than

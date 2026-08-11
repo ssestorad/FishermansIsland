@@ -54,6 +54,7 @@ const DOCK_CAPACITY_COLOR := Color(0.3, 0.6, 0.7)
 const NEEDS_SERVICE_COLOR := Color(0.6, 0.55, 0.35)
 const SHOP_RARITY_COLOR := Color(0.75, 0.55, 0.85)
 const PERK_SLOT_COLOR := Color(0.4, 0.65, 0.55)
+const SPOT_COLOR := Color(0.28, 0.55, 0.62)
 const SECRET_CHANCE_COLOR := Color(0.35, 0.22, 0.5)
 
 @onready var rows_container: VBoxContainer = $MarginContainer/VBoxContainer/MetaScroll/MetaRows
@@ -74,6 +75,8 @@ var _needs_service_row: ListRow
 var _shop_rarity_row: ListRow
 var _perk_slot_row: ListRow
 var _secret_chance_row: ListRow
+## id -> row, for the buyable fishing spots (the pond is free).
+var _spot_rows: Dictionary = {}
 
 func _ready() -> void:
 	close_button.pressed.connect(_on_close_pressed)
@@ -96,6 +99,11 @@ func _on_state_changed(_value = null) -> void:
 
 func _build() -> void:
 	UiListUtils.clear_children(rows_container)
+
+	# Spots first: they gate what everything else is worth.
+	_spot_rows.clear()
+	for id in MetaProgress.SPOT_COSTS:
+		_spot_rows[id] = _make_row(_on_buy_spot.bind(id))
 
 	_slot_row = _make_row(_on_buy_slot)
 	_luck_row = _make_row(_on_buy_luck)
@@ -125,6 +133,7 @@ func refresh() -> void:
 	if _slot_row == null:
 		return
 
+	_refresh_spots()
 	_refresh_slot()
 	_refresh_luck()
 	_refresh_speed()
@@ -140,6 +149,26 @@ func refresh() -> void:
 	_refresh_shop_rarity()
 	_refresh_perk_slot()
 	_refresh_secret_chance()
+
+## One-time unlocks rather than levels, so a bought spot shows what it
+## gives rather than a price.
+func _refresh_spots() -> void:
+	for id in _spot_rows:
+		var row: ListRow = _spot_rows[id]
+		var cost: int = MetaProgress.SPOT_COSTS[id]
+		var label := "Unlock %s" % FishingSpots.display_name(id)
+		if MetaProgress.is_spot_unlocked(id):
+			row.setup(label, FishingSpots.get_spot(id).blurb, "OWNED", SPOT_COLOR)
+			row.disabled = true
+			continue
+		row.setup(label, FishingSpots.get_spot(id).blurb, "%d Scales" % cost, SPOT_COLOR)
+		row.disabled = Economy.scales < cost
+
+func _on_buy_spot(id: String) -> void:
+	if MetaProgress.is_spot_unlocked(id):
+		return
+	if Economy.spend_scales(MetaProgress.SPOT_COSTS[id]):
+		MetaProgress.unlock_spot(id)
 
 func _refresh_slot() -> void:
 	if MetaProgress.extra_slots >= SLOT_MAX_LEVEL:

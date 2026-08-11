@@ -82,6 +82,9 @@ func _ready() -> void:
 
 	autosave_timer.timeout.connect(_on_autosave_timeout)
 	MetaProgress.updated.connect(_update_hire_button)
+	# The jetty only appears once Offshore is bought, and nothing else
+	# repaints the world layer.
+	MetaProgress.updated.connect(func(): queue_redraw())
 
 	_spawn_stations()
 	_update_hire_button()
@@ -231,7 +234,9 @@ func _spawn_fisherman(saved_data: Dictionary = {}) -> Node:
 	fisherman.name = "Fisherman_%d" % (index + 1)
 	var row_y := minf(110.0 + index * ROW_SPACING, MAX_HOME_ROW_Y)
 	fisherman.home_position = Vector2(80, row_y)
-	fisherman.dock_position = Vector2(320, row_y)
+	fisherman.lane_y = row_y
+	# dock_position follows from the spot; set_fishing_spot() is called
+	# once the saved assignment (if any) has been read below.
 
 	if not saved_data.is_empty():
 		fisherman.display_name = saved_data.get("display_name", "")
@@ -254,6 +259,9 @@ func _spawn_fisherman(saved_data: Dictionary = {}) -> Node:
 		fisherman.catch_history = loaded_history
 		fisherman.best_catch_tier = int(saved_data.get("best_catch_tier", 0))
 		fisherman.is_favorite = bool(saved_data.get("is_favorite", false))
+		# Saves from before fishing spots existed have everyone at the
+		# pier, which is where they all used to stand.
+		fisherman.fishing_spot = str(saved_data.get("fishing_spot", FishingSpots.PIER))
 		var equipped: Dictionary = saved_data.get("equipped_items", {})
 		for slot in equipped:
 			var item_name = equipped[slot]
@@ -268,6 +276,12 @@ func _spawn_fisherman(saved_data: Dictionary = {}) -> Node:
 		fisherman.perks = PerkCatalog.roll_perk_names(randi_range(perk_count_range.x, perk_count_range.y))
 
 	add_child(fisherman)
+	# After add_child so _ready() has run and the node can react to the
+	# assignment; also drops a spot the player has since lost access to.
+	if not FishingSpots.is_unlocked(fisherman.fishing_spot):
+		fisherman.fishing_spot = FishingSpots.POND
+	fisherman.set_fishing_spot(fisherman.fishing_spot)
+	fisherman.position = fisherman.home_position
 	fishermen.append(fisherman)
 	fisherman.clicked.connect(_show_profile)
 	return fisherman
@@ -384,3 +398,22 @@ func _draw() -> void:
 		var y := 130.0 + i * 45.0
 		draw_line(Vector2(320, y), Vector2(580, y), WorldLayout.WAVE_COLOR, 2.0)
 	draw_rect(WorldLayout.PIER_RECT, WorldLayout.PIER_COLOR)
+	_draw_pond()
+	# Only exists once bought, so the purchase visibly builds something.
+	if FishingSpots.is_unlocked(FishingSpots.OFFSHORE):
+		draw_rect(WorldLayout.JETTY_RECT, WorldLayout.JETTY_COLOR)
+		draw_rect(
+			Rect2(WorldLayout.JETTY_RECT.position + Vector2(0.0, WorldLayout.JETTY_RECT.size.y - 4.0),
+				Vector2(WorldLayout.JETTY_RECT.size.x, 4.0)),
+			WorldLayout.JETTY_PLANK_COLOR
+		)
+
+func _draw_pond() -> void:
+	var pond := WorldLayout.POND_RECT
+	draw_rect(pond, WorldLayout.POND_COLOR)
+	# A lighter rim reads as shallows and keeps the pond from looking like
+	# a hole punched in the grass.
+	draw_rect(Rect2(pond.position, Vector2(pond.size.x, 3.0)), WorldLayout.POND_SHALLOW_COLOR)
+	draw_rect(Rect2(pond.position + Vector2(0.0, pond.size.y - 3.0), Vector2(pond.size.x, 3.0)), WorldLayout.POND_SHALLOW_COLOR)
+	draw_rect(Rect2(pond.position, Vector2(3.0, pond.size.y)), WorldLayout.POND_SHALLOW_COLOR)
+	draw_rect(Rect2(pond.position + Vector2(pond.size.x - 3.0, 0.0), Vector2(3.0, pond.size.y)), WorldLayout.POND_SHALLOW_COLOR)

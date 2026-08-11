@@ -230,13 +230,17 @@ static func total_count() -> int:
 ## season and time of day, biased by each candidate's pick_weight. Returns
 ## null when nothing of that tier qualifies right now — routine for
 ## Secret, and possible for any tier whose entries are all condition-gated.
-static func roll_species(tier: FishRarity.Tier) -> FishSpecies:
+## `habitats` empty means the whole catalog; otherwise the roll is
+## restricted to that fishing spot's slice of it.
+static func roll_species(tier: FishRarity.Tier, habitats: Array = []) -> FishSpecies:
 	var current_weather: String = WorldClock.get_weather()
 	var current_season: String = WorldClock.get_season_name()
 	var is_night: bool = WorldClock.get_night_factor() >= 0.5
 	var eligible: Array = []
 	var total_weight := 0.0
 	for species in species_for_tier(tier):
+		if not habitats.is_empty() and not habitats.has(species.habitat):
+			continue
 		if species.conditions_met(current_weather, current_season, is_night):
 			eligible.append(species)
 			total_weight += species.pick_weight

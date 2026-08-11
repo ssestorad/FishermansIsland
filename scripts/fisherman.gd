@@ -140,6 +140,9 @@ var _pose_anim_timer: float = 0.0
 var _pose_frame: int = 0
 ## Which sheet column is showing, so _draw() knows where the rod tip is.
 var _current_frame_column: int = 0
+## Where to head once the current leg's waypoint is reached, or null when
+## walking straight there. Only the offshore jetty needs one.
+var _deferred_target = null
 
 var appearance_variant: int = -1
 
@@ -174,6 +177,12 @@ var best_catch_tier: FishRarity.Tier = FishRarity.Tier.COMMON
 ## Purely cosmetic — surfaces in the Fishermen list (sorted first) and the
 ## Profile panel. No gameplay effect.
 var is_favorite: bool = false
+
+## Which fishing spot this one casts from, and the row it was spawned on.
+## dock_position is derived from the two rather than stored, so switching
+## spot moves the fisherman without main.gd having to re-place anyone.
+var fishing_spot: String = FishingSpots.POND
+var lane_y: float = 200.0
 
 ## Weighted so a single exceptional catch (rare tier) or a long grind
 ## (total_catches, uncapped) both move the needle, and level alone can't
@@ -237,7 +246,7 @@ func _process(delta: float) -> void:
 	match state:
 		State.WALK_TO_DOCK:
 			_move_toward(current_target, delta)
-			if position.distance_to(current_target) < 2.0:
+			if position.distance_to(current_target) < 2.0 and not _consume_waypoint():
 				state = State.FISHING
 				# The water is east, and the fishing pose only exists in
 				# the right-facing row — without this a fisherman whose
@@ -250,15 +259,14 @@ func _process(delta: float) -> void:
 			wait_timer -= delta
 			if wait_timer <= 0.0:
 				_resolve_catch()
-				current_target = _random_home_point()
-				state = State.WALK_TO_STORAGE
+				_walk_to(_random_home_point(), State.WALK_TO_STORAGE)
 		State.WALK_TO_STORAGE:
 			_move_toward(current_target, delta)
-			if position.distance_to(current_target) < 2.0:
+			if position.distance_to(current_target) < 2.0 and not _consume_waypoint():
 				_start_next_leg()
 		State.WALK_TO_NEED:
 			_move_toward(current_target, delta)
-			if position.distance_to(current_target) < 2.0:
+			if position.distance_to(current_target) < 2.0 and not _consume_waypoint():
 				state = State.SERVICING_NEED
 				# Servicing a need is the one idle pose that isn't aimed at
 				# the water, so turn to face the camera while it happens.
@@ -268,8 +276,7 @@ func _process(delta: float) -> void:
 			wait_timer -= delta
 			if wait_timer <= 0.0:
 				_finish_servicing_need()
-				current_target = _random_dock_point()
-				state = State.WALK_TO_DOCK
+				_walk_to(_random_dock_point(), State.WALK_TO_DOCK)
 	_update_sprite_animation(delta)
 	queue_redraw()
 
@@ -281,8 +288,7 @@ func _process(delta: float) -> void:
 func _start_next_leg() -> void:
 	var need := _due_need()
 	if need == "":
-		current_target = _random_dock_point()
-		state = State.WALK_TO_DOCK
+		_walk_to(_random_dock_point(), State.WALK_TO_DOCK)
 		return
 	var station = _claim_need_station(need)
 	if station == null:
@@ -291,13 +297,11 @@ func _start_next_leg() -> void:
 		# is already close enough to due to be worth handling instead.
 		need = _fallback_need(need)
 		if need == "":
-			current_target = _random_dock_point()
-			state = State.WALK_TO_DOCK
+			_walk_to(_random_dock_point(), State.WALK_TO_DOCK)
 			return
 		station = _claim_need_station(need)
 	current_need = need
-	current_target = station
-	state = State.WALK_TO_NEED
+	_walk_to(station, State.WALK_TO_NEED)
 
 ## The top-priority need (`blocked`) couldn't be serviced this visit (only
 ## possible for "rest", when every bench is occupied). Rather than the
@@ -458,7 +462,7 @@ func _roll_and_apply_catch(catch_duration: float = -1.0, forced_rarity: int = -1
 		# possible when a hidden species' weather/season/time-of-day combo
 		# is currently in effect, and even then only a small independent
 		# chance actually lands one instead of a normal-tier catch.
-		var secret_species := FishCatalog.roll_species(FishRarity.Tier.SECRET)
+		var secret_species := FishCatalog.roll_species(FishRarity.Tier.SECRET, _spot_habitats())
 		var secret_chance := SECRET_CATCH_BASE_CHANCE * (1.0 + get_effective_stat(luck_xp, "luck") + MetaProgress.get_secret_chance_bonus())
 		if secret_species != null and randf() < secret_chance:
 			caught_rarity = FishRarity.Tier.SECRET
@@ -468,14 +472,9 @@ func _roll_and_apply_catch(catch_duration: float = -1.0, forced_rarity: int = -1
 			if caught_rarity < FishRarity.Tier.RARE and get_equipment_bonus("guarantee_rare") > 0.0:
 				caught_rarity = FishRarity.Tier.RARE
 	if caught_species == null:
-		# Every species of a tier can be condition-locked at once as the
-		# catalog grows, so step down tiers rather than failing the catch.
-		var tier: int = caught_rarity
-		while caught_species == null and tier >= 0:
-			caught_species = FishCatalog.roll_species(tier)
-			if caught_species != null:
-				caught_rarity = tier
-			tier -= 1
+		var resolved := _nearest_available_tier(caught_rarity)
+		caught_species = resolved.species
+		caught_rarity = resolved.tier
 	var caught_weight := caught_species.roll_weight(get_effective_stat(power_xp, "power"))
 
 	# Common/Uncommon auto-sell for Coins on the spot, same as always. Rare+
@@ -530,6 +529,28 @@ func _roll_and_apply_catch(catch_duration: float = -1.0, forced_rarity: int = -1
 		"amount": amount,
 		"docked": docked,
 	}
+
+func _spot_habitats() -> Array:
+	return FishingSpots.habitats(fishing_spot)
+
+## Finds the closest tier this fisherman's spot can actually produce.
+##
+## Steps down first (a rolled Legendary settling for an Epic reads as bad
+## luck), then up. Searching upward is not optional: Offshore contains no
+## Common or Uncommon species at all, so a downward-only walk would run
+## past tier 0 and leave the caller holding a null species.
+func _nearest_available_tier(rolled: FishRarity.Tier) -> Dictionary:
+	var habitats := _spot_habitats()
+	for tier in range(int(rolled), -1, -1):
+		var species := FishCatalog.roll_species(tier, habitats)
+		if species != null:
+			return {"species": species, "tier": tier}
+	for tier in range(int(rolled) + 1, int(FishRarity.MAX_ROLLABLE_TIER) + 1):
+		var species := FishCatalog.roll_species(tier, habitats)
+		if species != null:
+			return {"species": species, "tier": tier}
+	# Only reachable if a spot's entire slice is condition-locked at once.
+	return {"species": FishCatalog.roll_species(FishRarity.Tier.COMMON), "tier": FishRarity.Tier.COMMON}
 
 ## Dev-console hook: forces a catch of the given rarity (skips the luck
 ## roll) through the normal currency/album/XP pipeline. Returns {} if no
@@ -618,6 +639,41 @@ func _update_facing(direction: Vector2) -> void:
 		facing = "right" if direction.x >= 0.0 else "left"
 	else:
 		facing = "down" if direction.y >= 0.0 else "up"
+
+## Routes a walk through the spot's approach point when either end of the
+## trip is out past it, so nobody strolls across open water to reach the
+## jetty (or back off it). Everything that starts a walk goes through here.
+func _walk_to(destination: Vector2, next_state: State) -> void:
+	var approach = FishingSpots.approach_point(fishing_spot)
+	var beyond: bool = approach != null and (position.x > approach.x + 2.0 or destination.x > approach.x + 2.0)
+	if beyond:
+		_deferred_target = destination
+		current_target = approach
+	else:
+		_deferred_target = null
+		current_target = destination
+	state = next_state
+
+## True when the leg just finished was only the waypoint; advances to the
+## real destination and reports that the caller should not treat this as
+## an arrival yet.
+func _consume_waypoint() -> bool:
+	if _deferred_target == null:
+		return false
+	current_target = _deferred_target
+	_deferred_target = null
+	return true
+
+## Re-derives the casting point from the assigned spot. Called on spawn
+## and whenever the player reassigns the fisherman.
+func set_fishing_spot(id: String) -> void:
+	fishing_spot = id
+	dock_position = FishingSpots.cast_position(id, lane_y)
+	dock_y_bounds = FishingSpots.lane_bounds(id)
+	# Someone already on their way is heading to the old spot's water.
+	if state == State.WALK_TO_DOCK or state == State.FISHING:
+		_walk_to(_random_dock_point(), State.WALK_TO_DOCK)
+	stats_changed.emit()
 
 func _random_dock_point() -> Vector2:
 	var y := clampf(dock_position.y + randf_range(-dock_wander_range, dock_wander_range), dock_y_bounds.x, dock_y_bounds.y)

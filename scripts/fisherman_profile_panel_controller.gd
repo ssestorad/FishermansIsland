@@ -6,6 +6,7 @@ signal slot_clicked(fisherman, slot_name)
 
 @onready var name_label: Label = $MarginContainer/VBoxContainer/HeaderRow/NameLabel
 @onready var rank_label: Label = $MarginContainer/VBoxContainer/RankLabel
+@onready var spot_button: Button = $MarginContainer/VBoxContainer/SpotButton
 @onready var favorite_button: Button = $MarginContainer/VBoxContainer/HeaderRow/FavoriteButton
 @onready var speed_label: Label = $MarginContainer/VBoxContainer/StatsScroll/StatsBlock/SpeedLabel
 @onready var speed_bar: ProgressBar = $MarginContainer/VBoxContainer/StatsScroll/StatsBlock/SpeedBar
@@ -44,6 +45,7 @@ func _ready() -> void:
 	dismiss_button.pressed.connect(_on_dismiss_button_pressed)
 	close_button.pressed.connect(_on_close_button_pressed)
 	favorite_button.pressed.connect(_on_favorite_button_pressed)
+	spot_button.pressed.connect(_on_spot_button_pressed)
 	visibility_changed.connect(_on_visibility_changed)
 
 func _process(delta: float) -> void:
@@ -93,6 +95,7 @@ func refresh() -> void:
 	name_label.text = _fisherman.display_name
 	rank_label.text = _fisherman.get_rank_title()
 	_update_favorite_button()
+	_update_spot_button()
 	speed_label.text = "Speed: Lvl %d" % _fisherman.get_level(_fisherman.speed_xp)
 	speed_bar.value = _fisherman.get_level_progress(_fisherman.speed_xp)
 	luck_label.text = "Luck: Lvl %d" % _fisherman.get_level(_fisherman.luck_xp)
@@ -145,6 +148,26 @@ func _on_favorite_button_pressed() -> void:
 		return
 	_fisherman.toggle_favorite()
 	_update_favorite_button()
+
+## Cycles through the spots the player owns. With only the pond unlocked
+## there is nothing to choose, so the button says why instead of looking
+## broken when pressing it does nothing.
+func _update_spot_button() -> void:
+	var available := FishingSpots.unlocked_ids()
+	spot_button.text = "Fishing: %s" % FishingSpots.display_name(_fisherman.fishing_spot)
+	spot_button.disabled = available.size() < 2
+	spot_button.tooltip_text = FishingSpots.get_spot(_fisherman.fishing_spot).blurb \
+		if available.size() > 1 else "Unlock another spot in the Meta shop."
+
+func _on_spot_button_pressed() -> void:
+	if _fisherman == null:
+		return
+	var available := FishingSpots.unlocked_ids()
+	if available.size() < 2:
+		return
+	var index := available.find(_fisherman.fishing_spot)
+	_fisherman.set_fishing_spot(available[(index + 1) % available.size()])
+	_update_spot_button()
 
 func _on_slot_pressed(slot_name: String) -> void:
 	if _fisherman != null:
