@@ -1,6 +1,8 @@
 extends Node2D
 
 const FISHERMAN_SCENE := preload("res://scenes/entities/Fisherman.tscn")
+const STATION_SCENE := preload("res://scenes/entities/Station.tscn")
+const STATION_IDS := ["storage", "grill", "beer", "benches"]
 const STARTING_FISHERMEN_COUNT := 1
 const MAX_FISHERMEN_SLOTS := 6
 const ROW_SPACING := 35.0
@@ -43,6 +45,12 @@ const MIN_OFFLINE_SECONDS_TO_SHOW := 60.0
 var fishermen: Array = []
 var _zone_a_panels: Array = []
 
+## Station currently stuck to the cursor, or null. Right-click picks one
+## up, the next click drops it, Escape puts it back.
+var _carried_station: Node = null
+var _carried_origin := Vector2.ZERO
+var _stations: Array = []
+
 func _ready() -> void:
 	get_viewport().physics_object_picking = true
 	DevConsole.register_main(self)
@@ -74,12 +82,74 @@ func _ready() -> void:
 
 	autosave_timer.timeout.connect(_on_autosave_timeout)
 	MetaProgress.updated.connect(_update_hire_button)
-	# The bench count in the world drawing depends on the meta upgrade —
-	# without this, buying more benches wouldn't visually show up until
-	# something else happened to trigger a redraw.
-	MetaProgress.updated.connect(func(): queue_redraw())
 
+	_spawn_stations()
 	_update_hire_button()
+
+func _spawn_stations() -> void:
+	for id in STATION_IDS:
+		var station := STATION_SCENE.instantiate()
+		station.station_id = id
+		station.position = NeedStations.get_station_position(id)
+		station.pickup_requested.connect(_on_station_pickup_requested)
+		add_child(station)
+		_stations.append(station)
+	# Covers both a station being dropped somewhere new and the bench
+	# cluster's layout shifting when its capacity is upgraded.
+	NeedStations.stations_moved.connect(_sync_station_positions)
+
+func _sync_station_positions() -> void:
+	for station in _stations:
+		if station != _carried_station:
+			station.position = NeedStations.get_station_position(station.station_id)
+		station.queue_redraw()
+
+func _on_station_pickup_requested(station: Node) -> void:
+	if _carried_station != null:
+		return
+	_carried_station = station
+	_carried_origin = station.position
+	station.is_carried = true
+	_update_carried_station(get_global_mouse_position())
+
+## Snaps the carried station to the placement grid and tells it whether
+## the spot under the cursor is legal, which drives its green/red outline.
+func _update_carried_station(mouse_position: Vector2) -> void:
+	var snapped := WorldLayout.snap(mouse_position)
+	_carried_station.position = snapped
+	var footprint := NeedStations.footprint_at(_carried_station.station_id, snapped)
+	_carried_station.placement_valid = WorldLayout.is_placeable(footprint)
+	_carried_station.queue_redraw()
+
+func _drop_carried_station() -> void:
+	if not _carried_station.placement_valid:
+		return
+	var station := _carried_station
+	_carried_station = null
+	station.is_carried = false
+	# move_station() re-snaps and emits stations_moved, which is what
+	# nudges any fisherman already walking to re-target.
+	NeedStations.move_station(station.station_id, station.position)
+
+func _cancel_carried_station() -> void:
+	var station := _carried_station
+	_carried_station = null
+	station.is_carried = false
+	station.position = _carried_origin
+	station.queue_redraw()
+
+func _unhandled_input(event: InputEvent) -> void:
+	if _carried_station == null:
+		return
+	if event is InputEventMouseMotion:
+		_update_carried_station(get_global_mouse_position())
+	elif event is InputEventMouseButton and event.pressed:
+		if event.button_index == MOUSE_BUTTON_LEFT or event.button_index == MOUSE_BUTTON_RIGHT:
+			_drop_carried_station()
+			get_viewport().set_input_as_handled()
+	elif event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
+		_cancel_carried_station()
+		get_viewport().set_input_as_handled()
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_WM_CLOSE_REQUEST:
@@ -102,6 +172,10 @@ func _load_game() -> void:
 	# capacity-upgraded save's real entries as overflow and auto-sell them.
 	MetaProgress.load_state(data.get("meta_progress", {}))
 	DockInventory.load_state(data.get("dock", []))
+	# Same ordering trap: NeedStations clamps each station against its
+	# footprint, and the bench cluster's footprint grows with the purchased
+	# bench capacity.
+	NeedStations.load_state(data.get("stations", {}))
 	var saved_fishermen: Array = data.get("fishermen", [])
 	if saved_fishermen.is_empty():
 		_spawn_starting_fishermen()
@@ -264,6 +338,10 @@ func _on_menu_button_pressed() -> void:
 	get_tree().change_scene_to_file("res://scenes/main_menu/MainMenu.tscn")
 
 func _show_profile(fisherman: Node) -> void:
+	# The click that drops a carried station would otherwise also open the
+	# profile of whichever fisherman happened to be under the cursor.
+	if _carried_station != null:
+		return
 	equip_panel.visible = false
 	fishermen_panel.visible = false
 	profile_panel.show_fisherman(fisherman)
@@ -296,40 +374,13 @@ func _update_coins_label(new_total: int) -> void:
 func _update_scales_label(new_total: int) -> void:
 	scales_label.text = "%d" % new_total
 
+## Painted from WorldLayout so station placement validates against the
+## same geometry that is drawn here.
 func _draw() -> void:
-	draw_rect(Rect2(0, 0, 640, 360), Color(0.55, 0.72, 0.38))
-	draw_rect(Rect2(280, 80, 40, 240), Color(0.82, 0.72, 0.5))
-	draw_rect(Rect2(300, 100, 300, 200), Color(0.22, 0.45, 0.65))
+	draw_rect(Rect2(Vector2.ZERO, WorldLayout.WORLD_SIZE), WorldLayout.LAND_COLOR)
+	draw_rect(WorldLayout.SAND_RECT, WorldLayout.SAND_COLOR)
+	draw_rect(WorldLayout.WATER_RECT, WorldLayout.WATER_COLOR)
 	for i in range(4):
 		var y := 130.0 + i * 45.0
-		draw_line(Vector2(320, y), Vector2(580, y), Color(0.35, 0.58, 0.75, 0.5), 2.0)
-	draw_rect(Rect2(305, 95, 22, 210), Color(0.5, 0.35, 0.2))
-	_draw_need_stations()
-
-## Flat-rect markers for the storage/grill/beer/bench points, matching the
-## rest of this placeholder world's style — no new art assets, per the
-## "mechanic only for now" scope of the needs system.
-func _draw_need_stations() -> void:
-	# Storage: a small shed centered on NeedStations.STORAGE_POSITION, the
-	# one shared point every fisherman actually carries their catch to
-	# (regardless of which row they fish from), so the marker can't drift
-	# out of sync with where fishermen really walk.
-	var storage_pos := NeedStations.STORAGE_POSITION
-	draw_rect(Rect2(storage_pos + Vector2(-8, -6), Vector2(16, 14)), Color(0.45, 0.32, 0.2))
-	draw_rect(Rect2(storage_pos + Vector2(-10, -10), Vector2(20, 6)), Color(0.32, 0.22, 0.14))
-
-	# Grill: dark base + a warm coal glow on top.
-	var grill_pos := NeedStations.GRILL_POSITION
-	draw_rect(Rect2(grill_pos + Vector2(-6, -4), Vector2(12, 8)), Color(0.25, 0.25, 0.28))
-	draw_rect(Rect2(grill_pos + Vector2(-4, -6), Vector2(8, 4)), Color(0.85, 0.4, 0.15))
-
-	# Beer crate: a wooden box with a couple of bottle caps peeking out.
-	var beer_pos := NeedStations.BEER_POSITION
-	draw_rect(Rect2(beer_pos + Vector2(-7, -6), Vector2(14, 12)), Color(0.55, 0.38, 0.2))
-	draw_rect(Rect2(beer_pos + Vector2(-4, -9), Vector2(3, 4)), Color(0.75, 0.65, 0.2))
-	draw_rect(Rect2(beer_pos + Vector2(1, -9), Vector2(3, 4)), Color(0.75, 0.65, 0.2))
-
-	# Benches: one small plank per currently-available slot, so the drawn
-	# count always matches what the meta-shop upgrade actually grants.
-	for bench_pos in NeedStations.bench_positions():
-		draw_rect(Rect2(bench_pos + Vector2(-7, -2), Vector2(14, 4)), Color(0.55, 0.4, 0.24))
+		draw_line(Vector2(320, y), Vector2(580, y), WorldLayout.WAVE_COLOR, 2.0)
+	draw_rect(WorldLayout.PIER_RECT, WorldLayout.PIER_COLOR)

@@ -4,7 +4,7 @@ signal clicked(fisherman: Node2D)
 signal stats_changed
 
 ## Only this fisherman's idle spawn point now — WALK_TO_STORAGE targets
-## the shared NeedStations.STORAGE_POSITION instead (every catch goes to
+## the shared NeedStations.storage_position instead (every catch goes to
 ## the same shed regardless of row).
 @export var home_position: Vector2 = Vector2(100, 250)
 @export var dock_position: Vector2 = Vector2(450, 200)
@@ -186,6 +186,7 @@ func _ready() -> void:
 	click_area.input_event.connect(_on_click_area_input_event)
 	click_area.mouse_entered.connect(_on_mouse_entered)
 	click_area.mouse_exited.connect(_on_mouse_exited)
+	NeedStations.stations_moved.connect(_on_stations_moved)
 	sprite.texture = APPEARANCE_VARIANTS[appearance_variant]
 	_apply_sprite_frame(STAND_FRAME)
 	queue_redraw()
@@ -277,6 +278,20 @@ func _fallback_need(blocked: String) -> String:
 		return "thirst"
 	return ""
 
+## A station the player just moved may be the one this fisherman is
+## walking to, so re-resolve the destination rather than finishing a trip
+## to bare ground. Someone mid-SERVICING_NEED is left alone: they are
+## standing still and snapping them across the island would read worse
+## than letting them finish where they are.
+func _on_stations_moved() -> void:
+	match state:
+		State.WALK_TO_STORAGE:
+			current_target = _random_home_point()
+		State.WALK_TO_NEED:
+			var station = NeedStations.position_for_need(current_need, _claimed_bench_index)
+			if station != null:
+				current_target = station
+
 ## Priority order: Hunger, then Thirst, then Rest. A fisherman with several
 ## needs due at once resolves them one storage visit at a time rather than
 ## chaining several detours into one long trip.
@@ -302,9 +317,9 @@ func _due_need() -> String:
 func _claim_need_station(need: String):
 	match need:
 		"hunger":
-			return NeedStations.GRILL_POSITION
+			return NeedStations.grill_position
 		"thirst":
-			return NeedStations.BEER_POSITION
+			return NeedStations.beer_position
 		"rest":
 			var claim: Dictionary = NeedStations.claim_bench()
 			if claim.is_empty():
@@ -500,10 +515,10 @@ func _estimate_cycle_time() -> float:
 	var effective_speed := move_speed * (1.0 + get_equipment_bonus("walk_speed") + get_perk_bonus("walk_speed"))
 	var avg_walk := 0.0
 	if effective_speed > 0.0:
-		# Storage is a shared point now (NeedStations.STORAGE_POSITION), not
+		# Storage is a shared point now (NeedStations.storage_position), not
 		# this fisherman's own home_position, so the dock<->storage leg can
 		# have a real y-offset too — full distance, not just the x delta.
-		var round_trip_distance := dock_position.distance_to(NeedStations.STORAGE_POSITION) * 2.0
+		var round_trip_distance := dock_position.distance_to(NeedStations.storage_position) * 2.0
 		avg_walk = round_trip_distance / effective_speed
 	var base_cycle := avg_catch + avg_walk
 	return base_cycle + _average_needs_overhead(base_cycle)
@@ -550,7 +565,7 @@ func _random_dock_point() -> Vector2:
 ## spot now. The independent per-arrival jitter is also what keeps a big
 ## roster from rendering stacked exactly on top of each other at Storage.
 func _random_home_point() -> Vector2:
-	var storage_pos: Vector2 = NeedStations.STORAGE_POSITION
+	var storage_pos: Vector2 = NeedStations.storage_position
 	return storage_pos + Vector2(randf_range(-home_wander_range, home_wander_range), randf_range(-home_wander_range, home_wander_range))
 
 func _catch_time_range() -> Vector2:

@@ -39,6 +39,7 @@ func save_game(fishermen: Array) -> void:
 			"secret_chance_level": MetaProgress.secret_chance_level,
 			"extra_perk_slot_unlocked": MetaProgress.extra_perk_slot_unlocked,
 		},
+		"stations": NeedStations.save_state(),
 		"fishermen": fishermen_data,
 	}
 
