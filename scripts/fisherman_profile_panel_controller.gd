@@ -128,8 +128,17 @@ func _set_need_row(label: Label, bar: ProgressBar, title: String, need: String) 
 		status = "Due"
 	label.text = "%s: %s" % [title, status]
 
+## A hollow ☆ is unreadable at the pixel font's 7px cap height, so both
+## states use the filled star and colour carries the meaning instead.
+## Every state colour is overridden, otherwise hovering an unfavourited
+## star would light it up as though it were already set.
+const FAVORITE_ON := Color(0.95, 0.75, 0.2)
+const FAVORITE_OFF := Color(0.55, 0.5, 0.42)
+
 func _update_favorite_button() -> void:
-	favorite_button.text = "★" if _fisherman.is_favorite else "☆"
+	var color := FAVORITE_ON if _fisherman.is_favorite else FAVORITE_OFF
+	for state in ["font_color", "font_hover_color", "font_pressed_color"]:
+		favorite_button.add_theme_color_override(state, color)
 
 func _on_favorite_button_pressed() -> void:
 	if _fisherman == null:

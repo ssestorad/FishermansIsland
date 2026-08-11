@@ -1,6 +1,7 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://scripts/main_menu.gd" id="1_main_menu"]
+[ext_resource type="Script" path="res://scripts/main_menu_backdrop.gd" id="2_backdrop"]
 
 [node name="MainMenu" type="Control"]
 layout_mode = 3
@@ -9,43 +10,98 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 script = ExtResource("1_main_menu")
 
-[node name="Background" type="ColorRect" parent="."]
+[node name="Backdrop" type="Control" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-color = Color(0.22, 0.45, 0.65, 1)
+mouse_filter = 2
+script = ExtResource("2_backdrop")
 
-[node name="CenterContainer" type="CenterContainer" parent="."]
+[node name="TitleShadow" type="Label" parent="."]
 layout_mode = 1
-anchors_preset = 15
+anchors_preset = 10
 anchor_right = 1.0
-anchor_bottom = 1.0
-
-[node name="VBoxContainer" type="VBoxContainer" parent="CenterContainer"]
-layout_mode = 2
-theme_override_constants/separation = 16
-
-[node name="TitleLabel" type="Label" parent="CenterContainer/VBoxContainer"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 32
+offset_top = 42.0
+offset_bottom = 84.0
+mouse_filter = 2
+theme_override_font_sizes/font_size = 30
+theme_override_colors/font_color = Color(0.08, 0.12, 0.2, 0.8)
 horizontal_alignment = 1
 text = "Fisherman's Island"
 
-[node name="PlayButton" type="Button" parent="CenterContainer/VBoxContainer"]
+[node name="TitleLabel" type="Label" parent="."]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = -3.0
+offset_top = 39.0
+offset_bottom = 81.0
+mouse_filter = 2
+theme_override_font_sizes/font_size = 30
+theme_override_colors/font_color = Color(0.97, 0.93, 0.82, 1)
+horizontal_alignment = 1
+text = "Fisherman's Island"
+
+[node name="SubtitleLabel" type="Label" parent="."]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 88.0
+offset_bottom = 102.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.88, 0.91, 0.93, 0.85)
+horizontal_alignment = 1
+text = "Hire anglers. Fill the album."
+
+[node name="MenuBox" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -70.0
+offset_top = 42.0
+offset_right = 70.0
+offset_bottom = 140.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 8
+
+[node name="PlayButton" type="Button" parent="MenuBox"]
 layout_mode = 2
-custom_minimum_size = Vector2(200, 44)
+custom_minimum_size = Vector2(140, 26)
+theme_type_variation = &"PrimaryButton"
 text = "Play"
 
-[node name="SettingsButton" type="Button" parent="CenterContainer/VBoxContainer"]
+[node name="SettingsButton" type="Button" parent="MenuBox"]
 layout_mode = 2
-custom_minimum_size = Vector2(200, 44)
+custom_minimum_size = Vector2(140, 26)
 text = "Settings"
 
-[node name="QuitButton" type="Button" parent="CenterContainer/VBoxContainer"]
+[node name="QuitButton" type="Button" parent="MenuBox"]
 layout_mode = 2
-custom_minimum_size = Vector2(200, 44)
+custom_minimum_size = Vector2(140, 26)
 text = "Quit"
+
+[node name="VersionLabel" type="Label" parent="."]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -110.0
+offset_top = -20.0
+offset_right = -8.0
+offset_bottom = -6.0
+grow_horizontal = 0
+grow_vertical = 0
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.88, 0.91, 0.93, 0.5)
+horizontal_alignment = 2
+text = "prototype"
 
 [node name="SettingsPanel" type="Panel" parent="."]
 visible = false
@@ -55,34 +111,47 @@ anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -140.0
-offset_top = -80.0
-offset_right = 140.0
-offset_bottom = 80.0
+offset_left = -110.0
+offset_top = -62.0
+offset_right = 110.0
+offset_bottom = 62.0
+grow_horizontal = 2
+grow_vertical = 2
 
 [node name="MarginContainer" type="MarginContainer" parent="SettingsPanel"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 12.0
-offset_top = 12.0
-offset_right = -12.0
-offset_bottom = -12.0
+offset_left = 8.0
+offset_top = 8.0
+offset_right = -8.0
+offset_bottom = -8.0
+grow_horizontal = 2
+grow_vertical = 2
 
 [node name="VBoxContainer" type="VBoxContainer" parent="SettingsPanel/MarginContainer"]
 layout_mode = 2
-theme_override_constants/separation = 12
+theme_override_constants/separation = 8
 
 [node name="TitleLabel" type="Label" parent="SettingsPanel/MarginContainer/VBoxContainer"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 20
+theme_type_variation = &"TitleLabel"
 text = "Settings"
 
-[node name="FullscreenCheckBox" type="CheckBox" parent="SettingsPanel/MarginContainer/VBoxContainer"]
+[node name="FullscreenButton" type="Button" parent="SettingsPanel/MarginContainer/VBoxContainer"]
 layout_mode = 2
-text = "Fullscreen"
+custom_minimum_size = Vector2(0, 24)
+text = "Fullscreen: Off"
+
+[node name="HintLabel" type="Label" parent="SettingsPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_type_variation = &"MutedLabel"
+autowrap_mode = 3
+text = "Sound options arrive with the soundtrack."
 
 [node name="BackButton" type="Button" parent="SettingsPanel/MarginContainer/VBoxContainer"]
 layout_mode = 2
+custom_minimum_size = Vector2(0, 24)
 text = "Back"

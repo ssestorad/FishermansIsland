@@ -1,13 +1,32 @@
 extends Control
 
-const RADIUS := 6.0
-const FILL_COLOR := Color(0.95, 0.78, 0.25)
-const RIM_COLOR := Color(0.65, 0.48, 0.1)
+## o = rim, : = gold face, s = shine
+const MAP := """
+....oooo....
+..oo::::oo..
+.o::::::::o.
+.o::ss::::o.
+o::ss::::::o
+o::::::::::o
+o::::::::::o
+o::::::::::o
+.o::::::::o.
+.o::::::::o.
+..oo::::oo..
+....oooo....
+"""
+
+const PALETTE := {
+	"o": Color(0.55, 0.4, 0.08),
+	":": Color(0.95, 0.78, 0.25),
+	"s": Color(1.0, 0.93, 0.62),
+}
+
+var _rows: Array = []
 
 func _ready() -> void:
-	custom_minimum_size = Vector2(RADIUS * 2.0, RADIUS * 2.0)
+	_rows = PixelArt.parse(MAP)
+	custom_minimum_size = PixelArt.map_size(_rows)
 
 func _draw() -> void:
-	var center := Vector2(RADIUS, RADIUS)
-	draw_circle(center, RADIUS, RIM_COLOR)
-	draw_circle(center, RADIUS - 1.5, FILL_COLOR)
+	PixelArt.draw_map(self, _rows, PALETTE)

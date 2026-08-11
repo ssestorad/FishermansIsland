@@ -71,7 +71,7 @@ offset_top = 6.0
 offset_right = 118.0
 offset_bottom = 26.0
 theme_type_variation = &"HudLabel"
-theme_override_font_sizes/font_size = 15
+theme_override_font_sizes/font_size = 10
 text = "0"
 
 [node name="ScaleIcon" type="Control" parent="CanvasLayer"]
@@ -88,7 +88,7 @@ offset_top = 6.0
 offset_right = 236.0
 offset_bottom = 26.0
 theme_type_variation = &"HudLabel"
-theme_override_font_sizes/font_size = 15
+theme_override_font_sizes/font_size = 10
 text = "0"
 
 [node name="ClockLabel" type="Label" parent="CanvasLayer"]
@@ -97,7 +97,7 @@ offset_top = 6.0
 offset_right = 632.0
 offset_bottom = 26.0
 theme_type_variation = &"HudLabel"
-theme_override_font_sizes/font_size = 12
+theme_override_font_sizes/font_size = 10
 horizontal_alignment = 2
 text = "Day 1 — 00:00 (Spring)"
 script = ExtResource("3_clock_label")
@@ -120,7 +120,7 @@ theme_override_constants/separation = 4
 layout_mode = 2
 size_flags_horizontal = 3
 theme_type_variation = &"NavButton"
-theme_override_font_sizes/font_size = 12
+theme_override_font_sizes/font_size = 10
 text = "Fishermen"
 
 [node name="HireButton" type="Button" parent="CanvasLayer/NavRow"]
@@ -128,49 +128,49 @@ layout_mode = 2
 size_flags_horizontal = 3
 size_flags_stretch_ratio = 1.4
 theme_type_variation = &"PrimaryButton"
-theme_override_font_sizes/font_size = 12
+theme_override_font_sizes/font_size = 10
 text = "Hire (5)"
 
 [node name="AlbumButton" type="Button" parent="CanvasLayer/NavRow"]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_type_variation = &"NavButton"
-theme_override_font_sizes/font_size = 12
+theme_override_font_sizes/font_size = 10
 text = "Album"
 
 [node name="ShopButton" type="Button" parent="CanvasLayer/NavRow"]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_type_variation = &"NavButton"
-theme_override_font_sizes/font_size = 12
+theme_override_font_sizes/font_size = 10
 text = "Shop"
 
 [node name="MetaButton" type="Button" parent="CanvasLayer/NavRow"]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_type_variation = &"NavButton"
-theme_override_font_sizes/font_size = 12
+theme_override_font_sizes/font_size = 10
 text = "Meta"
 
 [node name="DockButton" type="Button" parent="CanvasLayer/NavRow"]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_type_variation = &"NavButton"
-theme_override_font_sizes/font_size = 12
+theme_override_font_sizes/font_size = 10
 text = "Dock"
 
 [node name="StatsButton" type="Button" parent="CanvasLayer/NavRow"]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_type_variation = &"NavButton"
-theme_override_font_sizes/font_size = 12
+theme_override_font_sizes/font_size = 10
 text = "Stats"
 
 [node name="MenuButton" type="Button" parent="CanvasLayer/NavRow"]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_type_variation = &"NavButton"
-theme_override_font_sizes/font_size = 12
+theme_override_font_sizes/font_size = 10
 text = "Menu"
 
 [node name="FishermenPanel" type="Panel" parent="CanvasLayer"]
@@ -212,7 +212,7 @@ text = "Your Fishermen"
 layout_mode = 2
 custom_minimum_size = Vector2(24, 24)
 theme_type_variation = &"GhostButton"
-theme_override_font_sizes/font_size = 12
+theme_override_font_sizes/font_size = 10
 text = "✕"
 
 [node name="FishermenScroll" type="ScrollContainer" parent="CanvasLayer/FishermenPanel/MarginContainer/VBoxContainer"]
@@ -264,14 +264,14 @@ text = "Name"
 layout_mode = 2
 custom_minimum_size = Vector2(24, 24)
 theme_type_variation = &"GhostButton"
-theme_override_font_sizes/font_size = 14
-text = "☆"
+theme_override_font_sizes/font_size = 10
+text = "★"
 
 [node name="CloseButton" type="Button" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer/HeaderRow"]
 layout_mode = 2
 custom_minimum_size = Vector2(24, 24)
 theme_type_variation = &"GhostButton"
-theme_override_font_sizes/font_size = 12
+theme_override_font_sizes/font_size = 10
 text = "✕"
 
 [node name="RankLabel" type="Label" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer"]
@@ -343,7 +343,7 @@ show_percentage = false
 [node name="NeedsHeader" type="Label" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer/StatsScroll/StatsBlock"]
 layout_mode = 2
 theme_type_variation = &"MutedLabel"
-theme_override_font_sizes/font_size = 12
+theme_override_font_sizes/font_size = 10
 text = "Needs"
 
 [node name="HungerLabel" type="Label" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer/StatsScroll/StatsBlock"]
@@ -448,7 +448,7 @@ text = "Recent catches"
 
 [node name="HistoryLabel" type="Label" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer/StatsScroll/StatsBlock"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 11
+theme_override_font_sizes/font_size = 10
 autowrap_mode = 3
 text = "No catches yet."
 
@@ -489,14 +489,14 @@ theme_override_constants/separation = 4
 [node name="BackButton" type="Button" parent="CanvasLayer/EquipPanel/MarginContainer/VBoxContainer/HeaderRow"]
 layout_mode = 2
 theme_type_variation = &"GhostButton"
-theme_override_font_sizes/font_size = 12
+theme_override_font_sizes/font_size = 10
 text = "‹ Back"
 
 [node name="TitleLabel" type="Label" parent="CanvasLayer/EquipPanel/MarginContainer/VBoxContainer/HeaderRow"]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_type_variation = &"TitleLabel"
-theme_override_font_sizes/font_size = 16
+theme_override_font_sizes/font_size = 20
 clip_text = true
 text_overrun_behavior = 3
 text = "Slot"
@@ -505,7 +505,7 @@ text = "Slot"
 layout_mode = 2
 custom_minimum_size = Vector2(24, 24)
 theme_type_variation = &"GhostButton"
-theme_override_font_sizes/font_size = 12
+theme_override_font_sizes/font_size = 10
 text = "✕"
 
 [node name="ComparisonLabel" type="RichTextLabel" parent="CanvasLayer/EquipPanel/MarginContainer/VBoxContainer"]
@@ -514,7 +514,7 @@ bbcode_enabled = true
 fit_content = true
 scroll_active = false
 theme_override_colors/default_color = Color(0.5, 0.42, 0.32, 0.9)
-theme_override_font_sizes/normal_font_size = 11
+theme_override_font_sizes/normal_font_size = 10
 text = "Hover an item to compare against what's equipped."
 
 [node name="EquipScroll" type="ScrollContainer" parent="CanvasLayer/EquipPanel/MarginContainer/VBoxContainer"]
@@ -569,7 +569,7 @@ text = "Shop"
 layout_mode = 2
 custom_minimum_size = Vector2(24, 24)
 theme_type_variation = &"GhostButton"
-theme_override_font_sizes/font_size = 12
+theme_override_font_sizes/font_size = 10
 text = "✕"
 
 [node name="RestockLabel" type="Label" parent="CanvasLayer/ShopPanel/MarginContainer/VBoxContainer"]
@@ -647,7 +647,7 @@ text = "Meta"
 layout_mode = 2
 custom_minimum_size = Vector2(24, 24)
 theme_type_variation = &"GhostButton"
-theme_override_font_sizes/font_size = 12
+theme_override_font_sizes/font_size = 10
 text = "✕"
 
 [node name="MetaScroll" type="ScrollContainer" parent="CanvasLayer/MetaPanel/MarginContainer/VBoxContainer"]
@@ -691,16 +691,16 @@ layout_mode = 2
 layout_mode = 2
 size_flags_horizontal = 3
 theme_type_variation = &"TitleLabel"
-theme_override_font_sizes/font_size = 16
+theme_override_font_sizes/font_size = 20
 clip_text = true
 text_overrun_behavior = 3
-text = "Fish Album (0/155)"
+text = "Fish Album (0/120)"
 
 [node name="CloseButton" type="Button" parent="CanvasLayer/AlbumPanel/MarginContainer/VBoxContainer/HeaderRow"]
 layout_mode = 2
 custom_minimum_size = Vector2(24, 24)
 theme_type_variation = &"GhostButton"
-theme_override_font_sizes/font_size = 12
+theme_override_font_sizes/font_size = 10
 text = "✕"
 
 [node name="TierTabs" type="HBoxContainer" parent="CanvasLayer/AlbumPanel/MarginContainer/VBoxContainer"]
@@ -785,13 +785,13 @@ theme_override_constants/separation = 4
 [node name="PageLabel" type="Label" parent="CanvasLayer/AlbumPanel/MarginContainer/VBoxContainer/CardScroll/CardArea"]
 layout_mode = 2
 theme_type_variation = &"MutedLabel"
-theme_override_font_sizes/font_size = 12
+theme_override_font_sizes/font_size = 10
 horizontal_alignment = 1
 text = "All — 1 / 120"
 
 [node name="SpeciesNameLabel" type="Label" parent="CanvasLayer/AlbumPanel/MarginContainer/VBoxContainer/CardScroll/CardArea"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 18
+theme_override_font_sizes/font_size = 20
 horizontal_alignment = 1
 text = "???"
 
@@ -821,7 +821,7 @@ offset_left = -10.0
 offset_top = -16.0
 offset_right = 10.0
 offset_bottom = 16.0
-theme_override_font_sizes/font_size = 28
+theme_override_font_sizes/font_size = 30
 theme_override_colors/font_color = Color(0.94, 0.9, 0.8, 1)
 theme_override_colors/font_outline_color = Color(0.16, 0.13, 0.1, 1)
 theme_override_constants/outline_size = 4
@@ -843,7 +843,7 @@ text = ""
 [node name="DescriptionLabel" type="Label" parent="CanvasLayer/AlbumPanel/MarginContainer/VBoxContainer/CardScroll/CardArea"]
 layout_mode = 2
 custom_minimum_size = Vector2(240, 0)
-theme_override_font_sizes/font_size = 11
+theme_override_font_sizes/font_size = 10
 theme_override_colors/font_color = Color(0.42, 0.34, 0.24, 1)
 horizontal_alignment = 1
 autowrap_mode = 3
@@ -858,7 +858,7 @@ theme_override_constants/separation = 4
 [node name="OverviewTitle" type="Label" parent="CanvasLayer/AlbumPanel/MarginContainer/VBoxContainer/StatsArea"]
 layout_mode = 2
 theme_type_variation = &"MutedLabel"
-theme_override_font_sizes/font_size = 13
+theme_override_font_sizes/font_size = 10
 horizontal_alignment = 1
 text = "Discovery by Rarity"
 
@@ -871,7 +871,7 @@ theme_override_constants/separation = 6
 layout_mode = 2
 custom_minimum_size = Vector2(74, 26)
 theme_type_variation = &"TabButton"
-theme_override_font_sizes/font_size = 11
+theme_override_font_sizes/font_size = 10
 disabled = true
 text = "Rarity"
 
@@ -879,7 +879,7 @@ text = "Rarity"
 layout_mode = 2
 custom_minimum_size = Vector2(74, 26)
 theme_type_variation = &"TabButton"
-theme_override_font_sizes/font_size = 11
+theme_override_font_sizes/font_size = 10
 text = "Habitat"
 
 [node name="StatsScroll" type="ScrollContainer" parent="CanvasLayer/AlbumPanel/MarginContainer/VBoxContainer/StatsArea"]
@@ -936,7 +936,7 @@ layout_mode = 2
 layout_mode = 2
 size_flags_horizontal = 3
 theme_type_variation = &"TitleLabel"
-theme_override_font_sizes/font_size = 16
+theme_override_font_sizes/font_size = 20
 clip_text = true
 text_overrun_behavior = 3
 text = "Dock (0)"
@@ -945,7 +945,7 @@ text = "Dock (0)"
 layout_mode = 2
 custom_minimum_size = Vector2(24, 24)
 theme_type_variation = &"GhostButton"
-theme_override_font_sizes/font_size = 12
+theme_override_font_sizes/font_size = 10
 text = "✕"
 
 [node name="DockScroll" type="ScrollContainer" parent="CanvasLayer/DockPanel/MarginContainer/VBoxContainer"]
@@ -994,7 +994,7 @@ layout_mode = 2
 layout_mode = 2
 size_flags_horizontal = 3
 theme_type_variation = &"TitleLabel"
-theme_override_font_sizes/font_size = 16
+theme_override_font_sizes/font_size = 20
 clip_text = true
 text_overrun_behavior = 3
 text = "Stats"
@@ -1003,7 +1003,7 @@ text = "Stats"
 layout_mode = 2
 custom_minimum_size = Vector2(24, 24)
 theme_type_variation = &"GhostButton"
-theme_override_font_sizes/font_size = 12
+theme_override_font_sizes/font_size = 10
 text = "✕"
 
 [node name="StatsScroll" type="ScrollContainer" parent="CanvasLayer/StatsPanel/MarginContainer/VBoxContainer"]
@@ -1044,7 +1044,7 @@ theme_override_constants/separation = 8
 [node name="TitleLabel" type="Label" parent="CanvasLayer/WelcomeBackPanel/MarginContainer/VBoxContainer"]
 layout_mode = 2
 theme_type_variation = &"TitleLabel"
-theme_override_font_sizes/font_size = 22
+theme_override_font_sizes/font_size = 20
 horizontal_alignment = 1
 text = "Welcome back!"
 
@@ -1072,7 +1072,7 @@ script = ExtResource("13_coin_icon")
 
 [node name="CoinsEarnedLabel" type="Label" parent="CanvasLayer/WelcomeBackPanel/MarginContainer/VBoxContainer/CurrencyRow"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 18
+theme_override_font_sizes/font_size = 20
 text = "+0"
 
 [node name="DockedLabel" type="Label" parent="CanvasLayer/WelcomeBackPanel/MarginContainer/VBoxContainer"]

@@ -1,26 +1,32 @@
 extends Control
 
-const SIZE := 12.0
-const FILL_COLOR := Color(0.45, 0.75, 0.8)
-const RIM_COLOR := Color(0.2, 0.45, 0.5)
+## o = rim, : = scale face, s = shine
+const MAP := """
+.....oo.....
+....o::o....
+...o::::o...
+..o::s:::o..
+.o::s:::::o.
+o::::::::::o
+o::::::::::o
+.o::::::::o.
+..o::::::o..
+...o::::o...
+....o::o....
+.....oo.....
+"""
+
+const PALETTE := {
+	"o": Color(0.2, 0.45, 0.5),
+	":": Color(0.45, 0.75, 0.8),
+	"s": Color(0.75, 0.94, 0.96),
+}
+
+var _rows: Array = []
 
 func _ready() -> void:
-	custom_minimum_size = Vector2(SIZE, SIZE)
+	_rows = PixelArt.parse(MAP)
+	custom_minimum_size = PixelArt.map_size(_rows)
 
 func _draw() -> void:
-	var half := SIZE / 2.0
-	var points := PackedVector2Array([
-		Vector2(half, 0.0),
-		Vector2(SIZE, half),
-		Vector2(half, SIZE),
-		Vector2(0.0, half),
-	])
-	draw_colored_polygon(points, RIM_COLOR)
-	var inset := 1.5
-	var inner := PackedVector2Array([
-		Vector2(half, inset),
-		Vector2(SIZE - inset, half),
-		Vector2(half, SIZE - inset),
-		Vector2(inset, half),
-	])
-	draw_colored_polygon(inner, FILL_COLOR)
+	PixelArt.draw_map(self, _rows, PALETTE)
