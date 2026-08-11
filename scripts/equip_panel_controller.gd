@@ -1,6 +1,11 @@
 class_name EquipPanelController
 extends Panel
 
+## The comparison label answers "is this better?"; the detail panel
+## answers "what is this?". main.gd owns the latter.
+signal item_detail_requested(item, spot)
+signal item_detail_dismissed
+
 signal changed
 signal back_requested(fisherman)
 
@@ -24,6 +29,12 @@ func _ready() -> void:
 	unequip_button.pressed.connect(_on_unequip_pressed)
 	close_button.pressed.connect(_on_close_button_pressed)
 	back_button.pressed.connect(_on_back_button_pressed)
+	visibility_changed.connect(_on_visibility_changed)
+
+## Closing the equip panel any way at all must take the read-out with it.
+func _on_visibility_changed() -> void:
+	if not visible:
+		item_detail_dismissed.emit()
 
 func open_for(fisherman: Node, slot: String) -> void:
 	_fisherman = fisherman
@@ -52,7 +63,7 @@ func build() -> void:
 		var row: ListRow = LIST_ROW_SCENE.instantiate()
 		rows_container.add_child(row)
 		var rarity_color := RarityColors.for_name(item.rarity)
-		row.setup(item.item_name, item.effects_text(), item.rarity, rarity_color)
+		row.setup(item.item_name, item.summary_text(), item.rarity, rarity_color)
 		row.set_right_color(rarity_color)
 		row.pressed.connect(_on_equip_pressed.bind(item))
 		row.mouse_entered.connect(_on_row_hovered.bind(item))
@@ -61,6 +72,7 @@ func build() -> void:
 ## Diffs a hovered candidate item against whatever's currently equipped in
 ## this slot, one line per axis either of them touches.
 func _on_row_hovered(candidate: Item) -> void:
+	item_detail_requested.emit(candidate, _fisherman.fishing_spot if _fisherman != null else "")
 	var current: Item = _fisherman.equipped_items.get(_slot)
 	var axes: Dictionary = {}
 	for effect in candidate.effects:
@@ -89,6 +101,7 @@ func _on_row_hovered(candidate: Item) -> void:
 
 func _on_row_unhovered() -> void:
 	comparison_label.text = DEFAULT_COMPARISON_TEXT
+	item_detail_dismissed.emit()
 
 func _on_equip_pressed(item: Item) -> void:
 	var previous = _fisherman.equipped_items.get(_slot)

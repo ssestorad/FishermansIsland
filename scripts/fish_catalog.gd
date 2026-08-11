@@ -231,8 +231,10 @@ static func total_count() -> int:
 ## null when nothing of that tier qualifies right now — routine for
 ## Secret, and possible for any tier whose entries are all condition-gated.
 ## `habitats` empty means the whole catalog; otherwise the roll is
-## restricted to that fishing spot's slice of it.
-static func roll_species(tier: FishRarity.Tier, habitats: Array = []) -> FishSpecies:
+## restricted to that fishing spot's slice of it. `bias` maps a habitat to
+## a pick-weight multiplier and is how bait steers the catch — it skews
+## which species come up without ever unlocking one the spot can't reach.
+static func roll_species(tier: FishRarity.Tier, habitats: Array = [], bias: Dictionary = {}) -> FishSpecies:
 	var current_weather: String = WorldClock.get_weather()
 	var current_season: String = WorldClock.get_season_name()
 	var is_night: bool = WorldClock.get_night_factor() >= 0.5
@@ -243,13 +245,15 @@ static func roll_species(tier: FishRarity.Tier, habitats: Array = []) -> FishSpe
 			continue
 		if species.conditions_met(current_weather, current_season, is_night):
 			eligible.append(species)
-			total_weight += species.pick_weight
+			total_weight += species.pick_weight * float(bias.get(species.habitat, 1.0))
 	if eligible.is_empty() or total_weight <= 0.0:
 		return null
 	var roll := randf() * total_weight
 	var cumulative := 0.0
 	for species in eligible:
-		cumulative += species.pick_weight
+		# Must use the same biased weight the total was built from, or the
+		# roll lands short and skews toward the front of the list.
+		cumulative += species.pick_weight * float(bias.get(species.habitat, 1.0))
 		if roll <= cumulative:
 			return species
 	return eligible[eligible.size() - 1]

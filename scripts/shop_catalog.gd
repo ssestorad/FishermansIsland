@@ -1,256 +1,253 @@
 class_name ShopCatalog
 extends RefCounted
 
-# Raw item data: {n: name, s: slot, r: rarity, e: effects [[axis, amount], ...],
-# c: shop-availability condition ({} = always), cost: int, cur: "Coins"|"Scales"}.
-# Rarity budget: Common/Uncommon = 1 effect; Rare = up to 2; Epic = 2 + usually
-# conditional; Legendary/Mythic = 2-3, may include a drawback (negative amount).
-const RAW_ITEMS := [
-		{"n": "Old Bamboo Rod", "s": "Rod", "r": "Common", "e": [["speed", 0.06]], "c": {}, "cost": 6, "cur": "Coins"},
-		{"n": "Willow Branch Rod", "s": "Rod", "r": "Common", "e": [["speed", 0.06]], "c": {}, "cost": 6, "cur": "Coins"},
-		{"n": "Frayed-Line Rod", "s": "Rod", "r": "Common", "e": [["speed", 0.07]], "c": {}, "cost": 8, "cur": "Coins"},
-		{"n": "Backyard Rod", "s": "Rod", "r": "Common", "e": [["speed", 0.05]], "c": {}, "cost": 6, "cur": "Coins"},
-		{"n": "Split-Cane Rod", "s": "Rod", "r": "Common", "e": [["speed", 0.08]], "c": {}, "cost": 10, "cur": "Coins"},
-		{"n": "Hand-Me-Down Rod", "s": "Rod", "r": "Common", "e": [["speed", 0.07]], "c": {}, "cost": 8, "cur": "Coins"},
-		{"n": "Sapling Rod", "s": "Rod", "r": "Common", "e": [["speed", 0.06]], "c": {}, "cost": 7, "cur": "Coins"},
-		{"n": "Apprentice's Rod", "s": "Rod", "r": "Common", "e": [["speed", 0.09]], "c": {}, "cost": 12, "cur": "Coins"},
-		{"n": "Ash Rod", "s": "Rod", "r": "Uncommon", "e": [["speed", 0.11]], "c": {}, "cost": 16, "cur": "Coins"},
-		{"n": "Reinforced Cane Rod", "s": "Rod", "r": "Uncommon", "e": [["speed", 0.12]], "c": {}, "cost": 18, "cur": "Coins"},
-		{"n": "Quick-Cast Rod", "s": "Rod", "r": "Uncommon", "e": [["speed", 0.13]], "c": {}, "cost": 20, "cur": "Coins"},
-		{"n": "Tapered Hickory Rod", "s": "Rod", "r": "Uncommon", "e": [["speed", 0.1]], "c": {}, "cost": 15, "cur": "Coins"},
-		{"n": "Fair-Weather Rod", "s": "Rod", "r": "Uncommon", "e": [["speed", 0.14]], "c": {"weather": "Sunny"}, "cost": 18, "cur": "Coins"},
-		{"n": "Rainrunner Rod", "s": "Rod", "r": "Uncommon", "e": [["speed", 0.13]], "c": {"weather": "Rainy"}, "cost": 18, "cur": "Coins"},
-		{"n": "Twin-Guide Rod", "s": "Rod", "r": "Uncommon", "e": [["luck", 0.12]], "c": {}, "cost": 20, "cur": "Coins"},
-		{"n": "Limber Rod", "s": "Rod", "r": "Uncommon", "e": [["speed", 0.11]], "c": {}, "cost": 16, "cur": "Coins"},
-		{"n": "Featherline Rod", "s": "Rod", "r": "Rare", "e": [["speed", 0.14], ["luck", 0.06]], "c": {}, "cost": 34, "cur": "Coins"},
-		{"n": "Longcast Rod", "s": "Rod", "r": "Rare", "e": [["speed", 0.18]], "c": {}, "cost": 40, "cur": "Coins"},
-		{"n": "Riverwalker Rod", "s": "Rod", "r": "Rare", "e": [["speed", 0.12], ["power", 0.08]], "c": {}, "cost": 38, "cur": "Coins"},
-		{"n": "Tidecaller Rod", "s": "Rod", "r": "Rare", "e": [["speed", 0.2]], "c": {"weather": "Rainy"}, "cost": 42, "cur": "Coins"},
-		{"n": "Swiftcurrent Rod", "s": "Rod", "r": "Rare", "e": [["speed", 0.16]], "c": {"season": "Summer"}, "cost": 36, "cur": "Coins"},
-		{"n": "Deep-Set Rod", "s": "Rod", "r": "Rare", "e": [["speed", 0.1], ["power", 0.1]], "c": {}, "cost": 40, "cur": "Coins"},
-		{"n": "Silver-Guide Rod", "s": "Rod", "r": "Rare", "e": [["speed", 0.19]], "c": {}, "cost": 48, "cur": "Coins"},
-		{"n": "Nightline Rod", "s": "Rod", "r": "Rare", "e": [["luck", 0.22]], "c": {"night": true}, "cost": 45, "cur": "Coins"},
-		{"n": "Stormcaster Rod", "s": "Rod", "r": "Epic", "e": [["speed", 0.2], ["luck", 0.12]], "c": {"weather": "Stormy"}, "cost": 14, "cur": "Scales"},
-		{"n": "Galewhip Rod", "s": "Rod", "r": "Epic", "e": [["speed", 0.26]], "c": {}, "cost": 16, "cur": "Scales"},
-		{"n": "Ridgeback Rod", "s": "Rod", "r": "Epic", "e": [["speed", 0.18], ["power", 0.14]], "c": {}, "cost": 15, "cur": "Scales"},
-		{"n": "Moonline Rod", "s": "Rod", "r": "Epic", "e": [["luck", 0.24]], "c": {"night": true}, "cost": 14, "cur": "Scales"},
-		{"n": "Thundertip Rod", "s": "Rod", "r": "Epic", "e": [["speed", 0.22]], "c": {"weather": "Stormy"}, "cost": 13, "cur": "Scales"},
-		{"n": "Suncast Rod", "s": "Rod", "r": "Epic", "e": [["speed", 0.28]], "c": {"season": "Summer"}, "cost": 16, "cur": "Scales"},
-		{"n": "Frostguide Rod", "s": "Rod", "r": "Epic", "e": [["speed", 0.2], ["luck", 0.08]], "c": {"season": "Winter"}, "cost": 15, "cur": "Scales"},
-		{"n": "Leviathan's Reach", "s": "Rod", "r": "Legendary", "e": [["speed", 0.32], ["power", 0.14]], "c": {}, "cost": 28, "cur": "Scales"},
-		{"n": "Kraken-bone Rod", "s": "Rod", "r": "Legendary", "e": [["speed", 0.38]], "c": {"weather": "Stormy"}, "cost": 32, "cur": "Scales"},
-		{"n": "Voidtip Rod", "s": "Rod", "r": "Legendary", "e": [["luck", 0.3], ["power", -0.1]], "c": {"night": true}, "cost": 30, "cur": "Scales"},
-		{"n": "Emberline Rod", "s": "Rod", "r": "Legendary", "e": [["speed", 0.34], ["luck", 0.1]], "c": {"season": "Autumn"}, "cost": 30, "cur": "Scales"},
-		{"n": "Glacierfang Rod", "s": "Rod", "r": "Legendary", "e": [["speed", 0.4]], "c": {"season": "Winter", "weather": "Blizzard"}, "cost": 35, "cur": "Scales"},
-		{"n": "Stormforged Rod", "s": "Rod", "r": "Legendary", "e": [["speed", 0.28], ["power", 0.16], ["luck", -0.08]], "c": {"weather": "Stormy"}, "cost": 32, "cur": "Scales"},
-		{"n": "The Endless Line", "s": "Rod", "r": "Mythic", "e": [["speed", 0.45], ["luck", 0.2]], "c": {}, "cost": 60, "cur": "Scales"},
-		{"n": "Sirensong Rod", "s": "Rod", "r": "Mythic", "e": [["luck", 0.5], ["speed", -0.15]], "c": {"weather": "Foggy"}, "cost": 55, "cur": "Scales"},
-		{"n": "Draconic Reel", "s": "Rod", "r": "Mythic", "e": [["speed", 0.4], ["power", 0.25]], "c": {"weather": "Blizzard"}, "cost": 75, "cur": "Scales"},
-		{"n": "Wyrm's Fang Rod", "s": "Rod", "r": "Mythic", "e": [["speed", 0.35], ["luck", 0.35], ["power", -0.2]], "c": {"weather": "Stormy", "season": "Winter"}, "cost": 70, "cur": "Scales"},
-		{"n": "Frayed Cap", "s": "Hat", "r": "Common", "e": [["luck", 0.06]], "c": {}, "cost": 6, "cur": "Coins"},
-		{"n": "Straw Hat", "s": "Hat", "r": "Common", "e": [["luck", 0.07]], "c": {}, "cost": 7, "cur": "Coins"},
-		{"n": "Old Bandana", "s": "Hat", "r": "Common", "e": [["luck", 0.06]], "c": {}, "cost": 6, "cur": "Coins"},
-		{"n": "Patchwork Cap", "s": "Hat", "r": "Common", "e": [["luck", 0.08]], "c": {}, "cost": 9, "cur": "Coins"},
-		{"n": "Faded Cap", "s": "Hat", "r": "Common", "e": [["luck", 0.05]], "c": {}, "cost": 6, "cur": "Coins"},
-		{"n": "Sun Cap", "s": "Hat", "r": "Common", "e": [["luck", 0.07]], "c": {}, "cost": 8, "cur": "Coins"},
-		{"n": "Simple Cap", "s": "Hat", "r": "Common", "e": [["luck", 0.06]], "c": {}, "cost": 6, "cur": "Coins"},
-		{"n": "Fisherman's Cap", "s": "Hat", "r": "Common", "e": [["luck", 0.09]], "c": {}, "cost": 12, "cur": "Coins"},
-		{"n": "Lucky Cap", "s": "Hat", "r": "Uncommon", "e": [["luck", 0.12]], "c": {}, "cost": 18, "cur": "Coins"},
-		{"n": "Four-Leaf Cap", "s": "Hat", "r": "Uncommon", "e": [["luck", 0.13]], "c": {}, "cost": 19, "cur": "Coins"},
-		{"n": "Rabbit's-Foot Hat", "s": "Hat", "r": "Uncommon", "e": [["luck", 0.14]], "c": {}, "cost": 20, "cur": "Coins"},
-		{"n": "Tide-Charm Hat", "s": "Hat", "r": "Uncommon", "e": [["luck", 0.11]], "c": {}, "cost": 16, "cur": "Coins"},
-		{"n": "Whisker Cap", "s": "Hat", "r": "Uncommon", "e": [["luck", 0.1], ["speed", 0.04]], "c": {}, "cost": 18, "cur": "Coins"},
-		{"n": "Moonlit Cap", "s": "Hat", "r": "Uncommon", "e": [["luck", 0.13]], "c": {"night": true}, "cost": 18, "cur": "Coins"},
-		{"n": "Coral Cap", "s": "Hat", "r": "Uncommon", "e": [["luck", 0.12]], "c": {"season": "Summer"}, "cost": 17, "cur": "Coins"},
-		{"n": "Beachcomber's Hat", "s": "Hat", "r": "Uncommon", "e": [["luck", 0.14]], "c": {"weather": "Sunny"}, "cost": 19, "cur": "Coins"},
-		{"n": "Fortune's Brim", "s": "Hat", "r": "Rare", "e": [["luck", 0.18]], "c": {}, "cost": 40, "cur": "Coins"},
-		{"n": "Star-Gazer Hat", "s": "Hat", "r": "Rare", "e": [["luck", 0.2]], "c": {"night": true}, "cost": 44, "cur": "Coins"},
-		{"n": "Selkie's Hood", "s": "Hat", "r": "Rare", "e": [["luck", 0.16], ["power", 0.06]], "c": {}, "cost": 42, "cur": "Coins"},
-		{"n": "Wishing Cap", "s": "Hat", "r": "Rare", "e": [["luck", 0.22]], "c": {}, "cost": 48, "cur": "Coins"},
-		{"n": "Tidewatcher's Hat", "s": "Hat", "r": "Rare", "e": [["luck", 0.18]], "c": {"weather": "Rainy"}, "cost": 40, "cur": "Coins"},
-		{"n": "Omen Cap", "s": "Hat", "r": "Rare", "e": [["luck", 0.15], ["speed", 0.08]], "c": {}, "cost": 40, "cur": "Coins"},
-		{"n": "Lantern Hat", "s": "Hat", "r": "Rare", "e": [["luck", 0.19]], "c": {"weather": "Foggy"}, "cost": 42, "cur": "Coins"},
-		{"n": "Compass Cap", "s": "Hat", "r": "Rare", "e": [["luck", 0.17]], "c": {}, "cost": 38, "cur": "Coins"},
-		{"n": "Stormwatcher's Hood", "s": "Hat", "r": "Epic", "e": [["luck", 0.24]], "c": {"weather": "Stormy"}, "cost": 14, "cur": "Scales"},
-		{"n": "Auroral Cap", "s": "Hat", "r": "Epic", "e": [["luck", 0.26]], "c": {"season": "Winter"}, "cost": 15, "cur": "Scales"},
-		{"n": "Nightglass Hood", "s": "Hat", "r": "Epic", "e": [["luck", 0.28]], "c": {"night": true}, "cost": 16, "cur": "Scales"},
-		{"n": "Suncrest Hat", "s": "Hat", "r": "Epic", "e": [["luck", 0.22], ["speed", 0.1]], "c": {"season": "Summer"}, "cost": 15, "cur": "Scales"},
-		{"n": "Frostveil Hood", "s": "Hat", "r": "Epic", "e": [["luck", 0.24], ["power", 0.08]], "c": {"season": "Winter"}, "cost": 14, "cur": "Scales"},
-		{"n": "Ember-Crown Cap", "s": "Hat", "r": "Epic", "e": [["luck", 0.25]], "c": {"season": "Autumn"}, "cost": 14, "cur": "Scales"},
-		{"n": "Galebrim Hat", "s": "Hat", "r": "Epic", "e": [["luck", 0.27]], "c": {"weather": "Stormy"}, "cost": 16, "cur": "Scales"},
-		{"n": "Crown of the Tides", "s": "Hat", "r": "Legendary", "e": [["luck", 0.34], ["speed", 0.12]], "c": {}, "cost": 30, "cur": "Scales"},
-		{"n": "Halo of the Deep", "s": "Hat", "r": "Legendary", "e": [["luck", 0.4]], "c": {"weather": "Foggy"}, "cost": 32, "cur": "Scales"},
-		{"n": "Starfall Hood", "s": "Hat", "r": "Legendary", "e": [["luck", 0.36]], "c": {"night": true}, "cost": 30, "cur": "Scales"},
-		{"n": "Void-Sight Hood", "s": "Hat", "r": "Legendary", "e": [["luck", 0.38], ["speed", -0.12]], "c": {"night": true, "weather": "Foggy"}, "cost": 34, "cur": "Scales"},
-		{"n": "Phoenix-Feather Cap", "s": "Hat", "r": "Legendary", "e": [["luck", 0.32], ["power", 0.14]], "c": {"season": "Autumn"}, "cost": 32, "cur": "Scales"},
-		{"n": "Leviathan's Gaze", "s": "Hat", "r": "Legendary", "e": [["luck", 0.3], ["speed", 0.16], ["power", -0.1]], "c": {"weather": "Stormy"}, "cost": 34, "cur": "Scales"},
-		{"n": "The Third Eye", "s": "Hat", "r": "Mythic", "e": [["luck", 0.5]], "c": {"night": true}, "cost": 55, "cur": "Scales"},
-		{"n": "Oracle's Hood", "s": "Hat", "r": "Mythic", "e": [["luck", 0.45], ["speed", 0.15]], "c": {}, "cost": 65, "cur": "Scales"},
-		{"n": "Selkie Queen's Crown", "s": "Hat", "r": "Mythic", "e": [["luck", 0.55], ["speed", -0.2]], "c": {"weather": "Foggy", "season": "Autumn"}, "cost": 60, "cur": "Scales"},
-		{"n": "Kraken-Eye Hood", "s": "Hat", "r": "Mythic", "e": [["luck", 0.4], ["power", 0.25]], "c": {"weather": "Blizzard"}, "cost": 75, "cur": "Scales"},
-		{"n": "Worn Vest", "s": "Outfit", "r": "Common", "e": [["power", 0.06]], "c": {}, "cost": 6, "cur": "Coins"},
-		{"n": "Patched Overalls", "s": "Outfit", "r": "Common", "e": [["power", 0.07]], "c": {}, "cost": 7, "cur": "Coins"},
-		{"n": "Canvas Jacket", "s": "Outfit", "r": "Common", "e": [["power", 0.06]], "c": {}, "cost": 6, "cur": "Coins"},
-		{"n": "Rope-Belt Coat", "s": "Outfit", "r": "Common", "e": [["power", 0.08]], "c": {}, "cost": 9, "cur": "Coins"},
-		{"n": "Deckhand's Shirt", "s": "Outfit", "r": "Common", "e": [["power", 0.05]], "c": {}, "cost": 6, "cur": "Coins"},
-		{"n": "Oilcloth Vest", "s": "Outfit", "r": "Common", "e": [["power", 0.07]], "c": {}, "cost": 8, "cur": "Coins"},
-		{"n": "Rugged Overalls", "s": "Outfit", "r": "Common", "e": [["power", 0.06]], "c": {}, "cost": 6, "cur": "Coins"},
-		{"n": "Simple Waders", "s": "Outfit", "r": "Common", "e": [["power", 0.09]], "c": {}, "cost": 12, "cur": "Coins"},
-		{"n": "Waxed Coat", "s": "Outfit", "r": "Uncommon", "e": [["power", 0.12]], "c": {}, "cost": 18, "cur": "Coins"},
-		{"n": "Reinforced Vest", "s": "Outfit", "r": "Uncommon", "e": [["power", 0.13]], "c": {}, "cost": 19, "cur": "Coins"},
-		{"n": "Sailor's Jacket", "s": "Outfit", "r": "Uncommon", "e": [["power", 0.11]], "c": {}, "cost": 16, "cur": "Coins"},
-		{"n": "Tarred Overalls", "s": "Outfit", "r": "Uncommon", "e": [["power", 0.1], ["speed", 0.04]], "c": {}, "cost": 17, "cur": "Coins"},
-		{"n": "Sturdy Waders", "s": "Outfit", "r": "Uncommon", "e": [["power", 0.14]], "c": {}, "cost": 20, "cur": "Coins"},
-		{"n": "Netmaker's Vest", "s": "Outfit", "r": "Uncommon", "e": [["power", 0.12]], "c": {}, "cost": 18, "cur": "Coins"},
-		{"n": "Ironseam Coat", "s": "Outfit", "r": "Uncommon", "e": [["power", 0.13]], "c": {"season": "Autumn"}, "cost": 18, "cur": "Coins"},
-		{"n": "Rivet Jacket", "s": "Outfit", "r": "Uncommon", "e": [["power", 0.14]], "c": {"weather": "Stormy"}, "cost": 19, "cur": "Coins"},
-		{"n": "Oilskin Longcoat", "s": "Outfit", "r": "Rare", "e": [["power", 0.18]], "c": {}, "cost": 42, "cur": "Coins"},
-		{"n": "Whalebone Vest", "s": "Outfit", "r": "Rare", "e": [["power", 0.2]], "c": {}, "cost": 46, "cur": "Coins"},
-		{"n": "Anchor-Weight Coat", "s": "Outfit", "r": "Rare", "e": [["power", 0.16], ["speed", 0.06]], "c": {}, "cost": 40, "cur": "Coins"},
-		{"n": "Riptide Jacket", "s": "Outfit", "r": "Rare", "e": [["power", 0.19]], "c": {"weather": "Stormy"}, "cost": 42, "cur": "Coins"},
-		{"n": "Deepsea Waders", "s": "Outfit", "r": "Rare", "e": [["power", 0.17], ["luck", 0.08]], "c": {}, "cost": 44, "cur": "Coins"},
-		{"n": "Harpooner's Coat", "s": "Outfit", "r": "Rare", "e": [["power", 0.22]], "c": {}, "cost": 48, "cur": "Coins"},
-		{"n": "Iron-Rib Vest", "s": "Outfit", "r": "Rare", "e": [["power", 0.18]], "c": {"season": "Winter"}, "cost": 40, "cur": "Coins"},
-		{"n": "Stormguard Jacket", "s": "Outfit", "r": "Rare", "e": [["power", 0.2]], "c": {"weather": "Stormy"}, "cost": 44, "cur": "Coins"},
-		{"n": "Leviathan-Hide Coat", "s": "Outfit", "r": "Epic", "e": [["power", 0.26]], "c": {}, "cost": 15, "cur": "Scales"},
-		{"n": "Stormforged Vest", "s": "Outfit", "r": "Epic", "e": [["power", 0.24], ["speed", 0.1]], "c": {"weather": "Stormy"}, "cost": 15, "cur": "Scales"},
-		{"n": "Reef-Scale Jacket", "s": "Outfit", "r": "Epic", "e": [["power", 0.25]], "c": {"season": "Summer"}, "cost": 14, "cur": "Scales"},
-		{"n": "Tidewarden Coat", "s": "Outfit", "r": "Epic", "e": [["power", 0.22], ["luck", 0.12]], "c": {}, "cost": 16, "cur": "Scales"},
-		{"n": "Ashenhull Vest", "s": "Outfit", "r": "Epic", "e": [["power", 0.28]], "c": {"season": "Autumn"}, "cost": 15, "cur": "Scales"},
-		{"n": "Frostbound Jacket", "s": "Outfit", "r": "Epic", "e": [["power", 0.26]], "c": {"season": "Winter"}, "cost": 14, "cur": "Scales"},
-		{"n": "Deepcurrent Vest", "s": "Outfit", "r": "Epic", "e": [["power", 0.24], ["speed", 0.08]], "c": {"weather": "Rainy"}, "cost": 15, "cur": "Scales"},
-		{"n": "Krakenhide Cloak", "s": "Outfit", "r": "Legendary", "e": [["power", 0.36]], "c": {}, "cost": 30, "cur": "Scales"},
-		{"n": "Abyssal Plate Vest", "s": "Outfit", "r": "Legendary", "e": [["power", 0.4], ["speed", -0.1]], "c": {"weather": "Foggy"}, "cost": 32, "cur": "Scales"},
-		{"n": "Stormlord's Coat", "s": "Outfit", "r": "Legendary", "e": [["power", 0.34], ["luck", 0.14]], "c": {"weather": "Stormy"}, "cost": 32, "cur": "Scales"},
-		{"n": "Emberforged Jacket", "s": "Outfit", "r": "Legendary", "e": [["power", 0.38]], "c": {"season": "Autumn"}, "cost": 30, "cur": "Scales"},
-		{"n": "Glacierheart Vest", "s": "Outfit", "r": "Legendary", "e": [["power", 0.36], ["speed", 0.12]], "c": {"season": "Winter"}, "cost": 34, "cur": "Scales"},
-		{"n": "Wyrmscale Coat", "s": "Outfit", "r": "Legendary", "e": [["power", 0.32], ["luck", 0.16], ["speed", -0.1]], "c": {}, "cost": 34, "cur": "Scales"},
-		{"n": "The Leviathan's Embrace", "s": "Outfit", "r": "Mythic", "e": [["power", 0.5]], "c": {}, "cost": 70, "cur": "Scales"},
-		{"n": "Serpent King's Mantle", "s": "Outfit", "r": "Mythic", "e": [["power", 0.45], ["luck", 0.2]], "c": {"weather": "Blizzard"}, "cost": 75, "cur": "Scales"},
-		{"n": "Titan's Harness", "s": "Outfit", "r": "Mythic", "e": [["power", 0.55], ["speed", -0.2]], "c": {"weather": "Stormy"}, "cost": 65, "cur": "Scales"},
-		{"n": "Voidwoven Jacket", "s": "Outfit", "r": "Mythic", "e": [["power", 0.4], ["speed", 0.25]], "c": {"night": true}, "cost": 70, "cur": "Scales"},
-		{"n": "Wooden Bead", "s": "Charm", "r": "Common", "e": [["coin_gain", 0.05]], "c": {}, "cost": 6, "cur": "Coins"},
-		{"n": "Knot Charm", "s": "Charm", "r": "Common", "e": [["walk_speed", 0.04]], "c": {}, "cost": 6, "cur": "Coins"},
-		{"n": "Old Coin", "s": "Charm", "r": "Common", "e": [["coin_gain", 0.05]], "c": {}, "cost": 7, "cur": "Coins"},
-		{"n": "Shell Fragment", "s": "Charm", "r": "Common", "e": [["xp_gain", 0.04]], "c": {}, "cost": 6, "cur": "Coins"},
-		{"n": "Rope Loop", "s": "Charm", "r": "Common", "e": [["walk_speed", 0.05]], "c": {}, "cost": 7, "cur": "Coins"},
-		{"n": "Rusty Hook Charm", "s": "Charm", "r": "Common", "e": [["coin_gain", 0.06]], "c": {}, "cost": 9, "cur": "Coins"},
-		{"n": "Feather Charm", "s": "Charm", "r": "Common", "e": [["xp_gain", 0.05]], "c": {}, "cost": 7, "cur": "Coins"},
-		{"n": "River Stone", "s": "Charm", "r": "Common", "e": [["walk_speed", 0.06]], "c": {}, "cost": 8, "cur": "Coins"},
-		{"n": "Lucky Coin", "s": "Charm", "r": "Uncommon", "e": [["coin_gain", 0.09]], "c": {}, "cost": 16, "cur": "Coins"},
-		{"n": "Tidepool Shell", "s": "Charm", "r": "Uncommon", "e": [["xp_gain", 0.08]], "c": {}, "cost": 15, "cur": "Coins"},
-		{"n": "Netmaker's Knot", "s": "Charm", "r": "Uncommon", "e": [["walk_speed", 0.09]], "c": {}, "cost": 16, "cur": "Coins"},
-		{"n": "Anchor Charm", "s": "Charm", "r": "Uncommon", "e": [["rest_time", 0.07]], "c": {}, "cost": 15, "cur": "Coins"},
-		{"n": "Sailor's Knot", "s": "Charm", "r": "Uncommon", "e": [["walk_speed", 0.1]], "c": {}, "cost": 17, "cur": "Coins"},
-		{"n": "Compass Bead", "s": "Charm", "r": "Uncommon", "e": [["coin_gain", 0.09]], "c": {}, "cost": 16, "cur": "Coins"},
-		{"n": "Driftwood Charm", "s": "Charm", "r": "Uncommon", "e": [["walk_speed", 0.08], ["luck", 0.04]], "c": {}, "cost": 18, "cur": "Coins"},
-		{"n": "Whistle Charm", "s": "Charm", "r": "Uncommon", "e": [["rest_time", 0.1]], "c": {}, "cost": 17, "cur": "Coins"},
-		{"n": "Captain's Coin", "s": "Charm", "r": "Rare", "e": [["coin_gain", 0.14]], "c": {}, "cost": 38, "cur": "Coins"},
-		{"n": "Tideglass Pendant", "s": "Charm", "r": "Rare", "e": [["xp_gain", 0.13]], "c": {}, "cost": 36, "cur": "Coins"},
-		{"n": "Selkie's Tear", "s": "Charm", "r": "Rare", "e": [["luck", 0.12], ["walk_speed", 0.06]], "c": {}, "cost": 40, "cur": "Coins"},
-		{"n": "Barnacle Cluster", "s": "Charm", "r": "Rare", "e": [["scale_gain", 0.15]], "c": {}, "cost": 42, "cur": "Coins"},
-		{"n": "Storm-Bell Charm", "s": "Charm", "r": "Rare", "e": [["coin_gain", 0.16]], "c": {"weather": "Stormy"}, "cost": 38, "cur": "Coins"},
-		{"n": "Fisherman's Star", "s": "Charm", "r": "Rare", "e": [["walk_speed", 0.14]], "c": {}, "cost": 36, "cur": "Coins"},
-		{"n": "Reef Pendant", "s": "Charm", "r": "Rare", "e": [["rest_time", 0.13]], "c": {"season": "Summer"}, "cost": 36, "cur": "Coins"},
-		{"n": "Moonshell Amulet", "s": "Charm", "r": "Rare", "e": [["xp_gain", 0.15]], "c": {"night": true}, "cost": 38, "cur": "Coins"},
-		{"n": "Stormcaller's Bell", "s": "Charm", "r": "Epic", "e": [["coin_gain", 0.2]], "c": {"weather": "Stormy"}, "cost": 14, "cur": "Scales"},
-		{"n": "Deep Current Pendant", "s": "Charm", "r": "Epic", "e": [["scale_gain", 0.18]], "c": {}, "cost": 16, "cur": "Scales"},
-		{"n": "Auroral Shard", "s": "Charm", "r": "Epic", "e": [["xp_gain", 0.22]], "c": {"season": "Winter"}, "cost": 14, "cur": "Scales"},
-		{"n": "Frostbell Charm", "s": "Charm", "r": "Epic", "e": [["rest_time", 0.2]], "c": {"season": "Winter"}, "cost": 13, "cur": "Scales"},
-		{"n": "Emberstone Amulet", "s": "Charm", "r": "Epic", "e": [["walk_speed", 0.19], ["power", 0.08]], "c": {"season": "Autumn"}, "cost": 14, "cur": "Scales"},
-		{"n": "Suncoin Pendant", "s": "Charm", "r": "Epic", "e": [["coin_gain", 0.24]], "c": {"season": "Summer"}, "cost": 15, "cur": "Scales"},
-		{"n": "Voidglass Bead", "s": "Charm", "r": "Epic", "e": [["xp_gain", 0.21]], "c": {"night": true}, "cost": 14, "cur": "Scales"},
-		{"n": "Heart of the Tide", "s": "Charm", "r": "Legendary", "e": [["scale_gain", 0.3]], "c": {}, "cost": 32, "cur": "Scales"},
-		{"n": "Leviathan's Tooth", "s": "Charm", "r": "Legendary", "e": [["walk_speed", 0.28], ["power", 0.14]], "c": {}, "cost": 30, "cur": "Scales"},
-		{"n": "Kraken-Ink Vial", "s": "Charm", "r": "Legendary", "e": [["coin_gain", 0.32], ["luck", -0.1]], "c": {}, "cost": 30, "cur": "Scales"},
-		{"n": "Phoenix Ember Charm", "s": "Charm", "r": "Legendary", "e": [["xp_gain", 0.34]], "c": {"season": "Autumn"}, "cost": 32, "cur": "Scales"},
-		{"n": "Wyrm-Scale Pendant", "s": "Charm", "r": "Legendary", "e": [["rest_time", 0.3]], "c": {"weather": "Blizzard"}, "cost": 34, "cur": "Scales"},
-		{"n": "Abyssal Compass", "s": "Charm", "r": "Legendary", "e": [["walk_speed", 0.26], ["coin_gain", 0.16]], "c": {"weather": "Foggy"}, "cost": 32, "cur": "Scales"},
-		{"n": "The Tidebinder", "s": "Charm", "r": "Mythic", "e": [["scale_gain", 0.45]], "c": {}, "cost": 65, "cur": "Scales"},
-		{"n": "Siren's Promise", "s": "Charm", "r": "Mythic", "e": [["xp_gain", 0.5], ["coin_gain", -0.15]], "c": {"night": true}, "cost": 55, "cur": "Scales"},
-		{"n": "Titan's Knot", "s": "Charm", "r": "Mythic", "e": [["walk_speed", 0.4], ["rest_time", 0.3]], "c": {"weather": "Stormy"}, "cost": 70, "cur": "Scales"},
-		{"n": "Heartstone of the Deep", "s": "Charm", "r": "Mythic", "e": [["coin_gain", 0.35], ["scale_gain", 0.35]], "c": {"weather": "Blizzard"}, "cost": 80, "cur": "Scales"},
-		{"n": "Earthworm", "s": "Bait", "r": "Common", "e": [["luck", 0.05]], "c": {}, "cost": 5, "cur": "Coins"},
-		{"n": "Bread Crust", "s": "Bait", "r": "Common", "e": [["luck", 0.05]], "c": {}, "cost": 5, "cur": "Coins"},
-		{"n": "Cricket", "s": "Bait", "r": "Common", "e": [["luck", 0.06]], "c": {}, "cost": 6, "cur": "Coins"},
-		{"n": "Minnow Scrap", "s": "Bait", "r": "Common", "e": [["power", 0.06]], "c": {}, "cost": 6, "cur": "Coins"},
-		{"n": "Grub", "s": "Bait", "r": "Common", "e": [["luck", 0.05]], "c": {}, "cost": 5, "cur": "Coins"},
-		{"n": "Corn Kernel", "s": "Bait", "r": "Common", "e": [["luck", 0.06]], "c": {}, "cost": 6, "cur": "Coins"},
-		{"n": "Dough Ball", "s": "Bait", "r": "Common", "e": [["luck", 0.07]], "c": {}, "cost": 8, "cur": "Coins"},
-		{"n": "Grasshopper", "s": "Bait", "r": "Common", "e": [["speed", 0.06]], "c": {}, "cost": 7, "cur": "Coins"},
-		{"n": "Wriggling Worm", "s": "Bait", "r": "Uncommon", "e": [["luck", 0.1]], "c": {}, "cost": 15, "cur": "Coins"},
-		{"n": "Cricket Cluster", "s": "Bait", "r": "Uncommon", "e": [["luck", 0.11]], "c": {}, "cost": 16, "cur": "Coins"},
-		{"n": "Shrimp Bit", "s": "Bait", "r": "Uncommon", "e": [["power", 0.1]], "c": {}, "cost": 16, "cur": "Coins"},
-		{"n": "Squid Strip", "s": "Bait", "r": "Uncommon", "e": [["luck", 0.12]], "c": {}, "cost": 17, "cur": "Coins"},
-		{"n": "Nightcrawler", "s": "Bait", "r": "Uncommon", "e": [["luck", 0.13]], "c": {"night": true}, "cost": 17, "cur": "Coins"},
-		{"n": "Grasshopper Swarm", "s": "Bait", "r": "Uncommon", "e": [["speed", 0.11]], "c": {}, "cost": 16, "cur": "Coins"},
-		{"n": "Cheese Lure", "s": "Bait", "r": "Uncommon", "e": [["luck", 0.1], ["power", 0.04]], "c": {}, "cost": 17, "cur": "Coins"},
-		{"n": "Feather Jig", "s": "Bait", "r": "Uncommon", "e": [["speed", 0.12]], "c": {}, "cost": 18, "cur": "Coins"},
-		{"n": "Glowworm", "s": "Bait", "r": "Rare", "e": [["luck", 0.16]], "c": {"night": true}, "cost": 36, "cur": "Coins"},
-		{"n": "Moonlit Cricket", "s": "Bait", "r": "Rare", "e": [["luck", 0.18]], "c": {"night": true}, "cost": 40, "cur": "Coins"},
-		{"n": "Storm-Caught Shrimp", "s": "Bait", "r": "Rare", "e": [["power", 0.17]], "c": {"weather": "Stormy"}, "cost": 38, "cur": "Coins"},
-		{"n": "Frost Minnow", "s": "Bait", "r": "Rare", "e": [["luck", 0.16]], "c": {"season": "Winter"}, "cost": 36, "cur": "Coins"},
-		{"n": "Sunworm", "s": "Bait", "r": "Rare", "e": [["speed", 0.15]], "c": {"weather": "Sunny"}, "cost": 34, "cur": "Coins"},
-		{"n": "Rainlure", "s": "Bait", "r": "Rare", "e": [["luck", 0.18]], "c": {"weather": "Rainy"}, "cost": 38, "cur": "Coins"},
-		{"n": "Fogfly", "s": "Bait", "r": "Rare", "e": [["luck", 0.17]], "c": {"weather": "Foggy"}, "cost": 36, "cur": "Coins"},
-		{"n": "Tideworm", "s": "Bait", "r": "Rare", "e": [["power", 0.16], ["luck", 0.06]], "c": {}, "cost": 40, "cur": "Coins"},
-		{"n": "Stormlure", "s": "Bait", "r": "Epic", "e": [["luck", 0.24]], "c": {"weather": "Stormy"}, "cost": 14, "cur": "Scales"},
-		{"n": "Blizzard Grub", "s": "Bait", "r": "Epic", "e": [["power", 0.22]], "c": {"season": "Winter"}, "cost": 13, "cur": "Scales"},
-		{"n": "Suncrisp Beetle", "s": "Bait", "r": "Epic", "e": [["speed", 0.26]], "c": {"season": "Summer"}, "cost": 15, "cur": "Scales"},
-		{"n": "Auroral Shrimp", "s": "Bait", "r": "Epic", "e": [["luck", 0.24]], "c": {"season": "Winter", "night": true}, "cost": 14, "cur": "Scales"},
-		{"n": "Emberworm", "s": "Bait", "r": "Epic", "e": [["power", 0.23]], "c": {"season": "Autumn"}, "cost": 14, "cur": "Scales"},
-		{"n": "Frostfly", "s": "Bait", "r": "Epic", "e": [["luck", 0.25]], "c": {"season": "Winter"}, "cost": 15, "cur": "Scales"},
-		{"n": "Galebug", "s": "Bait", "r": "Epic", "e": [["speed", 0.24]], "c": {"weather": "Stormy"}, "cost": 14, "cur": "Scales"},
-		{"n": "Krakenbait", "s": "Bait", "r": "Legendary", "e": [["luck", 0.34]], "c": {"weather": "Stormy"}, "cost": 30, "cur": "Scales"},
-		{"n": "Wyrmworm", "s": "Bait", "r": "Legendary", "e": [["power", 0.32], ["luck", 0.12]], "c": {}, "cost": 32, "cur": "Scales"},
-		{"n": "Phoenix Feather Lure", "s": "Bait", "r": "Legendary", "e": [["luck", 0.36]], "c": {"season": "Autumn"}, "cost": 30, "cur": "Scales"},
-		{"n": "Voidworm", "s": "Bait", "r": "Legendary", "e": [["luck", 0.38]], "c": {"night": true}, "cost": 32, "cur": "Scales"},
-		{"n": "Stormheart Bait", "s": "Bait", "r": "Legendary", "e": [["power", 0.3], ["speed", 0.14]], "c": {"weather": "Stormy"}, "cost": 34, "cur": "Scales"},
-		{"n": "Glacier Shrimp", "s": "Bait", "r": "Legendary", "e": [["luck", 0.34], ["speed", -0.1]], "c": {"weather": "Blizzard"}, "cost": 32, "cur": "Scales"},
-		{"n": "The Endless Worm", "s": "Bait", "r": "Mythic", "e": [["luck", 0.5]], "c": {}, "cost": 60, "cur": "Scales"},
-		{"n": "Siren's Lure", "s": "Bait", "r": "Mythic", "e": [["luck", 0.55], ["power", -0.15]], "c": {"weather": "Foggy"}, "cost": 55, "cur": "Scales"},
-		{"n": "Leviathan's Chum", "s": "Bait", "r": "Mythic", "e": [["power", 0.45], ["luck", 0.2]], "c": {"weather": "Blizzard"}, "cost": 75, "cur": "Scales"},
-		{"n": "Bait of a Thousand Tides", "s": "Bait", "r": "Mythic", "e": [["luck", 0.4], ["speed", 0.4], ["power", -0.2]], "c": {"weather": "Stormy", "season": "Winter"}, "cost": 70, "cur": "Scales"},
+## Builds the gear catalog from GearFamilies plus the hand-written
+## signature pieces below.
+##
+## The previous catalog was 213 rows typed out individually, which is why
+## its numbers wandered: eight Common rods sat between +5% and +9% Speed
+## for no reason anyone could name. Family expansion keeps a line
+## internally consistent, and anything that genuinely should break the
+## pattern is written out by hand instead of hidden among the rest.
 
-	# --- Standout items: themed sets + a couple of unique-effect pieces,
-	# layered on top of the flat-bonus catalog above rather than replacing it.
-	{"n": "Chaser's Longrod", "s": "Rod", "r": "Rare", "e": [["speed", 0.15], ["luck", 0.08]], "c": {"weather": "Stormy"}, "cost": 34, "cur": "Coins", "set": "Storm Chaser"},
-	{"n": "Chaser's Hood", "s": "Hat", "r": "Rare", "e": [["luck", 0.14]], "c": {"weather": "Stormy"}, "cost": 30, "cur": "Coins", "set": "Storm Chaser"},
-	{"n": "Chaser's Talisman", "s": "Charm", "r": "Rare", "e": [["luck", 0.1]], "c": {"weather": "Stormy"}, "cost": 32, "cur": "Coins", "set": "Storm Chaser"},
-	{"n": "Frostbound Rod", "s": "Rod", "r": "Legendary", "e": [["speed", 0.3]], "c": {"season": "Winter"}, "cost": 30, "cur": "Scales", "set": "Frostbound"},
-	{"n": "Frostbound Coat", "s": "Outfit", "r": "Legendary", "e": [["rest_time", 0.15]], "c": {"season": "Winter"}, "cost": 28, "cur": "Scales", "set": "Frostbound"},
-	{"n": "Frostbound Lure", "s": "Bait", "r": "Legendary", "e": [["power", 0.2]], "c": {"season": "Winter"}, "cost": 30, "cur": "Scales", "set": "Frostbound"},
-	{"n": "Rare-Seeking Lure", "s": "Bait", "r": "Epic", "e": [["guarantee_rare", 1.0]], "c": {}, "cost": 20, "cur": "Scales"},
-	{"n": "Tireless Charm", "s": "Charm", "r": "Epic", "e": [["skip_rest_chance", 0.2]], "c": {}, "cost": 16, "cur": "Scales"},
+## Only the Bait piece of a family carries its habitat bias. Every family
+## that steers fish still has to earn it through the one slot dedicated to
+## steering fish, rather than a rod quietly doing a bait's job.
+const BIAS_SLOT := "Bait"
+
+## Hand-written pieces: capstones, real trade-offs, and the oddities that
+## give the top of the catalog character. These deliberately ignore the
+## rarity curve.
+const SIGNATURE_ITEMS := [
+	{
+		"name": "The Endless Line", "slot": "Rod", "rarity": "Mythic", "family": "Signature",
+		"description": "It has never once needed re-spooling. Nobody asks why.",
+		"effects": [["speed", 0.46], ["luck", 0.2]],
+		"cost": 78, "currency": "Scales",
+	},
+	{
+		"name": "Sirensong Reel", "slot": "Rod", "rarity": "Mythic", "family": "Signature",
+		"description": "Reels beautifully. Reels whether you want it to or not.",
+		"effects": [["luck", 0.55], ["speed", -0.18]],
+		"cost": 72, "currency": "Scales",
+	},
+	{
+		"name": "Leviathan's Reach", "slot": "Rod", "rarity": "Legendary", "family": "Signature",
+		"description": "Two arm-spans of something that used to be a rib.",
+		"effects": [["power", 0.36], ["speed", 0.1], ["walk_speed", -0.12]],
+		"cost": 34, "currency": "Scales",
+	},
+	{
+		"name": "Wyrm's Fang", "slot": "Rod", "rarity": "Mythic", "family": "Signature",
+		"description": "Still warm. Still sharp. Still, apparently, hungry.",
+		"effects": [["speed", 0.34], ["luck", 0.34], ["power", -0.2]],
+		"bonus_effects": [["power", 0.5]], "condition": {"weather": "Blizzard"},
+		"cost": 80, "currency": "Scales",
+	},
+	{
+		"name": "Drowned Crown", "slot": "Hat", "rarity": "Mythic", "family": "Signature",
+		"description": "Fits anyone. Nobody wears it twice.",
+		"effects": [["luck", 0.48], ["endurance", -0.15]],
+		"cost": 74, "currency": "Scales",
+	},
+	{
+		"name": "Lighthouse Keeper's Hood", "slot": "Hat", "rarity": "Legendary", "family": "Signature",
+		"description": "Forty years of nights, and he never once sat down.",
+		"effects": [["luck", 0.2]],
+		"bonus_effects": [["luck", 0.3], ["endurance", 0.15]], "condition": {"night": true},
+		"cost": 32, "currency": "Scales",
+	},
+	{
+		"name": "Salt-Cured Regalia", "slot": "Outfit", "rarity": "Mythic", "family": "Signature",
+		"description": "Stiff as board, warm as a hearth, smells like a tide pool.",
+		"effects": [["power", 0.4], ["endurance", 0.2], ["walk_speed", -0.15]],
+		"cost": 76, "currency": "Scales",
+	},
+	{
+		"name": "Stormforged Mantle", "slot": "Outfit", "rarity": "Legendary", "family": "Signature",
+		"description": "Struck twice. Improved both times.",
+		"effects": [["power", 0.18]],
+		"bonus_effects": [["power", 0.3], ["speed", 0.14]], "condition": {"weather": "Stormy"},
+		"cost": 33, "currency": "Scales",
+	},
+	{
+		"name": "Tireless Charm", "slot": "Charm", "rarity": "Legendary", "family": "Signature",
+		"description": "You will not rest. You may not want to.",
+		"effects": [["skip_rest_chance", 0.35], ["endurance", 0.15]],
+		"cost": 30, "currency": "Scales",
+	},
+	{
+		"name": "Cartographer's Relic", "slot": "Charm", "rarity": "Mythic", "family": "Signature",
+		"description": "The island is drawn slightly wrong, and slightly smaller.",
+		"effects": [["walk_speed", 0.4], ["xp_gain", 0.2]],
+		"cost": 66, "currency": "Scales",
+	},
+	{
+		"name": "Hook of Certainty", "slot": "Charm", "rarity": "Mythic", "family": "Signature",
+		"description": "Nothing common has taken it yet. Nothing common ever will.",
+		"effects": [["guarantee_rare", 1.0], ["speed", -0.25]],
+		"cost": 88, "currency": "Scales",
+	},
+	{
+		"name": "Purser's Sigil", "slot": "Charm", "rarity": "Legendary", "family": "Signature",
+		"description": "Counts faster than you do, and is never wrong.",
+		"effects": [["coin_gain", 0.35], ["scale_gain", 0.15]],
+		"cost": 31, "currency": "Scales",
+	},
+	{
+		"name": "The Last Minnow", "slot": "Bait", "rarity": "Mythic", "family": "Signature",
+		"description": "Every deep thing in the world knows this shape.",
+		"effects": [["luck", 0.3]],
+		"habitat_bias": {"The Deep": 3.2, "Sunken Ruins": 3.2, "Open Water": 2.0},
+		"cost": 70, "currency": "Scales",
+	},
+	{
+		"name": "Kingfisher's Offering", "slot": "Bait", "rarity": "Legendary", "family": "Signature",
+		"description": "Freshwater only. Freshwater exclusively. Freshwater proudly.",
+		"effects": [["luck", 0.24], ["power", 0.1]],
+		"habitat_bias": {"Reedbeds": 3.0, "River Bend": 3.0},
+		"cost": 28, "currency": "Scales",
+	},
+	{
+		"name": "Bottled Storm", "slot": "Bait", "rarity": "Mythic", "family": "Signature",
+		"description": "Uncork upwind. This is not advice, it is a warning.",
+		"effects": [["luck", 0.2]],
+		"bonus_effects": [["luck", 0.35], ["speed", 0.2]], "condition": {"weather": "Stormy"},
+		"habitat_bias": {"Storm Front": 3.4},
+		"cost": 82, "currency": "Scales",
+	},
+	{
+		"name": "Beginner's Luck", "slot": "Charm", "rarity": "Common", "family": "Signature",
+		"description": "It only works once, but it works spectacularly.",
+		"effects": [["luck", 0.14], ["xp_gain", -0.1]],
+		"cost": 9, "currency": "Coins",
+	},
+	{
+		"name": "Borrowed Boots", "slot": "Outfit", "rarity": "Common", "family": "Signature",
+		"description": "A size too large. You will grow into them or fall over.",
+		"effects": [["walk_speed", 0.16], ["power", -0.05]],
+		"cost": 8, "currency": "Coins",
+	},
+	{
+		"name": "Lucky Stone", "slot": "Charm", "rarity": "Uncommon", "family": "Signature",
+		"description": "Ordinary in every measurable way.",
+		"effects": [["luck", 0.16]],
+		"cost": 20, "currency": "Coins",
+	},
+	{
+		"name": "Patchwork Sail Coat", "slot": "Outfit", "rarity": "Rare", "family": "Signature",
+		"description": "Nine ships contributed. None of them willingly.",
+		"effects": [["power", 0.14], ["endurance", 0.1], ["walk_speed", 0.06]],
+		"cost": 45, "currency": "Coins",
+	},
+	{
+		"name": "Ledger of Small Fish", "slot": "Hat", "rarity": "Rare", "family": "Signature",
+		"description": "Worn as a hat because there is nowhere else to keep it.",
+		"effects": [["xp_gain", 0.18], ["coin_gain", 0.1]],
+		"cost": 44, "currency": "Coins",
+	},
+	{
+		"name": "Deadwater Lure", "slot": "Bait", "rarity": "Epic", "family": "Signature",
+		"description": "Sinks like it means it.",
+		"effects": [["power", 0.2]],
+		"habitat_bias": {"The Deep": 2.6},
+		"cost": 17, "currency": "Scales",
+	},
+	{
+		"name": "Ice Auger Charm", "slot": "Charm", "rarity": "Epic", "family": "Signature",
+		"description": "Opens water that would rather stay shut.",
+		"effects": [["power", 0.12]],
+		"bonus_effects": [["power", 0.24], ["endurance", 0.12]], "condition": {"season": "Winter"},
+		"cost": 16, "currency": "Scales",
+	},
+	{
+		"name": "Jetty Boots", "slot": "Outfit", "rarity": "Epic", "family": "Signature",
+		"description": "Grip for wet planks a long way from shore.",
+		"effects": [["endurance", 0.14]],
+		"bonus_effects": [["power", 0.22], ["speed", 0.1]], "condition": {"spot": "offshore"},
+		"cost": 18, "currency": "Scales",
+	},
+	{
+		"name": "Pondside Stool", "slot": "Charm", "rarity": "Uncommon", "family": "Signature",
+		"description": "Three legs, one of them optimistic.",
+		"effects": [["rest_time", 0.14]],
+		"bonus_effects": [["luck", 0.14]], "condition": {"spot": "pond"},
+		"cost": 19, "currency": "Coins",
+	},
+	{
+		"name": "Harbour Permit", "slot": "Charm", "rarity": "Rare", "family": "Signature",
+		"description": "Stamped, countersigned, and almost certainly forged.",
+		"effects": [["coin_gain", 0.12]],
+		"bonus_effects": [["coin_gain", 0.2], ["speed", 0.1]], "condition": {"spot": "pier"},
+		"cost": 46, "currency": "Coins",
+	},
 ]
-
-## Themed multi-piece equip bonuses, keyed by Item.set_name. Each entry maps
-## a piece-count threshold to the [axis, amount] bonus granted at that count
-## (only the highest threshold met applies, not all of them stacked).
-const SET_BONUSES := {
-	"Storm Chaser": {2: [["luck", 0.05]], 3: [["luck", 0.1]]},
-	"Frostbound": {2: [["speed", 0.08]], 3: [["speed", 0.15]]},
-}
 
 static var _catalog: Array = []
 
 static func _build_catalog() -> void:
 	if not _catalog.is_empty():
 		return
-	for raw in RAW_ITEMS:
-		_catalog.append(Item.new(raw["n"], raw["s"], raw["r"], raw["e"], raw["c"], raw["cost"], raw["cur"], raw.get("set", "")))
+	for family in GearFamilies.FAMILIES:
+		for item_data in _expand_family(family):
+			_catalog.append(Item.new(item_data))
+	for data in SIGNATURE_ITEMS:
+		_catalog.append(Item.new(data))
+
+## Splits a family's budget across its axes and turns it into one item per
+## slot per rarity in its band.
+static func _expand_family(family: Dictionary) -> Array:
+	var result: Array = []
+	var axes: Array = family.axes
+	var condition: Dictionary = family.get("condition", {})
+	var is_conditional := not condition.is_empty()
+	for rarity in family.rarities:
+		var rarity_index: int = GearFamilies.RARITY_ORDER.find(rarity)
+		var budget: float = GearFamilies.RARITY_BUDGET[rarity]
+		var base_budget: float = budget * (GearFamilies.CONDITIONAL_BASE_SHARE if is_conditional else 1.0)
+		var bonus_budget: float = budget * GearFamilies.CONDITIONAL_BONUS_SHARE if is_conditional else 0.0
+		var stem: String = GearFamilies.stem_for(family, rarity_index)
+		var pricing: Dictionary = GearFamilies.RARITY_COST[rarity]
+		for slot in family.slots:
+			var noun: String = GearFamilies.SLOT_NOUNS[slot][rarity_index]
+			var data := {
+				"name": "%s %s" % [stem, noun],
+				"slot": slot,
+				"rarity": rarity,
+				"family": family.family,
+				"description": family.blurb,
+				"effects": _split_budget(base_budget, axes),
+				"condition": condition,
+				"cost": pricing.cost,
+				"currency": pricing.currency,
+			}
+			if is_conditional:
+				data["bonus_effects"] = _split_budget(bonus_budget, axes)
+			if slot == BIAS_SLOT and family.has("habitat_bias"):
+				data["habitat_bias"] = family.habitat_bias
+			result.append(data)
+	return result
+
+static func _split_budget(budget: float, axes: Array) -> Array:
+	if budget <= 0.0 or axes.is_empty():
+		return []
+	if axes.size() == 1:
+		return [[axes[0], snappedf(budget, 0.01)]]
+	var pairs: Array = [[axes[0], snappedf(budget * GearFamilies.PRIMARY_SHARE, 0.01)]]
+	for i in range(1, axes.size()):
+		var amount := snappedf(budget * GearFamilies.SECONDARY_SHARE, 0.01)
+		if amount > 0.0:
+			pairs.append([axes[i], amount])
+	return pairs
 
 static func all_items() -> Array:
 	_build_catalog()
 	return _catalog
 
+## Conditions are live effects now rather than shelf filters, so the whole
+## catalog is always purchasable (see Item.is_available_now).
 static func available_items() -> Array:
-	_build_catalog()
-	var result: Array = []
-	for item in _catalog:
-		if item.is_available_now():
-			result.append(item)
-	return result
+	return all_items()
 
 static func items_for_slot(slot: String) -> Array:
 	_build_catalog()
@@ -259,6 +256,16 @@ static func items_for_slot(slot: String) -> Array:
 		if item.slot == slot:
 			result.append(item)
 	return result
+
+static func find(item_name: String) -> Item:
+	_build_catalog()
+	for item in _catalog:
+		if item.item_name == item_name:
+			return item
+	return null
+
+static func set_bonuses() -> Dictionary:
+	return GearFamilies.set_bonuses()
 
 ## Kept for compatibility with earlier callers expecting a small default set.
 static func default_items() -> Array:

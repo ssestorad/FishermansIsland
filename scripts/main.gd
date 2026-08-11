@@ -39,6 +39,7 @@ const MIN_OFFLINE_SECONDS_TO_SHOW := 60.0
 @onready var stats_panel: StatsPanelController = $CanvasLayer/StatsPanel
 @onready var profile_panel: FishermanProfilePanelController = $CanvasLayer/FishermanProfilePanel
 @onready var equip_panel: EquipPanelController = $CanvasLayer/EquipPanel
+@onready var item_detail_panel: ItemDetailPanelController = $CanvasLayer/ItemDetailPanel
 @onready var welcome_back_panel: WelcomeBackPanelController = $CanvasLayer/WelcomeBackPanel
 @onready var autosave_timer: Timer = $AutosaveTimer
 
@@ -79,6 +80,11 @@ func _ready() -> void:
 	profile_panel.dismiss_requested.connect(_on_dismiss_requested)
 	profile_panel.slot_clicked.connect(_on_slot_clicked)
 	equip_panel.back_requested.connect(_on_equip_back_requested)
+	shop_panel.item_detail_requested.connect(_on_item_detail_requested)
+	shop_panel.potion_detail_requested.connect(_on_potion_detail_requested)
+	equip_panel.item_detail_requested.connect(_on_equip_item_detail_requested)
+	equip_panel.item_detail_dismissed.connect(item_detail_panel.hide_item)
+	shop_panel.item_detail_dismissed.connect(item_detail_panel.hide_item)
 
 	autosave_timer.timeout.connect(_on_autosave_timeout)
 	MetaProgress.updated.connect(_update_hire_button)
@@ -350,6 +356,20 @@ func _on_stats_button_pressed() -> void:
 func _on_menu_button_pressed() -> void:
 	SaveManager.save_game(fishermen)
 	get_tree().change_scene_to_file("res://scenes/main_menu/MainMenu.tscn")
+
+## Shown without a wearer: a shop preview has no fisherman, so the spot
+## argument is left empty and spot-conditional bonuses read as inactive.
+func _on_item_detail_requested(item: Item) -> void:
+	item_detail_panel.show_item(item)
+
+func _on_potion_detail_requested(axis: String, cost: int, tint: Color) -> void:
+	item_detail_panel.show_potion(axis, cost, tint)
+
+## The equip panel occupies the right-hand slot, so its read-out opens on
+## the left, and it can pass the wearer's spot so spot-conditional gear
+## reports whether it would actually pay out for this fisherman.
+func _on_equip_item_detail_requested(item: Item, spot: String) -> void:
+	item_detail_panel.show_item(item, spot, true)
 
 func _show_profile(fisherman: Node) -> void:
 	# The click that drops a carried station would otherwise also open the

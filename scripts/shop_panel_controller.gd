@@ -1,6 +1,12 @@
 class_name ShopPanelController
 extends Panel
 
+## main.gd owns the detail panel, so the shop reports hover rather than
+## reaching across to another panel itself.
+signal item_detail_requested(item)
+signal potion_detail_requested(axis, cost, tint)
+signal item_detail_dismissed
+
 const LIST_ROW_SCENE := preload("res://scenes/ui/ListRow.tscn")
 
 const POTION_COST := 8
@@ -36,6 +42,7 @@ func _ready() -> void:
 	Economy.coins_changed.connect(_on_state_changed)
 	Economy.scales_changed.connect(_on_state_changed)
 	PotionManager.updated.connect(_on_state_changed)
+	visibility_changed.connect(_on_visibility_changed)
 	_build_potion_rows()
 
 func _on_state_changed(_value = null) -> void:
@@ -57,6 +64,21 @@ func _on_gear_tab_pressed() -> void:
 	_showing_potions = false
 	_update_tabs()
 
+## main.gd also hides this panel when switching to another one, so the
+## detail view is tied to visibility rather than to toggle() alone.
+func _on_visibility_changed() -> void:
+	if not visible:
+		item_detail_dismissed.emit()
+
+func _on_row_hovered(item: Item) -> void:
+	item_detail_requested.emit(item)
+
+func _on_potion_hovered(axis: String) -> void:
+	potion_detail_requested.emit(axis, POTION_COST, POTION_COLORS[axis])
+
+func _on_row_unhovered() -> void:
+	item_detail_dismissed.emit()
+
 func _on_potions_tab_pressed() -> void:
 	_showing_potions = true
 	_update_tabs()
@@ -74,12 +96,18 @@ func build() -> void:
 		var row: ListRow = LIST_ROW_SCENE.instantiate()
 		rows_container.add_child(row)
 		row.pressed.connect(_on_buy_item.bind(item))
+		# List rows clip too hard to show what the gear remake added, so
+		# resting on one opens the full read-out beside the shop.
+		row.mouse_entered.connect(_on_row_hovered.bind(item))
+		row.mouse_exited.connect(_on_row_unhovered)
 	refresh()
 
 func _build_potion_rows() -> void:
 	for axis in POTION_AXES:
 		var row: ListRow = LIST_ROW_SCENE.instantiate()
 		row.pressed.connect(_on_drink_potion.bind(axis))
+		row.mouse_entered.connect(_on_potion_hovered.bind(axis))
+		row.mouse_exited.connect(_on_row_unhovered)
 		potions_container.add_child(row)
 		var icon := Control.new()
 		icon.set_script(POTION_ICON_SCRIPT)
@@ -103,7 +131,7 @@ func refresh() -> void:
 		var cost := _discounted_cost(item)
 		row.setup(
 			item.item_name,
-			"%s · %s · %s" % [item.slot, item.rarity, item.effects_text()],
+			"%s · %s" % [item.slot, item.summary_text()],
 			"%d %s" % [cost, item.currency],
 			RarityColors.for_name(item.rarity)
 		)

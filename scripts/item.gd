@@ -1,6 +1,19 @@
 class_name Item
 extends RefCounted
 
+## A piece of gear.
+##
+## Three things separate this from the flat "+6% speed" list it replaces:
+##
+##   * conditions are live. `effects` always apply; `bonus_effects` apply
+##     only while `condition` matches the world clock. A storm rod is now
+##     actually better in a storm, rather than merely rarer to buy.
+##   * bait steers the catch. `habitat_bias` multiplies the pick weight of
+##     species from those habitats, which is what makes choosing bait a
+##     decision instead of another stat stick.
+##   * every item belongs to a `family`, which carries its identity and
+##     its set bonus.
+
 const AXIS_LABELS := {
 	"speed": "Speed",
 	"luck": "Luck",
@@ -18,30 +31,60 @@ const AXIS_LABELS := {
 var item_name: String
 var slot: String
 var rarity: String
-var effects: Array  # Array of [axis: String, amount: float]
-var condition: Dictionary  # {} = always available; may contain "weather", "season", "night"
+var family: String
+var description: String
+## Always-on [axis, amount] pairs.
+var effects: Array
+## Extra [axis, amount] pairs that only count while `condition` holds.
+var bonus_effects: Array
+## {} = unconditional; may contain "weather", "season", "night", "spot".
+var condition: Dictionary
+## habitat name -> pick-weight multiplier, for Bait.
+var habitat_bias: Dictionary
 var cost: int
 var currency: String  # "Coins" or "Scales"
-var set_name: String  # "" = not part of a themed set
 
-func _init(p_name: String, p_slot: String, p_rarity: String, p_effects: Array, p_condition: Dictionary, p_cost: int, p_currency: String, p_set_name: String = "") -> void:
-	item_name = p_name
-	slot = p_slot
-	rarity = p_rarity
-	effects = p_effects
-	condition = p_condition
-	cost = p_cost
-	currency = p_currency
-	set_name = p_set_name
+func _init(data: Dictionary) -> void:
+	item_name = data.get("name", "")
+	slot = data.get("slot", "Rod")
+	rarity = data.get("rarity", "Common")
+	family = data.get("family", "")
+	description = data.get("description", "")
+	effects = data.get("effects", [])
+	bonus_effects = data.get("bonus_effects", [])
+	condition = data.get("condition", {})
+	habitat_bias = data.get("habitat_bias", {})
+	cost = data.get("cost", 1)
+	currency = data.get("currency", "Coins")
 
-func get_bonus(axis: String) -> float:
+## Total for `axis` right now, including the conditional half only when
+## its condition currently holds. Everything that reads gear strength goes
+## through here, so the live-condition rule is applied in exactly one place.
+## `spot` is the wearer's fishing spot; an Item has no idea who holds it,
+## so a spot-conditional bonus would otherwise always count. Callers that
+## genuinely have no wearer (shop previews) pass nothing and see only the
+## world-condition half.
+func get_bonus(axis: String, spot: String = "") -> float:
 	var total := 0.0
 	for effect in effects:
 		if effect[0] == axis:
 			total += effect[1]
+	if not bonus_effects.is_empty() and condition_active(spot):
+		for effect in bonus_effects:
+			if effect[0] == axis:
+				total += effect[1]
 	return total
 
-func is_available_now() -> bool:
+## The bonus half only, whether or not it is currently live — used by the
+## UI to show what an item would be worth in its window.
+func get_conditional_bonus(axis: String) -> float:
+	var total := 0.0
+	for effect in bonus_effects:
+		if effect[0] == axis:
+			total += effect[1]
+	return total
+
+func condition_active(spot: String = "") -> bool:
 	if condition.is_empty():
 		return true
 	if condition.has("weather") and WorldClock.get_weather() != condition["weather"]:
@@ -50,11 +93,13 @@ func is_available_now() -> bool:
 		return false
 	if condition.has("night") and WorldClock.get_night_factor() < 0.5:
 		return false
+	if condition.has("spot") and condition["spot"] != spot:
+		return false
 	return true
 
 func condition_text() -> String:
 	if condition.is_empty():
-		return "Always"
+		return ""
 	var parts: Array = []
 	if condition.has("season"):
 		parts.append(condition["season"])
@@ -62,13 +107,56 @@ func condition_text() -> String:
 		parts.append(condition["weather"])
 	if condition.has("night"):
 		parts.append("Night")
-	return " + ".join(parts) + " only"
+	if condition.has("spot"):
+		parts.append(FishingSpots.display_name(condition["spot"]))
+	return " + ".join(parts)
 
-func effects_text() -> String:
+static func format_effects(pairs: Array) -> String:
 	var parts: Array = []
-	for effect in effects:
+	for effect in pairs:
 		var axis: String = effect[0]
 		var amount: float = effect[1]
 		var sign := "+" if amount >= 0.0 else "−"
 		parts.append("%s%d%% %s" % [sign, roundi(abs(amount) * 100.0), AXIS_LABELS.get(axis, axis)])
 	return " / ".join(parts)
+
+func effects_text() -> String:
+	var text := format_effects(effects)
+	if not bonus_effects.is_empty():
+		var window := condition_text()
+		var extra := "%s in %s" % [format_effects(bonus_effects), window] if window != "" else format_effects(bonus_effects)
+		text = extra if text == "" else "%s, %s" % [text, extra]
+	return text
+
+## One short line for list rows, which clip hard at the panel width.
+##
+## Leads with whatever actually distinguishes the item — its condition
+## window or what its bait attracts — because those are the decisions the
+## catalog is built around, and a truncated "+12% Luck / +6% XP Gai…"
+## hides exactly the part worth reading. Full numbers live in the equip
+## panel's comparison.
+func summary_text() -> String:
+	if not habitat_bias.is_empty():
+		var habitats: Array = habitat_bias.keys()
+		var lead: String = habitats[0]
+		if habitats.size() > 1:
+			return "Draws %s +%d more" % [lead, habitats.size() - 1]
+		return "Draws %s" % lead
+	if not bonus_effects.is_empty():
+		return "%s: %s" % [condition_text(), format_effects(bonus_effects)]
+	return format_effects(effects)
+
+func habitat_bias_text() -> String:
+	if habitat_bias.is_empty():
+		return ""
+	var parts: Array = []
+	for habitat in habitat_bias:
+		parts.append("%s x%.1f" % [habitat, float(habitat_bias[habitat])])
+	return "Attracts " + ", ".join(parts)
+
+## Shop rotation used to hide items whose condition wasn't met, which is
+## why storm gear felt like it did nothing: the condition only ever
+## affected the shelf, never the rod. Conditions are live effects now, so
+## everything is purchasable at any time.
+func is_available_now() -> bool:
+	return true

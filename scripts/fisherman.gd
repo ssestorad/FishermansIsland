@@ -462,7 +462,7 @@ func _roll_and_apply_catch(catch_duration: float = -1.0, forced_rarity: int = -1
 		# possible when a hidden species' weather/season/time-of-day combo
 		# is currently in effect, and even then only a small independent
 		# chance actually lands one instead of a normal-tier catch.
-		var secret_species := FishCatalog.roll_species(FishRarity.Tier.SECRET, _spot_habitats())
+		var secret_species := FishCatalog.roll_species(FishRarity.Tier.SECRET, _spot_habitats(), _bait_bias())
 		var secret_chance := SECRET_CATCH_BASE_CHANCE * (1.0 + get_effective_stat(luck_xp, "luck") + MetaProgress.get_secret_chance_bonus())
 		if secret_species != null and randf() < secret_chance:
 			caught_rarity = FishRarity.Tier.SECRET
@@ -533,6 +533,15 @@ func _roll_and_apply_catch(catch_duration: float = -1.0, forced_rarity: int = -1
 func _spot_habitats() -> Array:
 	return FishingSpots.habitats(fishing_spot)
 
+## Habitat pick-weight multipliers from the equipped bait. This is the
+## whole point of the Bait slot — it steers which species come up, rather
+## than being a fifth source of flat percentages.
+func _bait_bias() -> Dictionary:
+	var bait = equipped_items.get("Bait")
+	if bait == null:
+		return {}
+	return bait.habitat_bias
+
 ## Finds the closest tier this fisherman's spot can actually produce.
 ##
 ## Steps down first (a rolled Legendary settling for an Epic reads as bad
@@ -541,12 +550,13 @@ func _spot_habitats() -> Array:
 ## past tier 0 and leave the caller holding a null species.
 func _nearest_available_tier(rolled: FishRarity.Tier) -> Dictionary:
 	var habitats := _spot_habitats()
+	var bias := _bait_bias()
 	for tier in range(int(rolled), -1, -1):
-		var species := FishCatalog.roll_species(tier, habitats)
+		var species := FishCatalog.roll_species(tier, habitats, bias)
 		if species != null:
 			return {"species": species, "tier": tier}
 	for tier in range(int(rolled) + 1, int(FishRarity.MAX_ROLLABLE_TIER) + 1):
-		var species := FishCatalog.roll_species(tier, habitats)
+		var species := FishCatalog.roll_species(tier, habitats, bias)
 		if species != null:
 			return {"species": species, "tier": tier}
 	# Only reachable if a spot's entire slice is condition-locked at once.
@@ -740,20 +750,25 @@ func get_equipment_bonus(axis: String) -> float:
 	var total := 0.0
 	for item in equipped_items.values():
 		if item != null:
-			total += item.get_bonus(axis)
+			# Passing the spot is what lets spot-conditional gear know
+			# whether it's earning its bonus right now.
+			total += item.get_bonus(axis, fishing_spot)
 	return total
 
-## Multi-piece set bonuses (e.g. 2x "Storm Chaser" pieces equipped). Only the
-## highest piece-count threshold met applies, not every threshold stacked.
+## Multi-piece family bonuses (e.g. 2x Stormchaser pieces equipped). Only
+## the highest piece-count threshold met applies, not every threshold
+## stacked. Families replaced the old barely-used `set_name`: every item
+## belongs to one now, so wearing a matching line is a real choice.
 func get_set_bonus(axis: String) -> float:
 	var set_counts: Dictionary = {}
 	for item in equipped_items.values():
-		if item != null and item.set_name != "":
-			set_counts[item.set_name] = set_counts.get(item.set_name, 0) + 1
+		if item != null and item.family != "":
+			set_counts[item.family] = set_counts.get(item.family, 0) + 1
 	var total := 0.0
+	var all_bonuses := ShopCatalog.set_bonuses()
 	for set_name in set_counts:
 		var count: int = set_counts[set_name]
-		var thresholds: Dictionary = ShopCatalog.SET_BONUSES.get(set_name, {})
+		var thresholds: Dictionary = all_bonuses.get(set_name, {})
 		var best_threshold := 0
 		for threshold in thresholds:
 			if count >= threshold and threshold > best_threshold:

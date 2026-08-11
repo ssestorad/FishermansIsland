@@ -1,4 +1,4 @@
-[gd_scene load_steps=18 format=3]
+[gd_scene load_steps=19 format=3]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
 [ext_resource type="Script" path="res://scripts/welcome_back_panel_controller.gd" id="15_welcome_back_panel"]
@@ -17,6 +17,7 @@
 [ext_resource type="Script" path="res://scripts/fish_icon.gd" id="10_fish_icon"]
 [ext_resource type="Script" path="res://scripts/equip_panel_controller.gd" id="11_equip_panel"]
 [ext_resource type="Script" path="res://scripts/meta_panel_controller.gd" id="12_meta_panel"]
+[ext_resource type="Script" path="res://scripts/item_detail_panel_controller.gd" id="18_item_detail"]
 
 [node name="Main" type="Node2D"]
 script = ExtResource("1_main")
@@ -664,6 +665,87 @@ size_flags_vertical = 3
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 4
+
+[node name="ItemDetailPanel" type="Panel" parent="CanvasLayer"]
+visible = false
+offset_left = 340.0
+offset_top = 76.0
+offset_right = 620.0
+offset_bottom = 288.0
+script = ExtResource("18_item_detail")
+
+[node name="MarginContainer" type="MarginContainer" parent="CanvasLayer/ItemDetailPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 8.0
+offset_top = 8.0
+offset_right = -8.0
+offset_bottom = -8.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="CanvasLayer/ItemDetailPanel/MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 5
+
+[node name="HeaderRow" type="HBoxContainer" parent="CanvasLayer/ItemDetailPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="IconFrame" type="Panel" parent="CanvasLayer/ItemDetailPanel/MarginContainer/VBoxContainer/HeaderRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(34, 34)
+size_flags_vertical = 4
+
+[node name="TitleBlock" type="VBoxContainer" parent="CanvasLayer/ItemDetailPanel/MarginContainer/VBoxContainer/HeaderRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 0
+
+[node name="NameLabel" type="Label" parent="CanvasLayer/ItemDetailPanel/MarginContainer/VBoxContainer/HeaderRow/TitleBlock"]
+layout_mode = 2
+theme_type_variation = &"TitleLabel"
+autowrap_mode = 3
+text = "Item"
+
+[node name="KindLabel" type="Label" parent="CanvasLayer/ItemDetailPanel/MarginContainer/VBoxContainer/HeaderRow/TitleBlock"]
+layout_mode = 2
+theme_type_variation = &"MutedLabel"
+text = "Slot"
+
+[node name="DescriptionLabel" type="Label" parent="CanvasLayer/ItemDetailPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_type_variation = &"MutedLabel"
+autowrap_mode = 3
+text = ""
+
+[node name="EffectsLabel" type="Label" parent="CanvasLayer/ItemDetailPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+autowrap_mode = 3
+text = ""
+
+[node name="ConditionalLabel" type="Label" parent="CanvasLayer/ItemDetailPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+autowrap_mode = 3
+text = ""
+
+[node name="BiasLabel" type="Label" parent="CanvasLayer/ItemDetailPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+autowrap_mode = 3
+text = ""
+
+[node name="FamilyLabel" type="Label" parent="CanvasLayer/ItemDetailPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_type_variation = &"MutedLabel"
+autowrap_mode = 3
+text = ""
+
+[node name="CostLabel" type="Label" parent="CanvasLayer/ItemDetailPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 10
+text = ""
 
 [node name="AlbumPanel" type="Panel" parent="CanvasLayer"]
 visible = false
