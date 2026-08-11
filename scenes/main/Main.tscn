@@ -1,4 +1,4 @@
-[gd_scene load_steps=19 format=3]
+[gd_scene load_steps=33 format=3]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
 [ext_resource type="Script" path="res://scripts/welcome_back_panel_controller.gd" id="15_welcome_back_panel"]
@@ -18,6 +18,147 @@
 [ext_resource type="Script" path="res://scripts/equip_panel_controller.gd" id="11_equip_panel"]
 [ext_resource type="Script" path="res://scripts/meta_panel_controller.gd" id="12_meta_panel"]
 [ext_resource type="Script" path="res://scripts/item_detail_panel_controller.gd" id="18_item_detail"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_tab_common_normal"]
+bg_color = Color(0.7, 0.7, 0.7, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.385, 0.385, 0.385, 1)
+anti_aliasing = false
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_tab_common_selected"]
+bg_color = Color(0.35, 0.35, 0.35, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.595, 0.595, 0.595, 1)
+content_margin_top = 3.0
+content_margin_bottom = 1.0
+anti_aliasing = false
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_tab_uncommon_normal"]
+bg_color = Color(0.4, 0.75, 0.4, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.22, 0.413, 0.22, 1)
+anti_aliasing = false
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_tab_uncommon_selected"]
+bg_color = Color(0.2, 0.375, 0.2, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.34, 0.637, 0.34, 1)
+content_margin_top = 3.0
+content_margin_bottom = 1.0
+anti_aliasing = false
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_tab_rare_normal"]
+bg_color = Color(0.3, 0.5, 0.9, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.165, 0.275, 0.495, 1)
+anti_aliasing = false
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_tab_rare_selected"]
+bg_color = Color(0.15, 0.25, 0.45, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.255, 0.425, 0.765, 1)
+content_margin_top = 3.0
+content_margin_bottom = 1.0
+anti_aliasing = false
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_tab_epic_normal"]
+bg_color = Color(0.6, 0.35, 0.85, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.33, 0.193, 0.468, 1)
+anti_aliasing = false
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_tab_epic_selected"]
+bg_color = Color(0.3, 0.175, 0.425, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.51, 0.297, 0.722, 1)
+content_margin_top = 3.0
+content_margin_bottom = 1.0
+anti_aliasing = false
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_tab_legendary_normal"]
+bg_color = Color(0.9, 0.65, 0.15, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.495, 0.358, 0.083, 1)
+anti_aliasing = false
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_tab_legendary_selected"]
+bg_color = Color(0.45, 0.325, 0.075, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.765, 0.552, 0.128, 1)
+content_margin_top = 3.0
+content_margin_bottom = 1.0
+anti_aliasing = false
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_tab_mythic_normal"]
+bg_color = Color(0.85, 0.2, 0.25, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.468, 0.11, 0.138, 1)
+anti_aliasing = false
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_tab_mythic_selected"]
+bg_color = Color(0.425, 0.1, 0.125, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.722, 0.17, 0.212, 1)
+content_margin_top = 3.0
+content_margin_bottom = 1.0
+anti_aliasing = false
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_tab_secret_normal"]
+bg_color = Color(0.12, 0.08, 0.2, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.066, 0.044, 0.11, 1)
+anti_aliasing = false
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_tab_secret_selected"]
+bg_color = Color(0.06, 0.04, 0.1, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.102, 0.068, 0.17, 1)
+content_margin_top = 3.0
+content_margin_bottom = 1.0
+anti_aliasing = false
+
 
 [node name="Main" type="Node2D"]
 script = ExtResource("1_main")
@@ -808,7 +949,10 @@ layout_mode = 2
 custom_minimum_size = Vector2(32, 28)
 theme_type_variation = &"TabButton"
 theme_override_font_sizes/font_size = 10
-modulate = Color(0.7, 0.7, 0.7, 1)
+theme_override_styles/normal = SubResource("StyleBoxFlat_tab_common_normal")
+theme_override_styles/disabled = SubResource("StyleBoxFlat_tab_common_selected")
+theme_override_colors/font_color = Color(0.2, 0.14, 0.08, 1)
+theme_override_colors/font_disabled_color = Color(0.98, 0.96, 0.9, 1)
 text = "Com"
 
 [node name="UncommonTab" type="Button" parent="CanvasLayer/AlbumPanel/MarginContainer/VBoxContainer/TierTabs"]
@@ -816,7 +960,10 @@ layout_mode = 2
 custom_minimum_size = Vector2(32, 28)
 theme_type_variation = &"TabButton"
 theme_override_font_sizes/font_size = 10
-modulate = Color(0.4, 0.75, 0.4, 1)
+theme_override_styles/normal = SubResource("StyleBoxFlat_tab_uncommon_normal")
+theme_override_styles/disabled = SubResource("StyleBoxFlat_tab_uncommon_selected")
+theme_override_colors/font_color = Color(0.2, 0.14, 0.08, 1)
+theme_override_colors/font_disabled_color = Color(0.98, 0.96, 0.9, 1)
 text = "Unc"
 
 [node name="RareTab" type="Button" parent="CanvasLayer/AlbumPanel/MarginContainer/VBoxContainer/TierTabs"]
@@ -824,7 +971,10 @@ layout_mode = 2
 custom_minimum_size = Vector2(32, 28)
 theme_type_variation = &"TabButton"
 theme_override_font_sizes/font_size = 10
-modulate = Color(0.3, 0.5, 0.9, 1)
+theme_override_styles/normal = SubResource("StyleBoxFlat_tab_rare_normal")
+theme_override_styles/disabled = SubResource("StyleBoxFlat_tab_rare_selected")
+theme_override_colors/font_color = Color(0.98, 0.96, 0.9, 1)
+theme_override_colors/font_disabled_color = Color(0.98, 0.96, 0.9, 1)
 text = "Rare"
 
 [node name="EpicTab" type="Button" parent="CanvasLayer/AlbumPanel/MarginContainer/VBoxContainer/TierTabs"]
@@ -832,7 +982,10 @@ layout_mode = 2
 custom_minimum_size = Vector2(32, 28)
 theme_type_variation = &"TabButton"
 theme_override_font_sizes/font_size = 10
-modulate = Color(0.6, 0.35, 0.85, 1)
+theme_override_styles/normal = SubResource("StyleBoxFlat_tab_epic_normal")
+theme_override_styles/disabled = SubResource("StyleBoxFlat_tab_epic_selected")
+theme_override_colors/font_color = Color(0.98, 0.96, 0.9, 1)
+theme_override_colors/font_disabled_color = Color(0.98, 0.96, 0.9, 1)
 text = "Epic"
 
 [node name="LegendaryTab" type="Button" parent="CanvasLayer/AlbumPanel/MarginContainer/VBoxContainer/TierTabs"]
@@ -840,7 +993,10 @@ layout_mode = 2
 custom_minimum_size = Vector2(32, 28)
 theme_type_variation = &"TabButton"
 theme_override_font_sizes/font_size = 10
-modulate = Color(0.9, 0.65, 0.15, 1)
+theme_override_styles/normal = SubResource("StyleBoxFlat_tab_legendary_normal")
+theme_override_styles/disabled = SubResource("StyleBoxFlat_tab_legendary_selected")
+theme_override_colors/font_color = Color(0.2, 0.14, 0.08, 1)
+theme_override_colors/font_disabled_color = Color(0.98, 0.96, 0.9, 1)
 text = "Leg"
 
 [node name="MythicTab" type="Button" parent="CanvasLayer/AlbumPanel/MarginContainer/VBoxContainer/TierTabs"]
@@ -848,7 +1004,10 @@ layout_mode = 2
 custom_minimum_size = Vector2(32, 28)
 theme_type_variation = &"TabButton"
 theme_override_font_sizes/font_size = 10
-modulate = Color(0.85, 0.2, 0.25, 1)
+theme_override_styles/normal = SubResource("StyleBoxFlat_tab_mythic_normal")
+theme_override_styles/disabled = SubResource("StyleBoxFlat_tab_mythic_selected")
+theme_override_colors/font_color = Color(0.98, 0.96, 0.9, 1)
+theme_override_colors/font_disabled_color = Color(0.98, 0.96, 0.9, 1)
 text = "Myth"
 
 [node name="SecretTab" type="Button" parent="CanvasLayer/AlbumPanel/MarginContainer/VBoxContainer/TierTabs"]
@@ -857,7 +1016,10 @@ layout_mode = 2
 custom_minimum_size = Vector2(32, 28)
 theme_type_variation = &"TabButton"
 theme_override_font_sizes/font_size = 10
-modulate = Color(0.12, 0.08, 0.2, 1)
+theme_override_styles/normal = SubResource("StyleBoxFlat_tab_secret_normal")
+theme_override_styles/disabled = SubResource("StyleBoxFlat_tab_secret_selected")
+theme_override_colors/font_color = Color(0.98, 0.96, 0.9, 1)
+theme_override_colors/font_disabled_color = Color(0.98, 0.96, 0.9, 1)
 text = "Sec"
 
 [node name="CardScroll" type="ScrollContainer" parent="CanvasLayer/AlbumPanel/MarginContainer/VBoxContainer"]

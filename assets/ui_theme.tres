@@ -1,4 +1,4 @@
-[gd_resource type="Theme" load_steps=43 format=3]
+[gd_resource type="Theme" load_steps=44 format=3]
 
 ; Pixel-art UI theme.
 ;
@@ -334,6 +334,15 @@ border_width_bottom = 1
 border_color = Color(0.24, 0.17, 0.09, 1)
 anti_aliasing = false
 
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_tooltip"]
+bg_color = Color(0.96, 0.91, 0.78, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.45, 0.32, 0.19, 1)
+anti_aliasing = false
+
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_fill_speed"]
 bg_color = Color(0.35, 0.55, 0.85, 1)
 anti_aliasing = false
@@ -493,3 +502,12 @@ ThirstBar/styles/fill = SubResource("StyleBoxFlat_fill_thirst")
 RestBar/base_type = &"ProgressBar"
 RestBar/styles/background = SubResource("StyleBoxFlat_progress_bg")
 RestBar/styles/fill = SubResource("StyleBoxFlat_fill_rest_need")
+
+; Godot's default tooltip is dark; nothing here overrode it, so it fell
+; back to that default while every Label's font_color is set dark for the
+; parchment panels — dark text on a dark tooltip, the same collapse the
+; Album's Secret tab had. Explicit colors rather than relying on Label's
+; global color happening to work once the panel is parchment.
+TooltipPanel/styles/panel = SubResource("StyleBoxFlat_tooltip")
+TooltipLabel/colors/font_color = Color(0.25, 0.18, 0.1, 1)
+TooltipLabel/font_sizes/font_size = 10
