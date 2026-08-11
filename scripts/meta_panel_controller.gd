@@ -39,6 +39,9 @@ const SHOP_RARITY_MAX_LEVEL := MetaProgress.MAX_SHOP_RARITY_LEVEL
 const SECRET_CHANCE_BASE_COST := 30
 const SECRET_CHANCE_GROWTH := 1.35
 const SECRET_CHANCE_MAX_LEVEL := MetaProgress.MAX_SECRET_CHANCE_LEVEL
+const QUEST_SLOT_BASE_COST := 25
+const QUEST_SLOT_GROWTH := 1.35
+const QUEST_SLOT_MAX_LEVEL := MetaProgress.MAX_QUEST_SLOT_LEVEL
 
 const SLOT_COLOR := Color(0.3, 0.5, 0.65)
 const LUCK_COLOR := Color(0.45, 0.75, 0.4)
@@ -56,6 +59,7 @@ const SHOP_RARITY_COLOR := Color(0.75, 0.55, 0.85)
 const PERK_SLOT_COLOR := Color(0.4, 0.65, 0.55)
 const SPOT_COLOR := Color(0.28, 0.55, 0.62)
 const SECRET_CHANCE_COLOR := Color(0.35, 0.22, 0.5)
+const QUEST_SLOT_COLOR := Color(0.65, 0.5, 0.25)
 
 @onready var rows_container: VBoxContainer = $MarginContainer/VBoxContainer/MetaScroll/MetaRows
 @onready var close_button: Button = $MarginContainer/VBoxContainer/HeaderRow/CloseButton
@@ -75,6 +79,7 @@ var _needs_service_row: ListRow
 var _shop_rarity_row: ListRow
 var _perk_slot_row: ListRow
 var _secret_chance_row: ListRow
+var _quest_slot_row: ListRow
 ## id -> row, for the buyable fishing spots (the pond is free).
 var _spot_rows: Dictionary = {}
 
@@ -120,6 +125,7 @@ func _build() -> void:
 	_shop_rarity_row = _make_row(_on_buy_shop_rarity)
 	_perk_slot_row = _make_row(_on_buy_perk_slot)
 	_secret_chance_row = _make_row(_on_buy_secret_chance)
+	_quest_slot_row = _make_row(_on_buy_quest_slot)
 
 	refresh()
 
@@ -149,6 +155,7 @@ func refresh() -> void:
 	_refresh_shop_rarity()
 	_refresh_perk_slot()
 	_refresh_secret_chance()
+	_refresh_quest_slot()
 
 ## One-time unlocks rather than levels, so a bought spot shows what it
 ## gives rather than a price.
@@ -387,6 +394,25 @@ func _refresh_secret_chance() -> void:
 	)
 	_secret_chance_row.disabled = Economy.scales < secret_chance_cost
 
+func _refresh_quest_slot() -> void:
+	if MetaProgress.quest_slot_level >= QUEST_SLOT_MAX_LEVEL:
+		_quest_slot_row.setup(
+			"Extra Quest Slot",
+			"Maxed out",
+			"MAX",
+			QUEST_SLOT_COLOR
+		)
+		_quest_slot_row.disabled = true
+		return
+	var quest_slot_cost := _quest_slot_cost()
+	_quest_slot_row.setup(
+		"Extra Quest Slot",
+		"%d active quests" % (QuestManager.ACTIVE_QUEST_COUNT + MetaProgress.get_quest_slot_bonus()),
+		"%d Scales" % quest_slot_cost,
+		QUEST_SLOT_COLOR
+	)
+	_quest_slot_row.disabled = Economy.scales < quest_slot_cost
+
 func _slot_cost() -> int:
 	return int(round(SLOT_BASE_COST * pow(SLOT_GROWTH, MetaProgress.extra_slots)))
 
@@ -428,6 +454,9 @@ func _shop_rarity_cost() -> int:
 
 func _secret_chance_cost() -> int:
 	return int(round(SECRET_CHANCE_BASE_COST * pow(SECRET_CHANCE_GROWTH, MetaProgress.secret_chance_level)))
+
+func _quest_slot_cost() -> int:
+	return int(round(QUEST_SLOT_BASE_COST * pow(QUEST_SLOT_GROWTH, MetaProgress.quest_slot_level)))
 
 func _on_buy_slot() -> void:
 	if MetaProgress.extra_slots >= SLOT_MAX_LEVEL:
@@ -506,6 +535,12 @@ func _on_buy_secret_chance() -> void:
 		return
 	if Economy.spend_scales(_secret_chance_cost()):
 		MetaProgress.buy_secret_chance()
+
+func _on_buy_quest_slot() -> void:
+	if MetaProgress.quest_slot_level >= QUEST_SLOT_MAX_LEVEL:
+		return
+	if Economy.spend_scales(_quest_slot_cost()):
+		MetaProgress.buy_quest_slot()
 
 func _on_close_pressed() -> void:
 	visible = false

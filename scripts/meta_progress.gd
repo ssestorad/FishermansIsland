@@ -40,6 +40,12 @@ const MAX_NEEDS_SERVICE_BONUS := NEEDS_SERVICE_PER_LEVEL * MAX_NEEDS_SERVICE_LEV
 ## capacity (60) plus this many extra slots per level.
 const DOCK_CAPACITY_PER_LEVEL := 10
 
+## Extra concurrent slots on the Quest board, on top of
+## QuestManager.ACTIVE_QUEST_COUNT. Capped (unlike bench/dock capacity) so
+## the board can't grow past a size where "one quest at a time" stops
+## meaning anything.
+const MAX_QUEST_SLOT_LEVEL := 5
+
 ## Discounts the Coins cost of hiring the next fisherman
 ## (main.gd::_hire_cost_for_next_slot) — separate lever from Shop
 ## Discount, which only affects gear bought with Scales.
@@ -78,6 +84,7 @@ var dock_capacity_level: int = 0
 var hire_discount_level: int = 0
 var secret_chance_level: int = 0
 var extra_perk_slot_unlocked: bool = false
+var quest_slot_level: int = 0
 var unlocked_spots: Array = []
 
 func get_global_luck_bonus() -> float:
@@ -121,6 +128,9 @@ func get_secret_chance_bonus() -> float:
 
 func has_extra_perk_slot() -> bool:
 	return extra_perk_slot_unlocked
+
+func get_quest_slot_bonus() -> int:
+	return quest_slot_level
 
 func is_spot_unlocked(id: String) -> bool:
 	return unlocked_spots.has(id)
@@ -191,6 +201,12 @@ func buy_perk_slot() -> void:
 	extra_perk_slot_unlocked = true
 	updated.emit()
 
+func buy_quest_slot() -> void:
+	if quest_slot_level >= MAX_QUEST_SLOT_LEVEL:
+		return
+	quest_slot_level += 1
+	updated.emit()
+
 func load_state(data: Dictionary) -> void:
 	extra_slots = int(data.get("extra_slots", 0))
 	luck_level = int(data.get("luck_level", 0))
@@ -207,6 +223,7 @@ func load_state(data: Dictionary) -> void:
 	hire_discount_level = int(data.get("hire_discount_level", 0))
 	secret_chance_level = int(data.get("secret_chance_level", 0))
 	extra_perk_slot_unlocked = bool(data.get("extra_perk_slot_unlocked", false))
+	quest_slot_level = int(data.get("quest_slot_level", 0))
 	# Saves from before fishing spots existed had everyone at the pier, so
 	# it is granted rather than sold back to them.
 	unlocked_spots = data.get("unlocked_spots", ["pier"])

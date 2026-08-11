@@ -30,6 +30,7 @@ const MIN_OFFLINE_SECONDS_TO_SHOW := 60.0
 @onready var meta_button: Button = $CanvasLayer/NavRow/MetaButton
 @onready var dock_button: Button = $CanvasLayer/NavRow/DockButton
 @onready var stats_button: Button = $CanvasLayer/NavRow/StatsButton
+@onready var quests_button: Button = $CanvasLayer/NavRow/QuestsButton
 @onready var menu_button: Button = $CanvasLayer/NavRow/MenuButton
 @onready var fishermen_panel: FishermenPanelController = $CanvasLayer/FishermenPanel
 @onready var album_panel: AlbumPanelController = $CanvasLayer/AlbumPanel
@@ -37,6 +38,7 @@ const MIN_OFFLINE_SECONDS_TO_SHOW := 60.0
 @onready var meta_panel: MetaPanelController = $CanvasLayer/MetaPanel
 @onready var dock_panel: DockPanelController = $CanvasLayer/DockPanel
 @onready var stats_panel: StatsPanelController = $CanvasLayer/StatsPanel
+@onready var quest_panel: QuestPanelController = $CanvasLayer/QuestPanel
 @onready var profile_panel: FishermanProfilePanelController = $CanvasLayer/FishermanProfilePanel
 @onready var equip_panel: EquipPanelController = $CanvasLayer/EquipPanel
 @onready var item_detail_panel: ItemDetailPanelController = $CanvasLayer/ItemDetailPanel
@@ -55,7 +57,7 @@ var _stations: Array = []
 func _ready() -> void:
 	get_viewport().physics_object_picking = true
 	DevConsole.register_main(self)
-	_zone_a_panels = [fishermen_panel, album_panel, shop_panel, meta_panel, dock_panel, stats_panel]
+	_zone_a_panels = [fishermen_panel, album_panel, shop_panel, meta_panel, dock_panel, stats_panel, quest_panel]
 
 	if SaveManager.has_save():
 		_load_game()
@@ -74,6 +76,7 @@ func _ready() -> void:
 	meta_button.pressed.connect(_on_meta_button_pressed)
 	dock_button.pressed.connect(_on_dock_button_pressed)
 	stats_button.pressed.connect(_on_stats_button_pressed)
+	quests_button.pressed.connect(_on_quests_button_pressed)
 	menu_button.pressed.connect(_on_menu_button_pressed)
 
 	fishermen_panel.fisherman_selected.connect(_show_profile)
@@ -185,6 +188,7 @@ func _load_game() -> void:
 	# footprint, and the bench cluster's footprint grows with the purchased
 	# bench capacity.
 	NeedStations.load_state(data.get("stations", {}))
+	QuestManager.load_state(data.get("quests", {}))
 	var saved_fishermen: Array = data.get("fishermen", [])
 	if saved_fishermen.is_empty():
 		_spawn_starting_fishermen()
@@ -352,6 +356,10 @@ func _on_dock_button_pressed() -> void:
 func _on_stats_button_pressed() -> void:
 	_hide_other_zone_a_panels(stats_panel)
 	stats_panel.toggle(fishermen)
+
+func _on_quests_button_pressed() -> void:
+	_hide_other_zone_a_panels(quest_panel)
+	quest_panel.toggle()
 
 func _on_menu_button_pressed() -> void:
 	SaveManager.save_game(fishermen)

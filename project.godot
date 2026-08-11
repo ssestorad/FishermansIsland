@@ -26,6 +26,7 @@ PotionManager="*res://scripts/potion_manager.gd"
 ShopRotation="*res://scripts/shop_rotation.gd"
 DockInventory="*res://scripts/dock_inventory.gd"
 NeedStations="*res://scripts/need_stations.gd"
+QuestManager="*res://scripts/quest_manager.gd"
 DevConsole="*res://scenes/ui/DevConsole.tscn"
 
 [display]

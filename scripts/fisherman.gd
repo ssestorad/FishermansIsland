@@ -492,6 +492,7 @@ func _roll_and_apply_catch(catch_duration: float = -1.0, forced_rarity: int = -1
 		DockInventory.add_catch(caught_species, caught_weight, caught_rarity)
 		docked = true
 	Album.record_catch(caught_species, caught_weight, display_name)
+	QuestManager.record_catch(caught_species, caught_rarity)
 
 	var speed_range := _catch_time_range()
 	var normalized_speed := 1.0 - inverse_lerp(speed_range.x, speed_range.y, catch_duration)
