@@ -6,6 +6,14 @@ extends Node
 ## solving. Benches are the one capacity-limited station (the meta-shop
 ## upgrade is specifically "more benches"), so they get real slot tracking.
 
+## The single shared point every fisherman's catch gets carried to,
+## regardless of which row they fish from — previously each fisherman
+## walked to their own per-row home_position, so the drawn shed marker
+## (near the top of the home-lane column) only matched what the first row
+## actually walked to. main.gd's shed marker is drawn centered on this
+## same constant so the two can't drift apart again.
+const STORAGE_POSITION := Vector2(80.0, 90.0)
+
 ## y=84 sits just below the HUD's nav row (which runs to y=70) so these
 ## markers aren't hidden behind the UI; x starts past the storage shed
 ## marker near the home lane column (x=70-90) so nothing overlaps.

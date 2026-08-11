@@ -4,6 +4,14 @@ const FISHERMAN_SCENE := preload("res://scenes/entities/Fisherman.tscn")
 const STARTING_FISHERMEN_COUNT := 1
 const MAX_FISHERMEN_SLOTS := 6
 const ROW_SPACING := 35.0
+## Per-fisherman rows are laid out top-to-bottom starting at y=110; without
+## a ceiling this runs straight off the 360px-tall world once the roster
+## grows past ~7 (extra_slots is uncapped, so that's routine, not an edge
+## case). Rows beyond this clamp stack on the last one instead of walking
+## fishermen off-screen — visually crowded at a big roster, but never
+## invisible. dock_y_bounds already protects the fishing point the same
+## way; this is the equivalent guard for home/storage.
+const MAX_HOME_ROW_Y := 320.0
 const BASE_HIRE_COST := 5
 const HIRE_COST_GROWTH := 1.25
 
@@ -143,7 +151,7 @@ func _spawn_fisherman(saved_data: Dictionary = {}) -> Node:
 	var index := fishermen.size()
 	var fisherman := FISHERMAN_SCENE.instantiate()
 	fisherman.name = "Fisherman_%d" % (index + 1)
-	var row_y := 110.0 + index * ROW_SPACING
+	var row_y := minf(110.0 + index * ROW_SPACING, MAX_HOME_ROW_Y)
 	fisherman.home_position = Vector2(80, row_y)
 	fisherman.dock_position = Vector2(320, row_y)
 
@@ -290,11 +298,13 @@ func _draw() -> void:
 ## rest of this placeholder world's style — no new art assets, per the
 ## "mechanic only for now" scope of the needs system.
 func _draw_need_stations() -> void:
-	# Storage: a small shed near the top of the home lane column (x=80),
-	# where every catch gets carried regardless of which row a fisherman
-	# is on.
-	draw_rect(Rect2(72, 84, 16, 14), Color(0.45, 0.32, 0.2))
-	draw_rect(Rect2(70, 80, 20, 6), Color(0.32, 0.22, 0.14))
+	# Storage: a small shed centered on NeedStations.STORAGE_POSITION, the
+	# one shared point every fisherman actually carries their catch to
+	# (regardless of which row they fish from), so the marker can't drift
+	# out of sync with where fishermen really walk.
+	var storage_pos := NeedStations.STORAGE_POSITION
+	draw_rect(Rect2(storage_pos + Vector2(-8, -6), Vector2(16, 14)), Color(0.45, 0.32, 0.2))
+	draw_rect(Rect2(storage_pos + Vector2(-10, -10), Vector2(20, 6)), Color(0.32, 0.22, 0.14))
 
 	# Grill: dark base + a warm coal glow on top.
 	var grill_pos := NeedStations.GRILL_POSITION

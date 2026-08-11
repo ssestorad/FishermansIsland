@@ -111,7 +111,11 @@ func _refresh_needs() -> void:
 	_set_need_row(rest_label, rest_bar, "Rest", "rest")
 
 func _set_need_row(label: Label, bar: ProgressBar, title: String, need: String) -> void:
-	bar.value = _fisherman.get_need_progress(need)
+	# get_need_progress() is "how close to due" (0 = just serviced, 1 = due) —
+	# the right shape for game logic, but a satisfaction meter that empties
+	# out as a need grows reads more naturally than one that fills up, so
+	# the bar shows the inverse of the raw progress value.
+	bar.value = 1.0 - _fisherman.get_need_progress(need)
 	var status := "OK"
 	if _fisherman.current_need == need:
 		status = "Handling..."

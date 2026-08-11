@@ -3,6 +3,9 @@ extends Node2D
 signal clicked(fisherman: Node2D)
 signal stats_changed
 
+## Only this fisherman's idle spawn point now — WALK_TO_STORAGE targets
+## the shared NeedStations.STORAGE_POSITION instead (every catch goes to
+## the same shed regardless of row).
 @export var home_position: Vector2 = Vector2(100, 250)
 @export var dock_position: Vector2 = Vector2(450, 200)
 @export var move_speed: float = 80.0
@@ -136,6 +139,13 @@ func _ready() -> void:
 		display_name = NameGenerator.random_name()
 	if appearance_variant < 0:
 		appearance_variant = randi() % APPEARANCE_VARIANTS.size()
+	# Needs timers aren't saved (see save_manager.gd), so every fresh spawn —
+	# a brand new hire or every single game load — would otherwise start
+	# all three at exactly 0 for every fisherman at once, making the whole
+	# roster visibly hungry/thirsty/tired in lockstep. Stagger them instead.
+	hunger_timer = randf_range(0.0, HUNGER_INTERVAL)
+	thirst_timer = randf_range(0.0, THIRST_INTERVAL)
+	rest_timer = randf_range(0.0, REST_INTERVAL)
 	position = home_position
 	current_target = _random_dock_point()
 	click_area.input_event.connect(_on_click_area_input_event)
@@ -430,7 +440,10 @@ func _estimate_cycle_time() -> float:
 	var effective_speed := move_speed * (1.0 + get_equipment_bonus("walk_speed") + get_perk_bonus("walk_speed"))
 	var avg_walk := 0.0
 	if effective_speed > 0.0:
-		var round_trip_distance := absf(dock_position.x - home_position.x) * 2.0
+		# Storage is a shared point now (NeedStations.STORAGE_POSITION), not
+		# this fisherman's own home_position, so the dock<->storage leg can
+		# have a real y-offset too — full distance, not just the x delta.
+		var round_trip_distance := dock_position.distance_to(NeedStations.STORAGE_POSITION) * 2.0
 		avg_walk = round_trip_distance / effective_speed
 	var base_cycle := avg_catch + avg_walk
 	return base_cycle + _average_needs_overhead(base_cycle)
@@ -471,8 +484,13 @@ func _random_dock_point() -> Vector2:
 	var y := clampf(dock_position.y + randf_range(-dock_wander_range, dock_wander_range), dock_y_bounds.x, dock_y_bounds.y)
 	return Vector2(dock_position.x, y)
 
+## Every fisherman's catch is carried to the same shared point regardless
+## of which row they fish from — home_position is only their idle spawn
+## spot now. The independent per-arrival jitter is also what keeps a big
+## roster from rendering stacked exactly on top of each other at Storage.
 func _random_home_point() -> Vector2:
-	return home_position + Vector2(randf_range(-home_wander_range, home_wander_range), randf_range(-home_wander_range, home_wander_range))
+	var storage_pos: Vector2 = NeedStations.STORAGE_POSITION
+	return storage_pos + Vector2(randf_range(-home_wander_range, home_wander_range), randf_range(-home_wander_range, home_wander_range))
 
 func _catch_time_range() -> Vector2:
 	var reduction := get_effective_stat(speed_xp, "speed") * MAX_SPEED_REDUCTION
