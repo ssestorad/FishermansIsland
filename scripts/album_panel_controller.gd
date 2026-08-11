@@ -1,10 +1,9 @@
 class_name AlbumPanelController
-extends Panel
+extends PanelController
 
 const LIST_ROW_SCENE := preload("res://scenes/ui/ListRow.tscn")
 
 @onready var title_label: Label = $MarginContainer/VBoxContainer/HeaderRow/TitleLabel
-@onready var close_button: Button = $MarginContainer/VBoxContainer/HeaderRow/CloseButton
 @onready var card_scroll: ScrollContainer = $MarginContainer/VBoxContainer/CardScroll
 @onready var page_label: Label = $MarginContainer/VBoxContainer/CardScroll/CardArea/PageLabel
 @onready var icon: Sprite2D = $MarginContainer/VBoxContainer/CardScroll/CardArea/IconPanel/FishIcon
@@ -44,7 +43,7 @@ var _current_index: int = -1  # -1 = overview page
 ## Which breakdown the overview page shows: "rarity" or "habitat".
 var _overview_mode: String = "rarity"
 
-func _ready() -> void:
+func _on_ready() -> void:
 	for tier in FishRarity.Tier.values():
 		_tier_start_index[tier] = _all_species.size()
 		_all_species.append_array(FishCatalog.species_for_tier(tier))
@@ -59,7 +58,6 @@ func _ready() -> void:
 		FishRarity.Tier.SECRET: tab_secret,
 	}
 	Album.updated.connect(_on_album_updated)
-	close_button.pressed.connect(_on_close_button_pressed)
 	prev_button.pressed.connect(_on_prev_pressed)
 	next_button.pressed.connect(_on_next_pressed)
 	tab_overview.pressed.connect(_on_overview_tab_pressed)
@@ -76,9 +74,6 @@ func toggle() -> void:
 func _on_album_updated() -> void:
 	if visible:
 		refresh()
-
-func _on_close_button_pressed() -> void:
-	visible = false
 
 func _on_prev_pressed() -> void:
 	_current_index -= 1

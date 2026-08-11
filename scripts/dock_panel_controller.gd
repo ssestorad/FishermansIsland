@@ -1,22 +1,15 @@
 class_name DockPanelController
-extends Panel
+extends PanelController
 
 const LIST_ROW_SCENE := preload("res://scenes/ui/ListRow.tscn")
 
 @onready var title_label: Label = $MarginContainer/VBoxContainer/HeaderRow/TitleLabel
-@onready var close_button: Button = $MarginContainer/VBoxContainer/HeaderRow/CloseButton
 @onready var rows_container: VBoxContainer = $MarginContainer/VBoxContainer/DockScroll/DockRows
 @onready var sell_all_button: Button = $MarginContainer/VBoxContainer/SellAllButton
 
-func _ready() -> void:
-	close_button.pressed.connect(_on_close_button_pressed)
+func _on_ready() -> void:
 	sell_all_button.pressed.connect(_on_sell_all_pressed)
 	DockInventory.updated.connect(_on_dock_updated)
-
-func toggle() -> void:
-	visible = not visible
-	if visible:
-		build()
 
 func _on_dock_updated() -> void:
 	if visible:
@@ -49,6 +42,3 @@ func _on_sell_pressed(index: int) -> void:
 
 func _on_sell_all_pressed() -> void:
 	DockInventory.sell_all()
-
-func _on_close_button_pressed() -> void:
-	visible = false

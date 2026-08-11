@@ -1,21 +1,14 @@
 class_name QuestPanelController
-extends Panel
+extends PanelController
 
 const LIST_ROW_SCENE := preload("res://scenes/ui/ListRow.tscn")
 const READY_COLOR := Color(0.4, 0.85, 0.4)
 
 @onready var title_label: Label = $MarginContainer/VBoxContainer/HeaderRow/TitleLabel
-@onready var close_button: Button = $MarginContainer/VBoxContainer/HeaderRow/CloseButton
 @onready var rows_container: VBoxContainer = $MarginContainer/VBoxContainer/QuestScroll/QuestRows
 
-func _ready() -> void:
-	close_button.pressed.connect(_on_close_button_pressed)
+func _on_ready() -> void:
 	QuestManager.quests_updated.connect(_on_quests_updated)
-
-func toggle() -> void:
-	visible = not visible
-	if visible:
-		build()
 
 func _on_quests_updated() -> void:
 	if visible:
@@ -41,6 +34,3 @@ func build() -> void:
 
 func _on_quest_pressed(quest_id: String) -> void:
 	QuestManager.claim(quest_id)
-
-func _on_close_button_pressed() -> void:
-	visible = false

@@ -1,7 +1,9 @@
-[gd_scene load_steps=34 format=3]
+[gd_scene load_steps=36 format=3]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
 [ext_resource type="Script" path="res://scripts/quest_panel_controller.gd" id="19_quest_panel"]
+[ext_resource type="Script" path="res://scripts/world_renderer.gd" id="20_world_renderer"]
+[ext_resource type="Script" path="res://scripts/station_carry_controller.gd" id="21_station_carry"]
 [ext_resource type="Script" path="res://scripts/welcome_back_panel_controller.gd" id="15_welcome_back_panel"]
 [ext_resource type="Script" path="res://scripts/dock_panel_controller.gd" id="16_dock_panel"]
 [ext_resource type="Script" path="res://scripts/stats_panel_controller.gd" id="17_stats_panel"]
@@ -163,6 +165,12 @@ anti_aliasing = false
 
 [node name="Main" type="Node2D"]
 script = ExtResource("1_main")
+
+[node name="WorldRenderer" type="Node2D" parent="."]
+script = ExtResource("20_world_renderer")
+
+[node name="StationCarry" type="Node2D" parent="."]
+script = ExtResource("21_station_carry")
 
 [node name="AutosaveTimer" type="Timer" parent="."]
 wait_time = 30.0

@@ -1,5 +1,5 @@
 class_name FishermenPanelController
-extends Panel
+extends PanelController
 
 signal fisherman_selected(fisherman)
 
@@ -7,13 +7,11 @@ const LIST_ROW_SCENE := preload("res://scenes/ui/ListRow.tscn")
 const ROW_SWATCH_COLOR := Color(0.24, 0.45, 0.55)
 
 @onready var rows_container: VBoxContainer = $MarginContainer/VBoxContainer/FishermenScroll/FishermenRows
-@onready var close_button: Button = $MarginContainer/VBoxContainer/HeaderRow/CloseButton
 
 var _row_by_fisherman: Dictionary = {}
 var _connected_fishermen: Array = []
 
-func _ready() -> void:
-	close_button.pressed.connect(_on_close_button_pressed)
+func _on_ready() -> void:
 	visibility_changed.connect(_on_visibility_changed)
 
 ## Any code path that hides this panel — toggle(), the close button, or main.gd
@@ -22,15 +20,12 @@ func _on_visibility_changed() -> void:
 	if not visible:
 		_disconnect_all()
 
-func _on_close_button_pressed() -> void:
-	visible = false
-
-func toggle(fishermen: Array) -> void:
+func open(fishermen: Array) -> void:
 	visible = not visible
 	if visible:
-		build(fishermen)
+		_build_rows(fishermen)
 
-func build(fishermen: Array) -> void:
+func _build_rows(fishermen: Array) -> void:
 	_disconnect_all()
 	UiListUtils.clear_children(rows_container)
 	_row_by_fisherman.clear()

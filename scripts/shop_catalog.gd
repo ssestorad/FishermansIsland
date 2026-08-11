@@ -245,28 +245,9 @@ static func all_items() -> Array:
 	return _catalog
 
 ## Conditions are live effects now rather than shelf filters, so the whole
-## catalog is always purchasable (see Item.is_available_now).
+## catalog is always purchasable.
 static func available_items() -> Array:
 	return all_items()
 
-static func items_for_slot(slot: String) -> Array:
-	_build_catalog()
-	var result: Array = []
-	for item in _catalog:
-		if item.slot == slot:
-			result.append(item)
-	return result
-
-static func find(item_name: String) -> Item:
-	_build_catalog()
-	for item in _catalog:
-		if item.item_name == item_name:
-			return item
-	return null
-
 static func set_bonuses() -> Dictionary:
 	return GearFamilies.set_bonuses()
-
-## Kept for compatibility with earlier callers expecting a small default set.
-static func default_items() -> Array:
-	return available_items()

@@ -1,19 +1,7 @@
 extends Node2D
 
-const FISHERMAN_SCENE := preload("res://scenes/entities/Fisherman.tscn")
-const STATION_SCENE := preload("res://scenes/entities/Station.tscn")
-const STATION_IDS := ["storage", "grill", "beer", "benches"]
 const STARTING_FISHERMEN_COUNT := 1
 const MAX_FISHERMEN_SLOTS := 6
-const ROW_SPACING := 35.0
-## Per-fisherman rows are laid out top-to-bottom starting at y=110; without
-## a ceiling this runs straight off the 360px-tall world once the roster
-## grows past ~7 (extra_slots is uncapped, so that's routine, not an edge
-## case). Rows beyond this clamp stack on the last one instead of walking
-## fishermen off-screen — visually crowded at a big roster, but never
-## invisible. dock_y_bounds already protects the fishing point the same
-## way; this is the equivalent guard for home/storage.
-const MAX_HOME_ROW_Y := 320.0
 const BASE_HIRE_COST := 5
 const HIRE_COST_GROWTH := 1.25
 
@@ -44,15 +32,11 @@ const MIN_OFFLINE_SECONDS_TO_SHOW := 60.0
 @onready var item_detail_panel: ItemDetailPanelController = $CanvasLayer/ItemDetailPanel
 @onready var welcome_back_panel: WelcomeBackPanelController = $CanvasLayer/WelcomeBackPanel
 @onready var autosave_timer: Timer = $AutosaveTimer
+@onready var world_renderer: WorldRenderer = $WorldRenderer
+@onready var station_carry: StationCarryController = $StationCarry
 
 var fishermen: Array = []
 var _zone_a_panels: Array = []
-
-## Station currently stuck to the cursor, or null. Right-click picks one
-## up, the next click drops it, Escape puts it back.
-var _carried_station: Node = null
-var _carried_origin := Vector2.ZERO
-var _stations: Array = []
 
 func _ready() -> void:
 	get_viewport().physics_object_picking = true
@@ -93,75 +77,10 @@ func _ready() -> void:
 	MetaProgress.updated.connect(_update_hire_button)
 	# The jetty only appears once Offshore is bought, and nothing else
 	# repaints the world layer.
-	MetaProgress.updated.connect(func(): queue_redraw())
+	MetaProgress.updated.connect(func(): world_renderer.queue_redraw())
 
-	_spawn_stations()
+	station_carry.spawn_stations()
 	_update_hire_button()
-
-func _spawn_stations() -> void:
-	for id in STATION_IDS:
-		var station := STATION_SCENE.instantiate()
-		station.station_id = id
-		station.position = NeedStations.get_station_position(id)
-		station.pickup_requested.connect(_on_station_pickup_requested)
-		add_child(station)
-		_stations.append(station)
-	# Covers both a station being dropped somewhere new and the bench
-	# cluster's layout shifting when its capacity is upgraded.
-	NeedStations.stations_moved.connect(_sync_station_positions)
-
-func _sync_station_positions() -> void:
-	for station in _stations:
-		if station != _carried_station:
-			station.position = NeedStations.get_station_position(station.station_id)
-		station.queue_redraw()
-
-func _on_station_pickup_requested(station: Node) -> void:
-	if _carried_station != null:
-		return
-	_carried_station = station
-	_carried_origin = station.position
-	station.is_carried = true
-	_update_carried_station(get_global_mouse_position())
-
-## Snaps the carried station to the placement grid and tells it whether
-## the spot under the cursor is legal, which drives its green/red outline.
-func _update_carried_station(mouse_position: Vector2) -> void:
-	var snapped := WorldLayout.snap(mouse_position)
-	_carried_station.position = snapped
-	var footprint := NeedStations.footprint_at(_carried_station.station_id, snapped)
-	_carried_station.placement_valid = WorldLayout.is_placeable(footprint)
-	_carried_station.queue_redraw()
-
-func _drop_carried_station() -> void:
-	if not _carried_station.placement_valid:
-		return
-	var station := _carried_station
-	_carried_station = null
-	station.is_carried = false
-	# move_station() re-snaps and emits stations_moved, which is what
-	# nudges any fisherman already walking to re-target.
-	NeedStations.move_station(station.station_id, station.position)
-
-func _cancel_carried_station() -> void:
-	var station := _carried_station
-	_carried_station = null
-	station.is_carried = false
-	station.position = _carried_origin
-	station.queue_redraw()
-
-func _unhandled_input(event: InputEvent) -> void:
-	if _carried_station == null:
-		return
-	if event is InputEventMouseMotion:
-		_update_carried_station(get_global_mouse_position())
-	elif event is InputEventMouseButton and event.pressed:
-		if event.button_index == MOUSE_BUTTON_LEFT or event.button_index == MOUSE_BUTTON_RIGHT:
-			_drop_carried_station()
-			get_viewport().set_input_as_handled()
-	elif event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
-		_cancel_carried_station()
-		get_viewport().set_input_as_handled()
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_WM_CLOSE_REQUEST:
@@ -207,6 +126,14 @@ func _apply_offline_progress(data: Dictionary) -> void:
 	if effective_seconds < MIN_OFFLINE_SECONDS_TO_SHOW:
 		return
 
+	var result := _resolve_offline_batch(effective_seconds)
+	if result.catches > 0:
+		welcome_back_panel.show_summary(real_elapsed, result.catches, result.coins, result.docked, result.best)
+
+## Rolls `effective_seconds` worth of offline catches for every fisherman
+## and accumulates the totals. Shared by the real load path above and the
+## dev console's "Simulate Offline" button, so this loop only lives once.
+func _resolve_offline_batch(effective_seconds: float) -> Dictionary:
 	var total_catches := 0
 	var total_coins := 0
 	var total_docked := 0
@@ -226,9 +153,12 @@ func _apply_offline_progress(data: Dictionary) -> void:
 				"best_rarity": summary.best_rarity,
 				"best_weight": summary.best_weight,
 			}
-
-	if total_catches > 0:
-		welcome_back_panel.show_summary(real_elapsed, total_catches, total_coins, total_docked, best_summary)
+	return {
+		"catches": total_catches,
+		"coins": total_coins,
+		"docked": total_docked,
+		"best": best_summary,
+	}
 
 func _spawn_starting_fishermen() -> void:
 	for i in range(STARTING_FISHERMEN_COUNT):
@@ -239,52 +169,7 @@ func _spawn_starting_fishermen() -> void:
 		fisherman.endurance_xp = randf_range(0.0, 40.0)
 
 func _spawn_fisherman(saved_data: Dictionary = {}) -> Node:
-	var index := fishermen.size()
-	var fisherman := FISHERMAN_SCENE.instantiate()
-	fisherman.name = "Fisherman_%d" % (index + 1)
-	var row_y := minf(110.0 + index * ROW_SPACING, MAX_HOME_ROW_Y)
-	fisherman.home_position = Vector2(80, row_y)
-	fisherman.lane_y = row_y
-	# dock_position follows from the spot; set_fishing_spot() is called
-	# once the saved assignment (if any) has been read below.
-
-	if not saved_data.is_empty():
-		fisherman.display_name = saved_data.get("display_name", "")
-		fisherman.speed_xp = float(saved_data.get("speed_xp", 0.0))
-		fisherman.luck_xp = float(saved_data.get("luck_xp", 0.0))
-		fisherman.power_xp = float(saved_data.get("power_xp", 0.0))
-		fisherman.endurance_xp = float(saved_data.get("endurance_xp", 0.0))
-		fisherman.perks = saved_data.get("perks", [])
-		fisherman.total_catches = int(saved_data.get("total_catches", 0))
-		var raw_history: Array = saved_data.get("catch_history", [])
-		var loaded_history: Array = []
-		for raw in raw_history:
-			if raw is Dictionary and raw.has("species") and raw.has("tier") and raw.has("weight") and raw.has("day"):
-				loaded_history.append({
-					"species": raw.species,
-					"tier": int(raw.tier),
-					"weight": float(raw.weight),
-					"day": int(raw.day),
-				})
-		fisherman.catch_history = loaded_history
-		fisherman.best_catch_tier = int(saved_data.get("best_catch_tier", 0))
-		fisherman.is_favorite = bool(saved_data.get("is_favorite", false))
-		# Saves from before fishing spots existed have everyone at the
-		# pier, which is where they all used to stand.
-		fisherman.fishing_spot = str(saved_data.get("fishing_spot", FishingSpots.PIER))
-		var equipped: Dictionary = saved_data.get("equipped_items", {})
-		for slot in equipped:
-			var item_name = equipped[slot]
-			if item_name is String:
-				var item := SaveManager.find_item_by_name(item_name)
-				if item != null:
-					fisherman.equipped_items[slot] = item
-		if saved_data.has("appearance_variant"):
-			fisherman.set_appearance_variant(int(saved_data.get("appearance_variant")))
-	else:
-		var perk_count_range := Vector2i(2, 3) if MetaProgress.has_extra_perk_slot() else Vector2i(1, 2)
-		fisherman.perks = PerkCatalog.roll_perk_names(randi_range(perk_count_range.x, perk_count_range.y))
-
+	var fisherman := FishermanFactory.build(fishermen.size(), saved_data)
 	add_child(fisherman)
 	# After add_child so _ready() has run and the node can react to the
 	# assignment; also drops a spot the player has since lost access to.
@@ -335,7 +220,7 @@ func _hide_other_zone_a_panels(except_panel: Node) -> void:
 
 func _on_fishermen_button_pressed() -> void:
 	_hide_other_zone_a_panels(fishermen_panel)
-	fishermen_panel.toggle(fishermen)
+	fishermen_panel.open(fishermen)
 
 func _on_album_button_pressed() -> void:
 	_hide_other_zone_a_panels(album_panel)
@@ -355,7 +240,7 @@ func _on_dock_button_pressed() -> void:
 
 func _on_stats_button_pressed() -> void:
 	_hide_other_zone_a_panels(stats_panel)
-	stats_panel.toggle(fishermen)
+	stats_panel.open(fishermen)
 
 func _on_quests_button_pressed() -> void:
 	_hide_other_zone_a_panels(quest_panel)
@@ -382,7 +267,7 @@ func _on_equip_item_detail_requested(item: Item, spot: String) -> void:
 func _show_profile(fisherman: Node) -> void:
 	# The click that drops a carried station would otherwise also open the
 	# profile of whichever fisherman happened to be under the cursor.
-	if _carried_station != null:
+	if station_carry.is_carrying():
 		return
 	equip_panel.visible = false
 	fishermen_panel.visible = false
@@ -415,33 +300,3 @@ func _update_coins_label(new_total: int) -> void:
 
 func _update_scales_label(new_total: int) -> void:
 	scales_label.text = "%d" % new_total
-
-## Painted from WorldLayout so station placement validates against the
-## same geometry that is drawn here.
-func _draw() -> void:
-	draw_rect(Rect2(Vector2.ZERO, WorldLayout.WORLD_SIZE), WorldLayout.LAND_COLOR)
-	draw_rect(WorldLayout.SAND_RECT, WorldLayout.SAND_COLOR)
-	draw_rect(WorldLayout.WATER_RECT, WorldLayout.WATER_COLOR)
-	for i in range(4):
-		var y := 130.0 + i * 45.0
-		draw_line(Vector2(320, y), Vector2(580, y), WorldLayout.WAVE_COLOR, 2.0)
-	draw_rect(WorldLayout.PIER_RECT, WorldLayout.PIER_COLOR)
-	_draw_pond()
-	# Only exists once bought, so the purchase visibly builds something.
-	if FishingSpots.is_unlocked(FishingSpots.OFFSHORE):
-		draw_rect(WorldLayout.JETTY_RECT, WorldLayout.JETTY_COLOR)
-		draw_rect(
-			Rect2(WorldLayout.JETTY_RECT.position + Vector2(0.0, WorldLayout.JETTY_RECT.size.y - 4.0),
-				Vector2(WorldLayout.JETTY_RECT.size.x, 4.0)),
-			WorldLayout.JETTY_PLANK_COLOR
-		)
-
-func _draw_pond() -> void:
-	var pond := WorldLayout.POND_RECT
-	draw_rect(pond, WorldLayout.POND_COLOR)
-	# A lighter rim reads as shallows and keeps the pond from looking like
-	# a hole punched in the grass.
-	draw_rect(Rect2(pond.position, Vector2(pond.size.x, 3.0)), WorldLayout.POND_SHALLOW_COLOR)
-	draw_rect(Rect2(pond.position + Vector2(0.0, pond.size.y - 3.0), Vector2(pond.size.x, 3.0)), WorldLayout.POND_SHALLOW_COLOR)
-	draw_rect(Rect2(pond.position, Vector2(3.0, pond.size.y)), WorldLayout.POND_SHALLOW_COLOR)
-	draw_rect(Rect2(pond.position + Vector2(pond.size.x - 3.0, 0.0), Vector2(3.0, pond.size.y)), WorldLayout.POND_SHALLOW_COLOR)

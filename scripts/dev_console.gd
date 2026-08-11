@@ -116,15 +116,8 @@ func _on_simulate_offline() -> void:
 		_log("Enter a positive number of hours.")
 		return
 	var effective_seconds: float = hours * 3600.0 * (_main.OFFLINE_EFFICIENCY + MetaProgress.get_offline_efficiency_bonus())
-	var total_catches := 0
-	var total_coins := 0
-	var total_scales := 0
-	for fisherman in _main.fishermen:
-		var summary: Dictionary = fisherman.resolve_offline_catches(effective_seconds)
-		total_catches += summary.catches
-		total_coins += summary.coins
-		total_scales += summary.scales
-	_log("Simulated %.1fh offline: %d catches, +%d coins, +%d scales." % [hours, total_catches, total_coins, total_scales])
+	var result: Dictionary = _main._resolve_offline_batch(effective_seconds)
+	_log("Simulated %.1fh offline: %d catches, +%d coins, %d sent to dock." % [hours, result.catches, result.coins, result.docked])
 
 func _has_main() -> bool:
 	if _main == null or not is_instance_valid(_main):

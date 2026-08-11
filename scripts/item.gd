@@ -75,15 +75,6 @@ func get_bonus(axis: String, spot: String = "") -> float:
 				total += effect[1]
 	return total
 
-## The bonus half only, whether or not it is currently live — used by the
-## UI to show what an item would be worth in its window.
-func get_conditional_bonus(axis: String) -> float:
-	var total := 0.0
-	for effect in bonus_effects:
-		if effect[0] == axis:
-			total += effect[1]
-	return total
-
 func condition_active(spot: String = "") -> bool:
 	if condition.is_empty():
 		return true
@@ -154,9 +145,3 @@ func habitat_bias_text() -> String:
 		parts.append("%s x%.1f" % [habitat, float(habitat_bias[habitat])])
 	return "Attracts " + ", ".join(parts)
 
-## Shop rotation used to hide items whose condition wasn't met, which is
-## why storm gear felt like it did nothing: the condition only ever
-## affected the shelf, never the rod. Conditions are live effects now, so
-## everything is purchasable at any time.
-func is_available_now() -> bool:
-	return true

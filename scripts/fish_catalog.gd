@@ -226,6 +226,44 @@ static func total_count() -> int:
 	_build()
 	return _by_name.size()
 
+## Caches the (eligible species, total weight) pair roll_species() builds,
+## keyed on everything that affects it except the random draw itself.
+## Weather/season/night-bucket only change a few times a real minute, but
+## roll_species() runs on every catch (up to 30 fishermen every 2-5s, plus
+## one throwaway Secret-tier call per catch regardless of whether Secret
+## is even reachable right now) — re-scanning the tier's species and
+## re-evaluating conditions_met() that often was pure churn. The picked
+## species itself is never cached, only the eligible pool it's drawn from.
+static var _eligible_cache: Dictionary = {}
+
+static func _habitats_signature(habitats: Array) -> String:
+	if habitats.is_empty():
+		return ""
+	var sorted_habitats: Array = habitats.duplicate()
+	sorted_habitats.sort()
+	return ",".join(sorted_habitats)
+
+static func _bias_signature(bias: Dictionary) -> String:
+	if bias.is_empty():
+		return ""
+	var keys: Array = bias.keys()
+	keys.sort()
+	var parts: Array = []
+	for key in keys:
+		parts.append("%s:%s" % [key, bias[key]])
+	return ",".join(parts)
+
+static func _build_eligible(tier: FishRarity.Tier, habitats: Array, bias: Dictionary, weather: String, season: String, is_night: bool) -> Dictionary:
+	var eligible: Array = []
+	var total_weight := 0.0
+	for species in species_for_tier(tier):
+		if not habitats.is_empty() and not habitats.has(species.habitat):
+			continue
+		if species.conditions_met(weather, season, is_night):
+			eligible.append(species)
+			total_weight += species.pick_weight * float(bias.get(species.habitat, 1.0))
+	return {"eligible": eligible, "total_weight": total_weight}
+
 ## Picks a species of `tier` that is catchable under the current weather,
 ## season and time of day, biased by each candidate's pick_weight. Returns
 ## null when nothing of that tier qualifies right now — routine for
@@ -238,14 +276,17 @@ static func roll_species(tier: FishRarity.Tier, habitats: Array = [], bias: Dict
 	var current_weather: String = WorldClock.get_weather()
 	var current_season: String = WorldClock.get_season_name()
 	var is_night: bool = WorldClock.get_night_factor() >= 0.5
-	var eligible: Array = []
-	var total_weight := 0.0
-	for species in species_for_tier(tier):
-		if not habitats.is_empty() and not habitats.has(species.habitat):
-			continue
-		if species.conditions_met(current_weather, current_season, is_night):
-			eligible.append(species)
-			total_weight += species.pick_weight * float(bias.get(species.habitat, 1.0))
+	var key := "%d|%s|%s|%s|%s|%s" % [
+		tier, _habitats_signature(habitats), _bias_signature(bias), current_weather, current_season, is_night
+	]
+	var cached: Dictionary
+	if _eligible_cache.has(key):
+		cached = _eligible_cache[key]
+	else:
+		cached = _build_eligible(tier, habitats, bias, current_weather, current_season, is_night)
+		_eligible_cache[key] = cached
+	var eligible: Array = cached.eligible
+	var total_weight: float = cached.total_weight
 	if eligible.is_empty() or total_weight <= 0.0:
 		return null
 	var roll := randf() * total_weight

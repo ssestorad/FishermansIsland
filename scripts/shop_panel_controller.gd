@@ -1,5 +1,5 @@
 class_name ShopPanelController
-extends Panel
+extends PanelController
 
 ## main.gd owns the detail panel, so the shop reports hover rather than
 ## reaching across to another panel itself.
@@ -27,15 +27,13 @@ const POTION_ICON_SCRIPT := preload("res://scripts/potion_icon.gd")
 @onready var gear_scroll: ScrollContainer = $MarginContainer/VBoxContainer/ShopScroll
 @onready var rows_container: VBoxContainer = $MarginContainer/VBoxContainer/ShopScroll/ShopRows
 @onready var potions_container: VBoxContainer = $MarginContainer/VBoxContainer/PotionRows
-@onready var close_button: Button = $MarginContainer/VBoxContainer/HeaderRow/CloseButton
 
 var _items: Array = []
 var _potion_rows: Dictionary = {}
 var _showing_potions: bool = false
 var _tick_accumulator: float = 0.0
 
-func _ready() -> void:
-	close_button.pressed.connect(_on_close_button_pressed)
+func _on_ready() -> void:
 	gear_tab_button.pressed.connect(_on_gear_tab_pressed)
 	potions_tab_button.pressed.connect(_on_potions_tab_pressed)
 	ShopRotation.rotated.connect(_on_shop_rotated)
@@ -160,6 +158,3 @@ func _on_buy_item(item: Item) -> void:
 func _on_drink_potion(axis: String) -> void:
 	if Economy.spend_coins(POTION_COST):
 		PotionManager.activate(axis)
-
-func _on_close_button_pressed() -> void:
-	visible = false

@@ -64,15 +64,6 @@ static func tier_from_name(tier_name: String) -> Tier:
 	push_error("Unknown fish tier name: %s" % tier_name)
 	return Tier.COMMON
 
-## Share of catches this tier would get with 0 Luck — the un-skewed base
-## rate before roll()'s luck bias pushes toward rarer tiers. Always 0 for
-## SECRET: it's never part of the rollable pool in the first place.
-static func base_chance_percent(tier: Tier) -> float:
-	var total := 0.0
-	for w in WEIGHTS.values():
-		total += w
-	return (WEIGHTS.get(tier, 0.0) / total) * 100.0
-
 ## Fallback weight bands. Species carry their own ranges now; these only
 ## cover entries whose species can no longer be looked up — dock items and
 ## catch-history rows saved under a species name that has since been

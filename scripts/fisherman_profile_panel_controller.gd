@@ -1,5 +1,5 @@
 class_name FishermanProfilePanelController
-extends Panel
+extends PanelController
 
 signal dismiss_requested(fisherman)
 signal slot_clicked(fisherman, slot_name)
@@ -26,7 +26,6 @@ signal slot_clicked(fisherman, slot_name)
 @onready var perks_label: Label = $MarginContainer/VBoxContainer/StatsScroll/StatsBlock/PerksLabel
 @onready var history_label: Label = $MarginContainer/VBoxContainer/StatsScroll/StatsBlock/HistoryLabel
 @onready var dismiss_button: Button = $MarginContainer/VBoxContainer/DismissButton
-@onready var close_button: Button = $MarginContainer/VBoxContainer/HeaderRow/CloseButton
 
 ## Needs tick continuously (not just on a catch, unlike the XP bars above),
 ## so they need their own lightweight poll while the panel is open — same
@@ -38,12 +37,11 @@ var _fisherman: Node = null
 var _dismiss_armed: bool = false
 var _needs_tick_accumulator: float = 0.0
 
-func _ready() -> void:
+func _on_ready() -> void:
 	for slot_button in equipment_slots.get_children():
 		var slot_name: String = slot_button.name.trim_suffix("Slot")
 		slot_button.pressed.connect(_on_slot_pressed.bind(slot_name))
 	dismiss_button.pressed.connect(_on_dismiss_button_pressed)
-	close_button.pressed.connect(_on_close_button_pressed)
 	favorite_button.pressed.connect(_on_favorite_button_pressed)
 	spot_button.pressed.connect(_on_spot_button_pressed)
 	visibility_changed.connect(_on_visibility_changed)

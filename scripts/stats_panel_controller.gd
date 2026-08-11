@@ -1,22 +1,18 @@
 class_name StatsPanelController
-extends Panel
+extends PanelController
 
 const LIST_ROW_SCENE := preload("res://scenes/ui/ListRow.tscn")
 const TOP_N := 5
 const ROW_COLOR := Color(0.24, 0.45, 0.55)
 
-@onready var close_button: Button = $MarginContainer/VBoxContainer/HeaderRow/CloseButton
 @onready var rows_container: VBoxContainer = $MarginContainer/VBoxContainer/StatsScroll/StatsRows
 
-func _ready() -> void:
-	close_button.pressed.connect(_on_close_button_pressed)
-
-func toggle(fishermen: Array) -> void:
+func open(fishermen: Array) -> void:
 	visible = not visible
 	if visible:
-		build(fishermen)
+		_build_rows(fishermen)
 
-func build(fishermen: Array) -> void:
+func _build_rows(fishermen: Array) -> void:
 	UiListUtils.clear_children(rows_container)
 	_add_section("Most Catches", fishermen, func(f): return f.total_catches, "")
 	_add_section("Highest Speed", fishermen, func(f): return f.get_level(f.speed_xp), " Lvl")
@@ -47,6 +43,3 @@ func _add_section(section_title: String, fishermen: Array, value_fn: Callable, s
 		rows_container.add_child(row)
 		var value = value_fn.call(fisherman)
 		row.setup("#%d %s" % [i + 1, fisherman.display_name], "", "%s%s" % [value, suffix], ROW_COLOR)
-
-func _on_close_button_pressed() -> void:
-	visible = false

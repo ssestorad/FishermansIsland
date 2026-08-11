@@ -1,5 +1,5 @@
 class_name EquipPanelController
-extends Panel
+extends PanelController
 
 ## The comparison label answers "is this better?"; the detail panel
 ## answers "what is this?". main.gd owns the latter.
@@ -16,7 +16,6 @@ const LIST_ROW_SCENE := preload("res://scenes/ui/ListRow.tscn")
 @onready var rows_container: VBoxContainer = $MarginContainer/VBoxContainer/EquipScroll/EquipRows
 @onready var comparison_label: RichTextLabel = $MarginContainer/VBoxContainer/ComparisonLabel
 @onready var unequip_button: Button = $MarginContainer/VBoxContainer/UnequipButton
-@onready var close_button: Button = $MarginContainer/VBoxContainer/HeaderRow/CloseButton
 
 const DEFAULT_COMPARISON_TEXT := "Hover an item to compare against what's equipped."
 const BETTER_COLOR := "#4caf50"
@@ -25,9 +24,8 @@ const WORSE_COLOR := "#e05252"
 var _fisherman: Node = null
 var _slot: String = ""
 
-func _ready() -> void:
+func _on_ready() -> void:
 	unequip_button.pressed.connect(_on_unequip_pressed)
-	close_button.pressed.connect(_on_close_button_pressed)
 	back_button.pressed.connect(_on_back_button_pressed)
 	visibility_changed.connect(_on_visibility_changed)
 
@@ -119,9 +117,6 @@ func _on_unequip_pressed() -> void:
 		_fisherman.equipped_items[_slot] = null
 		changed.emit()
 	build()
-
-func _on_close_button_pressed() -> void:
-	visible = false
 
 func _on_back_button_pressed() -> void:
 	back_requested.emit(_fisherman)
