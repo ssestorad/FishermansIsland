@@ -7,8 +7,8 @@ extends Sprite2D
 ## Regenerate both with tools/generate_fish_sprites.py.
 const BODY_ATLAS := preload("res://assets/sprites/fish/fish_atlas.png")
 const OUTLINE_ATLAS := preload("res://assets/sprites/fish/fish_atlas_outline.png")
-const COLUMNS := 8
-const ROWS := 4
+const COLUMNS := 10
+const ROWS := 5
 const MODEL_COUNT := COLUMNS * ROWS
 
 ## Undiscovered fish flatten to a dark silhouette. Applied as

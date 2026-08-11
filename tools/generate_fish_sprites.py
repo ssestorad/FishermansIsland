@@ -29,7 +29,7 @@ import random
 from PIL import Image
 
 FRAME_W, FRAME_H = 32, 16
-COLUMNS, ROWS = 8, 4
+COLUMNS, ROWS = 10, 5
 MODEL_COUNT = COLUMNS * ROWS
 CENTER_Y = 7.5
 OUT_PATH = os.path.join("assets", "sprites", "fish", "fish_atlas.png")
@@ -198,6 +198,19 @@ def _draw_pattern(px, spec, bounds, x0, rng):
         elif style == "spots":
             if bottom - top >= 3 and i >= 3 and rng.random() < 0.35:
                 _put(px, x, rng.randint(top + 1, bottom - 1), "pattern")
+        elif style == "bars":
+            # Two lateral bands riding just inside the back/belly edges,
+            # the horizontal counterpart to "stripes"' vertical bands.
+            if bottom - top >= 3 and i >= 2:
+                _put(px, x, top + 1, "pattern")
+                _put(px, x, bottom - 1, "pattern")
+        elif style == "eyespot":
+            # A false eye near the tail, like a butterflyfish's — a small
+            # dark mark placed well clear of the real eye up at the head.
+            if i == int(round(spec["body_len"] * 0.78)) and bottom - top >= 3:
+                mid = int(round((top + bottom) / 2.0))
+                _put(px, x, mid, "pattern")
+                _put(px, x, mid - 1, "pattern")
 
 
 def _outline_positions(filled):
@@ -322,6 +335,41 @@ SPECS = [
     {"name": "sturgeon", "palette": "ink", "body_len": 22, "body_h": 3.0, "head_h": 0.8, "peak": 0.5, "tail": "long", "tail_len": 5, "snout": 2, "pattern": "stripes"},
     {"name": "catfish", "palette": "copper", "body_len": 20, "body_h": 3.8, "head_h": 1.0, "peak": 0.3, "tail": "round", "tail_len": 5, "snout": 3, "pattern": "spots"},
     {"name": "leviathan", "palette": "crimson", "body_len": 21, "body_h": 4.6, "head_h": 0.85, "peak": 0.45, "back_bias": 1.1, "belly_bias": 0.9, "tail": "fan", "tail_len": 5, "tail_flare": 1.0, "dorsal": (0.35, 0.75, 1.8), "pattern": "stripes"},
+    # Exotics — one-off silhouettes for named species that used to share a
+    # model with six-plus other fish (Lamp Squid/Anglerfish/Hadal Chimaera/
+    # Manta of the Shallows/the flatfish pair all rode on "serpent"/
+    # "bigeye"/"eel"/"ray"), plus dedicated shapes for the Kraken/Wyrm/
+    # Behemoth-and-Colossus mythic tier, which used to be three more
+    # "serpent"/"leviathan" repaints.
+    {"name": "squid", "palette": "violet", "body_len": 10, "body_h": 4.0, "head_h": 0.85, "tail_h": 0.15, "peak": 0.3, "tail": "point", "tail_len": 7, "tail_flare": 0.3, "pectoral": False, "pattern": "spots"},
+    {"name": "angler", "palette": "ink", "body_len": 12, "body_h": 5.0, "head_h": 0.95, "tail_h": 0.3, "peak": 0.15, "tail": "round", "tail_len": 3, "tail_flare": 0.4, "snout": 2, "dorsal": (0.05, 0.2, 1.2)},
+    {"name": "chimaera", "palette": "slate", "body_len": 14, "body_h": 3.2, "head_h": 0.75, "tail_h": 0.15, "peak": 0.3, "tail": "point", "tail_len": 8, "tail_flare": 0.25, "dorsal": (0.08, 0.3, 2.2)},
+    {"name": "manta", "palette": "steel", "body_len": 13, "body_h": 6.5, "head_h": 0.15, "tail_h": 0.05, "peak": 0.5, "tail": "point", "tail_len": 8, "tail_flare": 0.15, "snout": 2, "pectoral": False},
+    {"name": "flounder", "palette": "sand", "body_len": 13, "body_h": 5.5, "head_h": 0.25, "tail_h": 0.2, "peak": 0.5, "tail": "round", "tail_len": 3, "tail_flare": 0.35, "pectoral": False, "pattern": "eyespot"},
+    {"name": "kraken", "palette": "abyss", "body_len": 13, "body_h": 5.2, "head_h": 0.85, "tail_h": 0.2, "peak": 0.2, "tail": "point", "tail_len": 9, "tail_flare": 0.5, "dorsal": (0.1, 0.85, 2.6), "anal": (0.1, 0.85, 2.6), "pectoral": False},
+    {"name": "wyrm", "palette": "teal", "body_len": 23, "body_h": 3.2, "head_h": 0.9, "tail_h": 0.35, "peak": 0.03, "taper": "linear", "tail": "point", "tail_len": 5, "dorsal": (0.05, 0.95, 1.8), "pectoral": False},
+    {"name": "colossus", "palette": "copper", "body_len": 22, "body_h": 5.2, "head_h": 0.85, "tail_h": 0.35, "peak": 0.45, "back_bias": 1.15, "belly_bias": 0.95, "tail": "fan", "tail_len": 5, "tail_flare": 0.6, "dorsal": (0.3, 0.8, 2.2), "pattern": "bars"},
+    # Secret tier gets its own faces. All six Secret species used to share
+    # a model with an ordinary same-tier fish (Sunlit Mirage/Nightglass
+    # Siren both rode "sailfish", Glassfin Wraith rode "needlefish", all
+    # three Deep/Storm/Ruins heavies rode "leviathan") — a discovery this
+    # rare deserves a silhouette nothing else in the catalog has.
+    {"name": "mirage", "palette": "pearl", "body_len": 18, "body_h": 3.2, "head_h": 0.6, "tail_h": 0.3, "peak": 0.42, "tail": "fork", "tail_len": 5, "dorsal": (0.12, 0.85, 3.2), "pattern": "line"},
+    {"name": "drownedking", "palette": "abyss", "body_len": 20, "body_h": 4.2, "head_h": 0.85, "tail_h": 0.3, "peak": 0.4, "tail": "long", "tail_len": 6, "dorsal": (0.05, 0.3, 3.2), "snout": 1},
+    {"name": "wraith", "palette": "silver", "body_len": 20, "body_h": 2.2, "head_h": 0.6, "tail_h": 0.25, "peak": 0.1, "taper": "linear", "tail": "point", "tail_len": 7, "pectoral": False},
+    {"name": "siren", "palette": "violet", "body_len": 19, "body_h": 3.6, "head_h": 0.55, "tail_h": 0.35, "peak": 0.35, "tail": "fan", "tail_len": 6, "tail_flare": 1.1, "dorsal": (0.3, 0.9, 2.4), "anal": (0.5, 0.9, 2.0)},
+    {"name": "longdark", "palette": "ink", "body_len": 21, "body_h": 5.6, "head_h": 0.5, "tail_h": 0.4, "peak": 0.55, "back_bias": 1.2, "belly_bias": 1.2, "tail": "fan", "tail_len": 5, "tail_flare": 0.7, "pectoral": False},
+    {"name": "keeper", "palette": "sand", "body_len": 20, "body_h": 4.8, "head_h": 0.75, "tail_h": 0.3, "peak": 0.42, "back_bias": 1.1, "belly_bias": 0.9, "tail": "round", "tail_len": 4, "tail_flare": 0.5, "dorsal": (0.1, 0.85, 2.4), "pattern": "stripes", "snout": 1},
+    # The "shark" model alone covered four species spanning Epic to
+    # Legendary; Great White and Thresher are both distinctive enough by
+    # name/lore (thresher tails run as long as the body) to earn their own.
+    {"name": "greatwhite", "palette": "steel", "body_len": 21, "body_h": 4.4, "head_h": 0.65, "tail_h": 0.3, "peak": 0.32, "tail": "long", "tail_len": 6, "dorsal": (0.32, 0.55, 3.0), "snout": 1},
+    {"name": "thresher", "palette": "slate", "body_len": 16, "body_h": 3.4, "head_h": 0.6, "tail_h": 0.35, "peak": 0.35, "tail": "long", "tail_len": 12, "tail_flare": 0.35, "dorsal": (0.3, 0.5, 1.8)},
+    # Non-fish sea life. Both still fit the head-to-tail silhouette system;
+    # starfish and octopus don't (radial/many-armed body plans) and are
+    # deliberately not attempted here — see the project notes.
+    {"name": "seahorse", "palette": "rose", "body_len": 9, "body_h": 2.6, "head_h": 0.65, "tail_h": 0.1, "peak": 0.3, "back_bias": 1.3, "belly_bias": 0.7, "tail": "point", "tail_len": 8, "tail_flare": 0.1, "snout": 4, "dorsal": (0.15, 0.5, 1.6), "pectoral": False},
+    {"name": "jellyfish", "palette": "pearl", "body_len": 9, "body_h": 4.2, "head_h": 0.35, "tail_h": 0.1, "peak": 0.55, "tail": "point", "tail_len": 9, "tail_flare": 0.15, "pectoral": False},
 ]
 
 

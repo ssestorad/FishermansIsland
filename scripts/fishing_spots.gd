@@ -4,14 +4,14 @@ extends RefCounted
 ## The three places a fisherman can cast from, and which slice of the
 ## fish catalog each one reaches.
 ##
-## The habitat split is not arbitrary: the 120-species catalog was already
+## The habitat split is not arbitrary: the 122-species catalog was already
 ## authored with this progression baked in. Reedbeds/Harbour top out at
 ## Rare, while The Deep and Sunken Ruins contain no Common or Uncommon
 ## species at all, so grouping habitats by depth produces a clean rarity
 ## curve without retuning a single species.
 ##
 ##   pond      30 species, Common..Epic
-##   pier      49 species, Common..Legendary (+1 Secret)
+##   pier      51 species, Common..Legendary (+1 Secret)
 ##   offshore  41 species, Rare..Mythic      (+5 Secret)
 ##
 ## Everything casts eastward so the right-facing fishing pose always

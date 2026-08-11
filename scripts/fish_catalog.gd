@@ -78,9 +78,9 @@ const SPECIES := [
 	{"n": "Piling Blenny", "t": "Common", "h": "Harbour", "m": 3, "w": [0.1, 0.5], "v": 1, "d": "Lives in a bolt hole in the jetty and glares out at passers-by."},
 	{"n": "Rope Goby", "t": "Common", "h": "Harbour", "m": 0, "w": [0.1, 0.3], "v": 1, "d": "Hides in the fenders. Comes out only when the mooring lines go slack."},
 	{"n": "Tin Mackerel", "t": "Common", "h": "Harbour", "m": 2, "w": [0.4, 1.4], "v": 2, "d": "Striped like hammered metal and never still for a second."},
-	{"n": "Slipway Flounder", "t": "Common", "h": "Harbour", "m": 28, "w": [0.5, 2.0], "v": 2, "d": "Lies in the silt off the ramp with both eyes on the same side of its head, watching."},
+	{"n": "Slipway Flounder", "t": "Common", "h": "Harbour", "m": 36, "w": [0.5, 2.0], "v": 2, "d": "Lies in the silt off the ramp with both eyes on the same side of its head, watching."},
 	{"n": "Bilge Carp", "t": "Common", "h": "Harbour", "m": 9, "w": [1.0, 3.0], "v": 2, "d": "Thrives on galley scraps. Tastes exactly as good as that sounds."},
-	{"n": "Lamp Squid", "t": "Uncommon", "h": "Harbour", "m": 20, "w": [0.4, 1.8], "v": 5, "d": "Draws itself up to the deck lights after dark and turns the colour of the flame.", "night": true},
+	{"n": "Lamp Squid", "t": "Uncommon", "h": "Harbour", "m": 32, "w": [0.4, 1.8], "v": 5, "d": "Draws itself up to the deck lights after dark and turns the colour of the flame.", "night": true},
 	{"n": "Harbour Sea Bass", "t": "Uncommon", "h": "Harbour", "m": 15, "w": [1.5, 5.0], "v": 7, "d": "Patrols the pilings at the turn of the tide, taking whatever the current dislodges."},
 	{"n": "Mooring Conger", "t": "Uncommon", "h": "Harbour", "m": 19, "w": [2.0, 6.5], "v": 6, "d": "Lives under the stone quay. Every dockhand has an opinion on how big it really is."},
 	{"n": "Copper Mullet", "t": "Uncommon", "h": "Harbour", "m": 6, "w": [1.0, 3.6], "v": 6, "d": "Grazes algae off the hulls in slow, unbothered circles."},
@@ -88,19 +88,21 @@ const SPECIES := [
 	{"n": "Ballast Grouper", "t": "Rare", "h": "Harbour", "m": 12, "w": [6.0, 16.0], "v": 16, "d": "Took up residence in a scuttled hull and grew to fit the cabin."},
 	{"n": "Ghost Net Eel", "t": "Rare", "h": "Harbour", "m": 18, "w": [3.0, 9.0], "v": 14, "d": "Threads a lost net every night without ever being caught by it.", "night": true, "pick": 0.6},
 
-	# --- Kelp Forest (16) ----------------------------------------------
+	# --- Kelp Forest (18) ----------------------------------------------
 	# Cold green water and standing weed, thick enough to lose a boat in.
 	{"n": "Kelp Blenny", "t": "Common", "h": "Kelp Forest", "m": 3, "w": [0.1, 0.5], "v": 2, "d": "Green as the fronds it clings to, right down to its eyes."},
 	{"n": "Weed Pipefish", "t": "Common", "h": "Kelp Forest", "m": 25, "w": [0.1, 0.4], "v": 2, "d": "Hangs vertically among the stems and is missed by nearly everyone."},
 	{"n": "Rock Wrasse", "t": "Uncommon", "h": "Kelp Forest", "m": 8, "w": [0.6, 2.4], "v": 5, "d": "Cracks shellfish against a favourite stone and returns to it for years."},
 	{"n": "Kelp Perch", "t": "Uncommon", "h": "Kelp Forest", "m": 8, "w": [0.7, 2.6], "v": 5, "d": "Drifts nose-down between the stipes, pretending to be a piece of weed."},
 	{"n": "Green Wrasse", "t": "Uncommon", "h": "Kelp Forest", "m": 10, "w": [0.8, 3.0], "v": 6, "d": "Changes sex when the largest male dies. The kelp forest sorts itself out."},
-	{"n": "Frond Sole", "t": "Uncommon", "h": "Kelp Forest", "m": 28, "w": [0.6, 2.2], "v": 5, "d": "Flat, freckled and content to be stepped over."},
+	{"n": "Frond Sole", "t": "Uncommon", "h": "Kelp Forest", "m": 36, "w": [0.6, 2.2], "v": 5, "d": "Flat, freckled and content to be stepped over."},
 	{"n": "Otterfish", "t": "Uncommon", "h": "Kelp Forest", "m": 7, "w": [1.2, 4.2], "v": 7, "d": "Named for the way it rolls onto its back to work a shell loose."},
 	{"n": "Kelp Garfish", "t": "Uncommon", "h": "Kelp Forest", "m": 25, "w": [0.8, 3.0], "v": 6, "d": "A needle with green bones. The bones put people off; the taste wins them back."},
+	{"n": "Drifting Jellyfish", "t": "Uncommon", "h": "Kelp Forest", "m": 49, "w": [0.4, 1.8], "v": 6, "d": "Trails a curtain of stinging thread wherever the current decides to take it."},
 	{"n": "Copper Kelpfish", "t": "Rare", "h": "Kelp Forest", "m": 6, "w": [2.5, 7.0], "v": 12, "d": "Turns rust-red in autumn when the forest starts to die back.", "season": "Autumn"},
 	{"n": "Kelp Sculpin", "t": "Rare", "h": "Kelp Forest", "m": 11, "w": [2.0, 6.0], "v": 11, "d": "All head and spines. Swallows things nearly its own size and regrets nothing."},
-	{"n": "Weedbed Halibut", "t": "Rare", "h": "Kelp Forest", "m": 28, "w": [6.0, 15.0], "v": 16, "d": "A door-sized flatfish that has been mistaken for the seabed by at least one anchor."},
+	{"n": "Kelp Seahorse", "t": "Rare", "h": "Kelp Forest", "m": 48, "w": [0.05, 0.25], "v": 13, "d": "Anchors its curled tail to a stem of kelp and lets the whole forest sway around it."},
+	{"n": "Weedbed Halibut", "t": "Rare", "h": "Kelp Forest", "m": 36, "w": [6.0, 15.0], "v": 16, "d": "A door-sized flatfish that has been mistaken for the seabed by at least one anchor."},
 	{"n": "Forest Ling", "t": "Rare", "h": "Kelp Forest", "m": 19, "w": [4.0, 11.0], "v": 14, "d": "Long and mottled, working the base of the stipes where the light gives up."},
 	{"n": "Emerald Wrasse", "t": "Rare", "h": "Kelp Forest", "m": 10, "w": [2.0, 6.5], "v": 15, "d": "Impossibly green, and worth more to collectors than to cooks.", "pick": 0.6},
 	{"n": "Kelp Lord", "t": "Epic", "h": "Kelp Forest", "m": 12, "w": [10.0, 26.0], "v": 32, "d": "The forest's resident bulk. Holds a clearing among the stipes and tolerates no rivals."},
@@ -125,10 +127,10 @@ const SPECIES := [
 	{"n": "Napoleon Wrasse", "t": "Rare", "h": "Coral Shallows", "m": 10, "w": [6.0, 16.0], "v": 17, "d": "Grows a bulging forehead with age and follows divers around out of plain curiosity."},
 	{"n": "Coral Barracuda", "t": "Epic", "h": "Coral Shallows", "m": 16, "w": [8.0, 20.0], "v": 30, "d": "Hangs over the drop-off like a hung knife, moving only to become somewhere else."},
 	{"n": "Summer Marlin", "t": "Epic", "h": "Coral Shallows", "m": 23, "w": [16.0, 42.0], "v": 40, "d": "Comes into the warm shallows to hunt and lights up electric blue when it does.", "season": "Summer"},
-	{"n": "Manta of the Shallows", "t": "Epic", "h": "Coral Shallows", "m": 28, "w": [20.0, 50.0], "v": 38, "d": "Flies rather than swims, and turns the sand dark as it passes over."},
+	{"n": "Manta of the Shallows", "t": "Epic", "h": "Coral Shallows", "m": 35, "w": [20.0, 50.0], "v": 38, "d": "Flies rather than swims, and turns the sand dark as it passes over."},
 	{"n": "Emperor Angelfish", "t": "Legendary", "h": "Coral Shallows", "m": 13, "w": [4.0, 12.0], "v": 62, "d": "Wears a pattern so exact that the reef seems to have been designed around it."},
 	{"n": "Goldscale Sailfish", "t": "Legendary", "h": "Coral Shallows", "m": 24, "w": [25.0, 60.0], "v": 78, "d": "Raises its sail in the sunlit shallows and outruns anything the island can float.", "weather": "Sunny", "pick": 0.7},
-	{"n": "Sunlit Mirage", "t": "Secret", "h": "Coral Shallows", "m": 24, "w": [18.0, 45.0], "v": 320, "d": "Seen only at high summer noon, and only by fishermen nobody believes afterwards.", "weather": "Sunny", "season": "Summer", "night": false},
+	{"n": "Sunlit Mirage", "t": "Secret", "h": "Coral Shallows", "m": 40, "w": [18.0, 45.0], "v": 320, "d": "Seen only at high summer noon, and only by fishermen nobody believes afterwards.", "weather": "Sunny", "season": "Summer", "night": false},
 
 	# --- Open Water (10) -----------------------------------------------
 	# Off the shelf entirely: no bottom, no cover, nothing but fast fish.
@@ -139,8 +141,8 @@ const SPECIES := [
 	{"n": "Hammerhead", "t": "Epic", "h": "Open Water", "m": 27, "w": [24.0, 60.0], "v": 42, "d": "Sweeps that ridiculous head across the sand and reads the seabed like a page."},
 	{"n": "Broadbill Swordfish", "t": "Epic", "h": "Open Water", "m": 22, "w": [22.0, 58.0], "v": 44, "d": "Hunts by feel in water too dark to see, then slashes through the shoal sideways."},
 	{"n": "Blue Marlin", "t": "Legendary", "h": "Open Water", "m": 23, "w": [40.0, 95.0], "v": 82, "d": "The fight every fisherman on the island claims to have had once."},
-	{"n": "Great White", "t": "Legendary", "h": "Open Water", "m": 26, "w": [60.0, 140.0], "v": 88, "d": "Arrives without warning, leaves without hurry, and ends the day's fishing either way."},
-	{"n": "Thresher", "t": "Legendary", "h": "Open Water", "m": 26, "w": [35.0, 85.0], "v": 76, "d": "Stuns whole shoals with a tail longer than the rest of it.", "pick": 0.7},
+	{"n": "Great White", "t": "Legendary", "h": "Open Water", "m": 46, "w": [60.0, 140.0], "v": 88, "d": "Arrives without warning, leaves without hurry, and ends the day's fishing either way."},
+	{"n": "Thresher", "t": "Legendary", "h": "Open Water", "m": 47, "w": [35.0, 85.0], "v": 76, "d": "Stuns whole shoals with a tail longer than the rest of it.", "pick": 0.7},
 	{"n": "Ocean Leviathan", "t": "Mythic", "h": "Open Water", "m": 31, "w": [120.0, 300.0], "v": 190, "d": "Charted as an island twice. Both charts were withdrawn."},
 
 	# --- Storm Front (7) -----------------------------------------------
@@ -150,41 +152,41 @@ const SPECIES := [
 	{"n": "Thunder Marlin", "t": "Legendary", "h": "Storm Front", "m": 23, "w": [45.0, 110.0], "v": 86, "d": "Runs ahead of the lightning. Crews claim the line hums before it strikes.", "weather": "Stormy"},
 	{"n": "Galewing Ray", "t": "Legendary", "h": "Storm Front", "m": 28, "w": [30.0, 75.0], "v": 74, "d": "Breaches in heavy weather and lands flat, hard enough to be heard over the wind.", "weather": "Stormy", "pick": 0.7},
 	{"n": "Tempest Serpent", "t": "Mythic", "h": "Storm Front", "m": 20, "w": [90.0, 220.0], "v": 175, "d": "Comes up the face of the swell in coils and is gone before anyone agrees on what they saw.", "weather": "Stormy"},
-	{"n": "Stormheart Kraken", "t": "Mythic", "h": "Storm Front", "m": 20, "w": [110.0, 260.0], "v": 200, "d": "Takes the storm as an invitation. The harbour bell is rung when it is sighted.", "weather": "Stormy", "pick": 0.6},
-	{"n": "The Drowned King", "t": "Secret", "h": "Storm Front", "m": 31, "w": [150.0, 400.0], "v": 420, "d": "Rises only in a winter storm at dead of night, crowned in weed, and looks straight at the boat.", "weather": "Stormy", "season": "Winter", "night": true},
+	{"n": "Stormheart Kraken", "t": "Mythic", "h": "Storm Front", "m": 37, "w": [110.0, 260.0], "v": 200, "d": "Takes the storm as an invitation. The harbour bell is rung when it is sighted.", "weather": "Stormy", "pick": 0.6},
+	{"n": "The Drowned King", "t": "Secret", "h": "Storm Front", "m": 41, "w": [150.0, 400.0], "v": 420, "d": "Rises only in a winter storm at dead of night, crowned in weed, and looks straight at the boat.", "weather": "Stormy", "season": "Winter", "night": true},
 
 	# --- Ice Shelf (9) -------------------------------------------------
 	# Winter water at the edge of the pack ice.
 	{"n": "Frost Char", "t": "Rare", "h": "Ice Shelf", "m": 7, "w": [2.0, 6.0], "v": 14, "d": "Belly turns furnace-orange against water cold enough to stop a hand.", "season": "Winter"},
 	{"n": "Icecap Cod", "t": "Rare", "h": "Ice Shelf", "m": 6, "w": [4.0, 11.0], "v": 15, "d": "Carries its own antifreeze. Keeps feeding while everything else shuts down.", "season": "Winter"},
-	{"n": "Glacier Halibut", "t": "Epic", "h": "Ice Shelf", "m": 28, "w": [25.0, 65.0], "v": 42, "d": "Lies under the shelf like a second floor of ice, waiting out the whole season.", "season": "Winter"},
+	{"n": "Glacier Halibut", "t": "Epic", "h": "Ice Shelf", "m": 36, "w": [25.0, 65.0], "v": 42, "d": "Lies under the shelf like a second floor of ice, waiting out the whole season.", "season": "Winter"},
 	{"n": "Blizzard Lancet", "t": "Epic", "h": "Ice Shelf", "m": 25, "w": [8.0, 22.0], "v": 40, "d": "Only rises through the ice holes when the wind is bad enough to keep sensible people ashore.", "weather": "Blizzard"},
 	{"n": "Winter Sturgeon", "t": "Legendary", "h": "Ice Shelf", "m": 29, "w": [50.0, 120.0], "v": 80, "d": "Moves beneath the pack ice at a pace that suggests it has nowhere in particular to be.", "season": "Winter"},
 	{"n": "Hoarfrost Ray", "t": "Legendary", "h": "Ice Shelf", "m": 28, "w": [28.0, 70.0], "v": 76, "d": "Pale enough to read the seabed through, and cold to the touch long after landing.", "season": "Winter", "pick": 0.7},
-	{"n": "Frostbound Wyrm", "t": "Mythic", "h": "Ice Shelf", "m": 20, "w": [100.0, 240.0], "v": 185, "d": "Cuts up through the pack from below. The crack is heard well before anything is seen.", "weather": "Blizzard"},
-	{"n": "Whitewater Behemoth", "t": "Mythic", "h": "Ice Shelf", "m": 31, "w": [130.0, 320.0], "v": 205, "d": "Breaks the shelf apart surfacing, and the ice takes a week to close again.", "season": "Winter", "pick": 0.7},
-	{"n": "Glassfin Wraith", "t": "Secret", "h": "Ice Shelf", "m": 25, "w": [40.0, 110.0], "v": 360, "d": "Transparent from nose to tail. Visible only as a bend in the lamplight, and only in fog after dark.", "weather": "Foggy", "night": true},
+	{"n": "Frostbound Wyrm", "t": "Mythic", "h": "Ice Shelf", "m": 38, "w": [100.0, 240.0], "v": 185, "d": "Cuts up through the pack from below. The crack is heard well before anything is seen.", "weather": "Blizzard"},
+	{"n": "Whitewater Behemoth", "t": "Mythic", "h": "Ice Shelf", "m": 39, "w": [130.0, 320.0], "v": 205, "d": "Breaks the shelf apart surfacing, and the ice takes a week to close again.", "season": "Winter", "pick": 0.7},
+	{"n": "Glassfin Wraith", "t": "Secret", "h": "Ice Shelf", "m": 42, "w": [40.0, 110.0], "v": 360, "d": "Transparent from nose to tail. Visible only as a bend in the lamplight, and only in fog after dark.", "weather": "Foggy", "night": true},
 
 	# --- The Deep (10) -------------------------------------------------
 	# Below the light. Almost everything here is a night catch.
 	{"n": "Lanternfish", "t": "Epic", "h": "The Deep", "m": 12, "w": [3.0, 10.0], "v": 32, "d": "Rises the whole way up the water column each night and sinks again before dawn.", "night": true},
 	{"n": "Gulper Eel", "t": "Epic", "h": "The Deep", "m": 19, "w": [6.0, 18.0], "v": 34, "d": "Mostly mouth. In water this empty, you eat whatever arrives, whatever its size.", "night": true},
-	{"n": "Anglerfish", "t": "Legendary", "h": "The Deep", "m": 12, "w": [10.0, 30.0], "v": 70, "d": "Carries its own lure and its own light, and has never once needed daylight."},
+	{"n": "Anglerfish", "t": "Legendary", "h": "The Deep", "m": 33, "w": [10.0, 30.0], "v": 70, "d": "Carries its own lure and its own light, and has never once needed daylight."},
 	{"n": "Abyssal Lamprey", "t": "Legendary", "h": "The Deep", "m": 21, "w": [8.0, 24.0], "v": 68, "d": "A mouth that is also a wound. Comes up the line still attached to something else.", "night": true},
-	{"n": "Hadal Chimaera", "t": "Legendary", "h": "The Deep", "m": 18, "w": [14.0, 38.0], "v": 74, "d": "Built to a design the surface abandoned a very long time ago.", "night": true, "pick": 0.7},
+	{"n": "Hadal Chimaera", "t": "Legendary", "h": "The Deep", "m": 34, "w": [14.0, 38.0], "v": 74, "d": "Built to a design the surface abandoned a very long time ago.", "night": true, "pick": 0.7},
 	{"n": "Void Serpent", "t": "Mythic", "h": "The Deep", "m": 20, "w": [95.0, 230.0], "v": 195, "d": "Comes up out of water that has no bottom worth measuring, and goes back down unhurried.", "night": true},
-	{"n": "Abyssal Behemoth", "t": "Mythic", "h": "The Deep", "m": 31, "w": [140.0, 340.0], "v": 215, "d": "The pressure it lives under would fold the boat flat. It surfaces anyway, occasionally."},
-	{"n": "Blindlight Kraken", "t": "Mythic", "h": "The Deep", "m": 20, "w": [120.0, 280.0], "v": 210, "d": "Lightless, eyeless, and unerring. It finds the boat every time.", "night": true, "pick": 0.6},
-	{"n": "Nightglass Siren", "t": "Secret", "h": "The Deep", "m": 24, "w": [60.0, 150.0], "v": 380, "d": "Heard first, and always at the exact moment the last lamp goes out.", "night": true, "weather": "Foggy"},
-	{"n": "The Long Dark", "t": "Secret", "h": "The Deep", "m": 31, "w": [200.0, 500.0], "v": 460, "d": "No fisherman has described it twice the same way. All of them stopped fishing nights.", "night": true, "weather": "Stormy"},
+	{"n": "Abyssal Behemoth", "t": "Mythic", "h": "The Deep", "m": 39, "w": [140.0, 340.0], "v": 215, "d": "The pressure it lives under would fold the boat flat. It surfaces anyway, occasionally."},
+	{"n": "Blindlight Kraken", "t": "Mythic", "h": "The Deep", "m": 37, "w": [120.0, 280.0], "v": 210, "d": "Lightless, eyeless, and unerring. It finds the boat every time.", "night": true, "pick": 0.6},
+	{"n": "Nightglass Siren", "t": "Secret", "h": "The Deep", "m": 43, "w": [60.0, 150.0], "v": 380, "d": "Heard first, and always at the exact moment the last lamp goes out.", "night": true, "weather": "Foggy"},
+	{"n": "The Long Dark", "t": "Secret", "h": "The Deep", "m": 44, "w": [200.0, 500.0], "v": 460, "d": "No fisherman has described it twice the same way. All of them stopped fishing nights.", "night": true, "weather": "Stormy"},
 
 	# --- Sunken Ruins (5) ----------------------------------------------
 	# Drowned stonework out past the shelf. Nothing here is ordinary.
 	{"n": "Temple Grouper", "t": "Legendary", "h": "Sunken Ruins", "m": 12, "w": [30.0, 80.0], "v": 72, "d": "Has lived inside the same drowned doorway long enough to have shaped itself to the arch."},
 	{"n": "Runic Nautilus", "t": "Legendary", "h": "Sunken Ruins", "m": 11, "w": [12.0, 34.0], "v": 78, "d": "Its shell is scored in marks that are not growth lines and are not decoration.", "pick": 0.7},
-	{"n": "Drowned Colossus", "t": "Mythic", "h": "Sunken Ruins", "m": 31, "w": [150.0, 360.0], "v": 220, "d": "Sleeps in the flooded hall and moves once a season, which is when the ruins shift."},
-	{"n": "Primordial Wyrm", "t": "Mythic", "h": "Sunken Ruins", "m": 20, "w": [130.0, 300.0], "v": 215, "d": "Was in the water before the stonework was above it, and expects to outlast the argument."},
-	{"n": "Keeper of the Ruins", "t": "Secret", "h": "Sunken Ruins", "m": 31, "w": [180.0, 450.0], "v": 500, "d": "Surfaces in fog over the drowned city, waits until it has been properly looked at, and sinks.", "weather": "Foggy", "season": "Autumn"},
+	{"n": "Drowned Colossus", "t": "Mythic", "h": "Sunken Ruins", "m": 39, "w": [150.0, 360.0], "v": 220, "d": "Sleeps in the flooded hall and moves once a season, which is when the ruins shift."},
+	{"n": "Primordial Wyrm", "t": "Mythic", "h": "Sunken Ruins", "m": 38, "w": [130.0, 300.0], "v": 215, "d": "Was in the water before the stonework was above it, and expects to outlast the argument."},
+	{"n": "Keeper of the Ruins", "t": "Secret", "h": "Sunken Ruins", "m": 45, "w": [180.0, 450.0], "v": 500, "d": "Surfaces in fog over the drowned city, waits until it has been properly looked at, and sinks.", "weather": "Foggy", "season": "Autumn"},
 ]
 
 static var _by_tier: Dictionary = {}
