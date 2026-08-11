@@ -115,14 +115,12 @@ func _on_habitat_pressed(habitat: String) -> void:
 	_current_index = 0
 	refresh()
 
-## True once any Secret species has been caught. Until then the tier's
-## very existence stays hidden — its tab, its overview row, and its
-## members inside habitat listings.
+## Until any Secret species has been caught, the tier's very existence
+## stays hidden — its tab, its overview row, and its members inside
+## habitat listings. Album.has_caught_secret() is shared with the
+## meta-shop's Secret Catch Chance upgrade, which stays hidden the same way.
 func _is_secret_unlocked() -> bool:
-	for species in FishCatalog.species_for_tier(FishRarity.Tier.SECRET):
-		if Album.is_discovered(species.species_name):
-			return true
-	return false
+	return Album.has_caught_secret()
 
 func _visible_species_for_habitat(habitat: String) -> Array:
 	var secret_unlocked := _is_secret_unlocked()

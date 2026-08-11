@@ -96,8 +96,12 @@ func _load_game() -> void:
 	Album.load_state(album_data.get("caught_counts", {}), album_data.get("best_weights", {}), album_data.get("record_holders", {}))
 	WorldClock.load_state(float(data.get("elapsed_time", 0.0)))
 	Inventory.load_state(data.get("inventory", []))
-	DockInventory.load_state(data.get("dock", []))
+	# MetaProgress must load before DockInventory: DockInventory.load_state()
+	# trims to capacity() immediately, which reads MetaProgress's dock
+	# capacity level — loading in the other order would treat a
+	# capacity-upgraded save's real entries as overflow and auto-sell them.
 	MetaProgress.load_state(data.get("meta_progress", {}))
+	DockInventory.load_state(data.get("dock", []))
 	var saved_fishermen: Array = data.get("fishermen", [])
 	if saved_fishermen.is_empty():
 		_spawn_starting_fishermen()
@@ -184,7 +188,8 @@ func _spawn_fisherman(saved_data: Dictionary = {}) -> Node:
 		if saved_data.has("appearance_variant"):
 			fisherman.set_appearance_variant(int(saved_data.get("appearance_variant")))
 	else:
-		fisherman.perks = PerkCatalog.roll_perk_names(randi_range(1, 2))
+		var perk_count_range := Vector2i(2, 3) if MetaProgress.has_extra_perk_slot() else Vector2i(1, 2)
+		fisherman.perks = PerkCatalog.roll_perk_names(randi_range(perk_count_range.x, perk_count_range.y))
 
 	add_child(fisherman)
 	fishermen.append(fisherman)
@@ -200,10 +205,15 @@ func _on_hire_button_pressed() -> void:
 		_update_hire_button()
 
 func _max_fishermen_slots() -> int:
-	return MAX_FISHERMEN_SLOTS + MetaProgress.extra_slots
+	# Extra Fisherman Slot is meant to be purchasable up to MAX_EXTRA_SLOTS
+	# (30 total, the originally-envisioned island cap) — the meta panel's
+	# buy handler already stops the player there, this is the defensive
+	# match to that, same spirit as get_shop_discount()'s value clamp.
+	return MAX_FISHERMEN_SLOTS + mini(MetaProgress.extra_slots, MetaProgress.MAX_EXTRA_SLOTS)
 
 func _hire_cost_for_next_slot() -> int:
-	return int(round(BASE_HIRE_COST * pow(HIRE_COST_GROWTH, fishermen.size() - 1)))
+	var base_cost := BASE_HIRE_COST * pow(HIRE_COST_GROWTH, fishermen.size() - 1)
+	return int(round(base_cost * (1.0 - MetaProgress.get_hire_discount())))
 
 func _update_hire_button() -> void:
 	var max_slots := _max_fishermen_slots()

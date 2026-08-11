@@ -37,6 +37,12 @@ const HUNGER_INTERVAL := 240.0
 const THIRST_INTERVAL := 300.0
 const REST_INTERVAL := 200.0
 
+## Used only as a fallback threshold (see _fallback_need()): when the
+## top-priority due need can't be serviced right now (Rest, bench full),
+## a lower-priority need doesn't have to be fully due (100%) to be worth
+## handling on this same Storage visit — 80% along is close enough.
+const NEED_THRESHOLD := 0.8
+
 ## How long a need takes to service once the fisherman arrives at its
 ## station. Rest is additionally reduced by the Endurance stat (see
 ## _service_duration()); hunger/thirst stay flat so Endurance doesn't end
@@ -206,7 +212,8 @@ func _process(delta: float) -> void:
 ## Called on arrival at the storage point (every catch passes through
 ## here): dispatches to the highest-priority due need, or heads straight
 ## back to the dock if nothing's due. Only ever starts one need per visit —
-## a second due need just waits for the next storage trip.
+## a second due need just waits for the next storage trip, unless the
+## top-priority pick turns out to be blocked (see _fallback_need()).
 func _start_next_leg() -> void:
 	var need := _due_need()
 	if need == "":
@@ -215,14 +222,31 @@ func _start_next_leg() -> void:
 		return
 	var station = _claim_need_station(need)
 	if station == null:
-		# Couldn't get a station (bench cluster full) — try again next
-		# storage visit instead of blocking the fisherman here.
-		current_target = _random_dock_point()
-		state = State.WALK_TO_DOCK
-		return
+		# Couldn't get a station (bench cluster full) — rather than wasting
+		# this Storage visit entirely, check whether a lower-priority need
+		# is already close enough to due to be worth handling instead.
+		need = _fallback_need(need)
+		if need == "":
+			current_target = _random_dock_point()
+			state = State.WALK_TO_DOCK
+			return
+		station = _claim_need_station(need)
 	current_need = need
 	current_target = station
 	state = State.WALK_TO_NEED
+
+## The top-priority need (`blocked`) couldn't be serviced this visit (only
+## possible for "rest", when every bench is occupied). Rather than the
+## fisherman walking straight back to the dock empty-handed, check the
+## other two needs against NEED_THRESHOLD (80%) — close enough to due to
+## be worth bundling into this same Storage stop. Confirmed by the user:
+## fine to go fulfill a different need as long as it clears the threshold.
+func _fallback_need(blocked: String) -> String:
+	if blocked != "hunger" and get_need_progress("hunger") >= NEED_THRESHOLD:
+		return "hunger"
+	if blocked != "thirst" and get_need_progress("thirst") >= NEED_THRESHOLD:
+		return "thirst"
+	return ""
 
 ## Priority order: Hunger, then Thirst, then Rest. A fisherman with several
 ## needs due at once resolves them one storage visit at a time rather than
@@ -260,11 +284,16 @@ func _claim_need_station(need: String):
 			return claim.position
 	return null
 
+## Global reduction from the meta-shop's Needs Service Time upgrade,
+## applied to all three needs — on top of it, Rest gets its own separate
+## per-fisherman Endurance-based reduction, same as before.
 func _service_duration(need: String) -> float:
+	var base := randf_range(NEED_SERVICE_TIME.x, NEED_SERVICE_TIME.y)
+	var global_reduction := MetaProgress.get_needs_service_bonus()
 	if need == "rest":
 		var rest_reduction := clampf(get_effective_stat(endurance_xp, "endurance") + get_equipment_bonus("rest_time") + get_perk_bonus("rest_time"), 0.0, 0.9)
-		return randf_range(NEED_SERVICE_TIME.x, NEED_SERVICE_TIME.y) * (1.0 - rest_reduction)
-	return randf_range(NEED_SERVICE_TIME.x, NEED_SERVICE_TIME.y)
+		return base * (1.0 - rest_reduction) * (1.0 - global_reduction)
+	return base * (1.0 - global_reduction)
 
 func _finish_servicing_need() -> void:
 	match current_need:
@@ -323,7 +352,7 @@ func _roll_and_apply_catch(catch_duration: float = -1.0, forced_rarity: int = -1
 		# is currently in effect, and even then only a small independent
 		# chance actually lands one instead of a normal-tier catch.
 		var secret_species := FishCatalog.roll_species(FishRarity.Tier.SECRET)
-		var secret_chance := SECRET_CATCH_BASE_CHANCE * (1.0 + get_effective_stat(luck_xp, "luck"))
+		var secret_chance := SECRET_CATCH_BASE_CHANCE * (1.0 + get_effective_stat(luck_xp, "luck") + MetaProgress.get_secret_chance_bonus())
 		if secret_species != null and randf() < secret_chance:
 			caught_rarity = FishRarity.Tier.SECRET
 			caught_species = secret_species
@@ -456,7 +485,8 @@ func _average_needs_overhead(base_cycle: float) -> float:
 	if base_cycle <= 0.0:
 		return 0.0
 	const DETOUR_WALK_APPROX := 1.5
-	var avg_service := (NEED_SERVICE_TIME.x + NEED_SERVICE_TIME.y) / 2.0 + DETOUR_WALK_APPROX
+	var global_reduction := MetaProgress.get_needs_service_bonus()
+	var avg_service := (NEED_SERVICE_TIME.x + NEED_SERVICE_TIME.y) / 2.0 * (1.0 - global_reduction) + DETOUR_WALK_APPROX
 	var rest_reduction := clampf(get_effective_stat(endurance_xp, "endurance") + get_equipment_bonus("rest_time") + get_perk_bonus("rest_time"), 0.0, 0.9)
 	var skip_rest_chance := clampf(get_equipment_bonus("skip_rest_chance"), 0.0, 1.0)
 	var avg_rest_service := avg_service * (1.0 - rest_reduction) * (1.0 - skip_rest_chance)
@@ -612,9 +642,11 @@ func get_effective_stat(xp: float, axis: String) -> float:
 		"luck":
 			environment_bonus = WorldClock.get_weather_luck_bonus() + WorldClock.get_season_luck_bonus() + MetaProgress.get_global_luck_bonus()
 		"speed":
-			environment_bonus = WorldClock.get_weather_speed_bonus() + WorldClock.get_season_speed_bonus()
+			environment_bonus = WorldClock.get_weather_speed_bonus() + WorldClock.get_season_speed_bonus() + MetaProgress.get_global_speed_bonus()
 		"power":
-			environment_bonus = WorldClock.get_season_power_bonus()
+			environment_bonus = WorldClock.get_season_power_bonus() + MetaProgress.get_global_power_bonus()
+		"endurance":
+			environment_bonus = MetaProgress.get_global_endurance_bonus()
 	environment_bonus += PotionManager.get_bonus(axis)
 	environment_bonus += get_perk_bonus(axis)
 	environment_bonus += get_set_bonus(axis)

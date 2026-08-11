@@ -5,7 +5,11 @@ signal updated
 ## The dock is a small "manage it before it fills up" space, not an
 ## archive — capping it keeps the Dock panel's row count (and the save
 ## file) sane even after a long offline session floods it with catches.
-const DOCK_CAPACITY := 60
+## Upgradable via the meta-shop's Dock Capacity row.
+const BASE_CAPACITY := 60
+
+func capacity() -> int:
+	return BASE_CAPACITY + MetaProgress.get_dock_capacity_bonus()
 
 # Each entry: {species_name: String, tier: FishRarity.Tier, weight: float}
 var entries: Array = []
@@ -13,7 +17,7 @@ var entries: Array = []
 ## Adds a catch to the dock, or — if it's full — auto-sells it for Scales
 ## on the spot as an overflow safety valve so nothing is silently lost.
 func add_catch(species: FishSpecies, weight: float, tier: FishRarity.Tier) -> void:
-	if entries.size() >= DOCK_CAPACITY:
+	if entries.size() >= capacity():
 		Economy.add_currency_for_catch(tier, weight, 0.0, 0.0, species.species_name)
 		updated.emit()
 		return
@@ -39,7 +43,7 @@ func sell_all() -> int:
 	updated.emit()
 	return total
 
-## Restores saved entries, keeping only the most recent DOCK_CAPACITY and
+## Restores saved entries, keeping only the most recent capacity() and
 ## auto-selling any older overflow — handles saves from before the cap
 ## existed (or a dock that grew past it) without losing that value.
 func load_state(data: Array) -> void:
@@ -51,9 +55,10 @@ func load_state(data: Array) -> void:
 				"tier": int(raw.tier),
 				"weight": float(raw.weight),
 			})
-	if parsed.size() > DOCK_CAPACITY:
-		var overflow: Array = parsed.slice(0, parsed.size() - DOCK_CAPACITY)
-		parsed = parsed.slice(parsed.size() - DOCK_CAPACITY, parsed.size())
+	var cap := capacity()
+	if parsed.size() > cap:
+		var overflow: Array = parsed.slice(0, parsed.size() - cap)
+		parsed = parsed.slice(parsed.size() - cap, parsed.size())
 		for entry in overflow:
 			Economy.add_currency_for_catch(entry.tier, entry.weight, 0.0, 0.0, entry.species_name)
 	entries = parsed

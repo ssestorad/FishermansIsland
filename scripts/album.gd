@@ -18,6 +18,15 @@ func record_catch(species: FishSpecies, weight: float, caught_by: String = "") -
 func is_discovered(species_name: String) -> bool:
 	return caught_counts.get(species_name, 0) > 0
 
+## True once any Secret-tier species has been caught. Shared by the Album
+## panel (hides the Secret tab/rows until discovered) and the meta-shop
+## (keeps the Secret Catch Chance upgrade hidden until it's relevant).
+func has_caught_secret() -> bool:
+	for species in FishCatalog.species_for_tier(FishRarity.Tier.SECRET):
+		if is_discovered(species.species_name):
+			return true
+	return false
+
 func get_record_holder(species_name: String) -> String:
 	return record_holders.get(species_name, "")
 

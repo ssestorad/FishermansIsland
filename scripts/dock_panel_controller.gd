@@ -24,7 +24,7 @@ func _on_dock_updated() -> void:
 
 func build() -> void:
 	UiListUtils.clear_children(rows_container)
-	title_label.text = "Dock (%d/%d)" % [DockInventory.entries.size(), DockInventory.DOCK_CAPACITY]
+	title_label.text = "Dock (%d/%d)" % [DockInventory.entries.size(), DockInventory.capacity()]
 	sell_all_button.disabled = DockInventory.entries.is_empty()
 	for i in range(DockInventory.entries.size()):
 		var entry: Dictionary = DockInventory.entries[i]

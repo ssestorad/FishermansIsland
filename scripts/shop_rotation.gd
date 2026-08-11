@@ -14,6 +14,12 @@ const RARITY_WEIGHTS := {
 	"Mythic": 0.5,
 }
 
+## Tier index for each rarity, used to scale MetaProgress's Shop Rarity
+## Odds bonus proportionally to how rare the item already is — a Mythic
+## gets 5x the boost a Rare does, so the upgrade meaningfully shifts the
+## rotation toward the top instead of nudging everything equally.
+const RARITY_ORDER := ["Common", "Uncommon", "Rare", "Epic", "Legendary", "Mythic"]
+
 var current_items: Array = []
 var _timer: float = 0.0
 
@@ -39,15 +45,22 @@ func _weighted_sample(pool: Array, count: int) -> Array:
 	while remaining.size() > 0 and picked.size() < count:
 		var total := 0.0
 		for item in remaining:
-			total += RARITY_WEIGHTS.get(item.rarity, 1.0)
+			total += _weight_for(item)
 		var roll := randf() * total
 		var cumulative := 0.0
 		var chosen_index := 0
 		for i in range(remaining.size()):
-			cumulative += RARITY_WEIGHTS.get(remaining[i].rarity, 1.0)
+			cumulative += _weight_for(remaining[i])
 			if roll <= cumulative:
 				chosen_index = i
 				break
 		picked.append(remaining[chosen_index])
 		remaining.remove_at(chosen_index)
 	return picked
+
+func _weight_for(item) -> float:
+	var base_weight: float = RARITY_WEIGHTS.get(item.rarity, 1.0)
+	var tier_index := RARITY_ORDER.find(item.rarity)
+	if tier_index <= 0:
+		return base_weight
+	return base_weight * (1.0 + MetaProgress.get_shop_rarity_bonus() * tier_index)
