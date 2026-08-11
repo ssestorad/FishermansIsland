@@ -137,6 +137,35 @@ const CATCH_HISTORY_CAP := 50
 var total_catches: int = 0
 var catch_history: Array = []  # [{species, tier, weight, day}, ...] oldest first
 
+## Highest-ever tier this fisherman has landed — distinct from
+## catch_history, which only keeps the most recent CATCH_HISTORY_CAP
+## entries and rolls old ones off. Feeds get_rank_score().
+var best_catch_tier: FishRarity.Tier = FishRarity.Tier.COMMON
+
+## Purely cosmetic — surfaces in the Fishermen list (sorted first) and the
+## Profile panel. No gameplay effect.
+var is_favorite: bool = false
+
+## Weighted so a single exceptional catch (rare tier) or a long grind
+## (total_catches, uncapped) both move the needle, and level alone can't
+## dominate (LEVEL_CAP=20 x 4 axes x 3 = 240, same order of magnitude as
+## one Mythic catch). get_level() itself is uncapped display flavor (keeps
+## climbing past LEVEL_CAP forever) — mini()'d here to LEVEL_CAP per axis
+## so a long-lived fisherman's raw level count can't swamp the other two
+## components. Cosmetic only — see RankCatalog.
+func get_rank_score() -> int:
+	var capped_level := mini(get_level(speed_xp), int(LEVEL_CAP)) \
+		+ mini(get_level(luck_xp), int(LEVEL_CAP)) \
+		+ mini(get_level(power_xp), int(LEVEL_CAP)) \
+		+ mini(get_level(endurance_xp), int(LEVEL_CAP))
+	return total_catches + capped_level * 3 + int(best_catch_tier) * 40
+
+func get_rank_title() -> String:
+	return RankCatalog.title_for(get_rank_score())
+
+func toggle_favorite() -> void:
+	is_favorite = not is_favorite
+
 @onready var click_area: Area2D = $ClickArea
 @onready var sprite: Sprite2D = $Sprite2D
 
@@ -402,6 +431,8 @@ func _roll_and_apply_catch(catch_duration: float = -1.0, forced_rarity: int = -1
 	endurance_xp += XP_PER_CATCH * xp_multiplier
 
 	total_catches += 1
+	if caught_rarity > best_catch_tier:
+		best_catch_tier = caught_rarity
 	catch_history.append({
 		"species": caught_species.species_name,
 		"tier": caught_rarity,

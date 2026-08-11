@@ -260,12 +260,24 @@ clip_text = true
 text_overrun_behavior = 3
 text = "Name"
 
+[node name="FavoriteButton" type="Button" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer/HeaderRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(24, 24)
+theme_type_variation = &"GhostButton"
+theme_override_font_sizes/font_size = 14
+text = "☆"
+
 [node name="CloseButton" type="Button" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer/HeaderRow"]
 layout_mode = 2
 custom_minimum_size = Vector2(24, 24)
 theme_type_variation = &"GhostButton"
 theme_override_font_sizes/font_size = 12
 text = "✕"
+
+[node name="RankLabel" type="Label" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_type_variation = &"MutedLabel"
+text = "Rank"
 
 [node name="StatsScroll" type="ScrollContainer" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer"]
 layout_mode = 2

@@ -178,6 +178,8 @@ func _spawn_fisherman(saved_data: Dictionary = {}) -> Node:
 					"day": int(raw.day),
 				})
 		fisherman.catch_history = loaded_history
+		fisherman.best_catch_tier = int(saved_data.get("best_catch_tier", 0))
+		fisherman.is_favorite = bool(saved_data.get("is_favorite", false))
 		var equipped: Dictionary = saved_data.get("equipped_items", {})
 		for slot in equipped:
 			var item_name = equipped[slot]

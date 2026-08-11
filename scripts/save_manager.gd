@@ -78,6 +78,8 @@ func _serialize_fisherman(fisherman: Node) -> Dictionary:
 		"perks": fisherman.perks,
 		"total_catches": fisherman.total_catches,
 		"catch_history": fisherman.catch_history,
+		"best_catch_tier": fisherman.best_catch_tier,
+		"is_favorite": fisherman.is_favorite,
 	}
 
 ## Items are looked up by name from the live catalog rather than

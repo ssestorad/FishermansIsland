@@ -34,7 +34,7 @@ func build(fishermen: Array) -> void:
 	_disconnect_all()
 	UiListUtils.clear_children(rows_container)
 	_row_by_fisherman.clear()
-	for fisherman in fishermen:
+	for fisherman in _favorites_first(fishermen):
 		var row: ListRow = LIST_ROW_SCENE.instantiate()
 		row.pressed.connect(_on_row_pressed.bind(fisherman))
 		rows_container.add_child(row)
@@ -42,6 +42,18 @@ func build(fishermen: Array) -> void:
 		fisherman.stats_changed.connect(refresh)
 		_connected_fishermen.append(fisherman)
 	refresh()
+
+## Favorited fishermen sort to the top; relative order within each group
+## is otherwise preserved (a stable partition, not a full re-sort).
+func _favorites_first(fishermen: Array) -> Array:
+	var favorites: Array = []
+	var others: Array = []
+	for fisherman in fishermen:
+		if fisherman.is_favorite:
+			favorites.append(fisherman)
+		else:
+			others.append(fisherman)
+	return favorites + others
 
 func _disconnect_all() -> void:
 	for fisherman in _connected_fishermen:
@@ -57,4 +69,6 @@ func refresh() -> void:
 		if not is_instance_valid(fisherman):
 			continue
 		var row: ListRow = _row_by_fisherman[fisherman]
-		row.setup(fisherman.display_name, fisherman.get_stats_text(), "", ROW_SWATCH_COLOR)
+		var title := "[%s] %s" % [fisherman.get_rank_title(), fisherman.display_name]
+		var favorite_mark := "★" if fisherman.is_favorite else ""
+		row.setup(title, fisherman.get_stats_text(), favorite_mark, ROW_SWATCH_COLOR)

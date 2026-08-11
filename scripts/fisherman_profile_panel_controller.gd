@@ -5,6 +5,8 @@ signal dismiss_requested(fisherman)
 signal slot_clicked(fisherman, slot_name)
 
 @onready var name_label: Label = $MarginContainer/VBoxContainer/HeaderRow/NameLabel
+@onready var rank_label: Label = $MarginContainer/VBoxContainer/RankLabel
+@onready var favorite_button: Button = $MarginContainer/VBoxContainer/HeaderRow/FavoriteButton
 @onready var speed_label: Label = $MarginContainer/VBoxContainer/StatsScroll/StatsBlock/SpeedLabel
 @onready var speed_bar: ProgressBar = $MarginContainer/VBoxContainer/StatsScroll/StatsBlock/SpeedBar
 @onready var luck_label: Label = $MarginContainer/VBoxContainer/StatsScroll/StatsBlock/LuckLabel
@@ -41,6 +43,7 @@ func _ready() -> void:
 		slot_button.pressed.connect(_on_slot_pressed.bind(slot_name))
 	dismiss_button.pressed.connect(_on_dismiss_button_pressed)
 	close_button.pressed.connect(_on_close_button_pressed)
+	favorite_button.pressed.connect(_on_favorite_button_pressed)
 	visibility_changed.connect(_on_visibility_changed)
 
 func _process(delta: float) -> void:
@@ -88,6 +91,8 @@ func refresh() -> void:
 		visible = false
 		return
 	name_label.text = _fisherman.display_name
+	rank_label.text = _fisherman.get_rank_title()
+	_update_favorite_button()
 	speed_label.text = "Speed: Lvl %d" % _fisherman.get_level(_fisherman.speed_xp)
 	speed_bar.value = _fisherman.get_level_progress(_fisherman.speed_xp)
 	luck_label.text = "Luck: Lvl %d" % _fisherman.get_level(_fisherman.luck_xp)
@@ -122,6 +127,15 @@ func _set_need_row(label: Label, bar: ProgressBar, title: String, need: String) 
 	elif _fisherman.is_need_due(need):
 		status = "Due"
 	label.text = "%s: %s" % [title, status]
+
+func _update_favorite_button() -> void:
+	favorite_button.text = "★" if _fisherman.is_favorite else "☆"
+
+func _on_favorite_button_pressed() -> void:
+	if _fisherman == null:
+		return
+	_fisherman.toggle_favorite()
+	_update_favorite_button()
 
 func _on_slot_pressed(slot_name: String) -> void:
 	if _fisherman != null:
