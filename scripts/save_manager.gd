@@ -40,6 +40,7 @@ func save_game(fishermen: Array) -> void:
 			"extra_perk_slot_unlocked": MetaProgress.extra_perk_slot_unlocked,
 			"quest_slot_level": MetaProgress.quest_slot_level,
 			"unlocked_spots": MetaProgress.unlocked_spots,
+			"expeditions_unlocked": MetaProgress.expeditions_unlocked,
 		},
 		"stations": NeedStations.save_state(),
 		"social": SocialHub.save_state(),
@@ -90,6 +91,8 @@ func _serialize_fisherman(fisherman: Node) -> Dictionary:
 		"fisherman_id": fisherman.fisherman_id,
 		"conversations": fisherman.conversations,
 		"favorite_weather": fisherman.favorite_weather,
+		"expedition_habitat": fisherman.expedition_habitat,
+		"expedition_time_left": fisherman.expedition_time_left,
 	}
 
 ## Items are looked up by name from the live catalog rather than

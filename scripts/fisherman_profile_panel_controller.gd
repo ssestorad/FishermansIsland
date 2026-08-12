@@ -10,6 +10,7 @@ const LIST_ROW_SCENE := preload("res://scenes/ui/ListRow.tscn")
 @onready var name_label: Label = $MarginContainer/VBoxContainer/HeaderRow/NameLabel
 @onready var rank_label: Label = $MarginContainer/VBoxContainer/RankLabel
 @onready var spot_button: Button = $MarginContainer/VBoxContainer/SpotButton
+@onready var expedition_button: Button = $MarginContainer/VBoxContainer/ExpeditionButton
 @onready var favorite_button: Button = $MarginContainer/VBoxContainer/HeaderRow/FavoriteButton
 @onready var skills_tab: VBoxContainer = $MarginContainer/VBoxContainer/StatsScroll/StatsBlock/SkillsTab
 @onready var needs_tab: VBoxContainer = $MarginContainer/VBoxContainer/StatsScroll/StatsBlock/NeedsTab
@@ -69,6 +70,7 @@ func _on_ready() -> void:
 	dismiss_button.pressed.connect(_on_dismiss_button_pressed)
 	favorite_button.pressed.connect(_on_favorite_button_pressed)
 	spot_button.pressed.connect(_on_spot_button_pressed)
+	expedition_button.pressed.connect(_on_expedition_button_pressed)
 	skills_tab_button.pressed.connect(_on_tab_pressed.bind(TAB_SKILLS))
 	needs_tab_button.pressed.connect(_on_tab_pressed.bind(TAB_NEEDS))
 	social_tab_button.pressed.connect(_on_tab_pressed.bind(TAB_SOCIAL))
@@ -137,6 +139,9 @@ func refresh() -> void:
 	rank_label.text = _fisherman.get_rank_title()
 	_update_favorite_button()
 	_update_spot_button()
+	_update_expedition_button()
+	# Can't dismiss someone who isn't on the island right now.
+	dismiss_button.disabled = _fisherman.state == _fisherman.State.EXPEDITION
 	speed_label.text = "Speed: Lvl %d" % _fisherman.get_level(_fisherman.speed_xp)
 	speed_bar.value = _fisherman.get_level_progress(_fisherman.speed_xp)
 	luck_label.text = "Luck: Lvl %d" % _fisherman.get_level(_fisherman.luck_xp)
@@ -241,13 +246,18 @@ func _on_favorite_button_pressed() -> void:
 
 ## Cycles through the spots the player owns. With only the pond unlocked
 ## there is nothing to choose, so the button says why instead of looking
-## broken when pressing it does nothing.
+## broken when pressing it does nothing. Also disabled while away on
+## expedition — there's no spot to reassign someone who isn't there.
 func _update_spot_button() -> void:
+	var away: bool = _fisherman.state == _fisherman.State.EXPEDITION
 	var available := FishingSpots.unlocked_ids()
 	spot_button.text = "Fishing: %s" % FishingSpots.display_name(_fisherman.fishing_spot)
-	spot_button.disabled = available.size() < 2
-	spot_button.tooltip_text = FishingSpots.get_spot(_fisherman.fishing_spot).blurb \
-		if available.size() > 1 else "Unlock another spot in the Meta shop."
+	spot_button.disabled = away or available.size() < 2
+	if away:
+		spot_button.tooltip_text = "Away on an expedition."
+	else:
+		spot_button.tooltip_text = FishingSpots.get_spot(_fisherman.fishing_spot).blurb \
+			if available.size() > 1 else "Unlock another spot in the Meta shop."
 
 func _on_spot_button_pressed() -> void:
 	if _fisherman == null:
@@ -257,6 +267,29 @@ func _on_spot_button_pressed() -> void:
 		return
 	var index := available.find(_fisherman.fishing_spot)
 	_fisherman.set_fishing_spot(available[(index + 1) % available.size()])
+	_update_spot_button()
+
+## Hidden until Expeditions is unlocked in the Meta shop; while away, shows
+## the countdown instead of the call-to-action and disables the button so
+## it can't be pressed again mid-trip.
+func _update_expedition_button() -> void:
+	expedition_button.visible = MetaProgress.has_expeditions_unlocked()
+	if not expedition_button.visible:
+		return
+	var away: bool = _fisherman.state == _fisherman.State.EXPEDITION
+	expedition_button.disabled = away
+	if away:
+		expedition_button.text = "On expedition — back in %s" % _fisherman.get_expedition_time_left_text()
+		expedition_button.tooltip_text = "This fisherman is off-island and will return with a catch."
+	else:
+		expedition_button.text = "Send on Expedition"
+		expedition_button.tooltip_text = "40 minutes away, earns nothing and needs pause, but guarantees a rare+ catch no fishing spot can reach."
+
+func _on_expedition_button_pressed() -> void:
+	if _fisherman == null:
+		return
+	_fisherman.send_on_expedition()
+	_update_expedition_button()
 	_update_spot_button()
 
 func _on_slot_pressed(slot_name: String) -> void:

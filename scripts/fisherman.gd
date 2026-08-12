@@ -149,8 +149,12 @@ const FISH_LINE_COLOR := Color(0.86, 0.89, 0.93, 0.9)
 ## (see current_need below), not a guaranteed step after every catch.
 ## WALK_TO_STORAGE is what WALK_HOME used to be — the fisherman always
 ## carries a catch to the storage point; needs are a separate detour from
-## there, not folded into this leg.
-enum State { WALK_TO_DOCK, FISHING, WALK_TO_STORAGE, WALK_TO_NEED, SERVICING_NEED }
+## there, not folded into this leg. EXPEDITION is a hard interrupt from
+## anywhere else (see send_on_expedition()) rather than a leg reached by
+## walking — deliberately left out of both the `working` (needs-accrual)
+## and `moving` (walk-cycle) checks below, so needs simply pause and the
+## sprite simply stops for its duration, no extra condition needed.
+enum State { WALK_TO_DOCK, FISHING, WALK_TO_STORAGE, WALK_TO_NEED, SERVICING_NEED, EXPEDITION }
 
 var display_name: String = ""
 var state: State = State.WALK_TO_DOCK
@@ -173,6 +177,15 @@ var _claimed_bench_index: int = -1
 ## means the gathering spot was full and this fisherman went to the phone
 ## instead, which is also what makes a solo call distinguishable later.
 var _claimed_gathering_index: int = -1
+
+## Real-time seconds a trip takes, and which expedition-only habitat
+## (FishCatalog.EXPEDITION_HABITATS) it's targeting. expedition_habitat is
+## empty whenever state != EXPEDITION; both are persisted (see
+## save_manager.gd) since this is the one state worth surviving a save/load,
+## unlike every other State value which just resets to WALK_TO_DOCK.
+const EXPEDITION_DURATION := 2400.0
+var expedition_habitat: String = ""
+var expedition_time_left: float = 0.0
 
 ## Stable identity, persisted. Needed because friendship scores are keyed
 ## between *pairs* of fishermen and display_name is not unique — the name
@@ -313,6 +326,10 @@ func _ready() -> void:
 	NeedStations.stations_moved.connect(_on_stations_moved)
 	sprite.texture = APPEARANCE_VARIANTS[appearance_variant]
 	_apply_sprite_frame(STAND_FRAME)
+	# A fisherman loaded mid-expedition starts in that state already (see
+	# fisherman_factory.gd) — set this here too so there's no one-frame
+	# flash of the sprite before the first _process() tick corrects it.
+	sprite.visible = state != State.EXPEDITION
 	queue_redraw()
 
 func set_appearance_variant(variant: int) -> void:
@@ -371,6 +388,11 @@ func _process(delta: float) -> void:
 			if wait_timer <= 0.0:
 				_finish_servicing_need()
 				_walk_to(_random_dock_point(), State.WALK_TO_DOCK)
+		State.EXPEDITION:
+			expedition_time_left -= delta
+			if expedition_time_left <= 0.0:
+				_resolve_expedition()
+	sprite.visible = state != State.EXPEDITION
 	_update_sprite_animation(delta)
 	queue_redraw()
 
@@ -545,6 +567,38 @@ func release_claimed_slots() -> void:
 		SocialHub.release_gathering_slot(_claimed_gathering_index)
 		_claimed_gathering_index = -1
 
+## Player-initiated hard interrupt from whatever this fisherman is currently
+## doing — same immediate-redirect spirit as set_fishing_spot(), not a leg
+## reached by walking. Returns false if already away or if no expedition
+## habitat exists yet (FishCatalog.EXPEDITION_HABITATS empty).
+func send_on_expedition() -> bool:
+	if state == State.EXPEDITION:
+		return false
+	if FishCatalog.EXPEDITION_HABITATS.is_empty():
+		return false
+	release_claimed_slots()
+	current_need = ""
+	expedition_habitat = FishCatalog.EXPEDITION_HABITATS.pick_random()
+	expedition_time_left = EXPEDITION_DURATION
+	state = State.EXPEDITION
+	stats_changed.emit()
+	return true
+
+## Rolls the guaranteed catch and puts the fisherman back into the normal
+## fishing loop. Returns the same result shape _roll_and_apply_catch()
+## always does, so both the live-timer path above and the offline path
+## below (_advance_expedition_offline()) can share it.
+func _resolve_expedition() -> Dictionary:
+	var habitat := expedition_habitat
+	expedition_habitat = ""
+	expedition_time_left = 0.0
+	state = State.WALK_TO_DOCK
+	current_target = _random_dock_point()
+	var result := _roll_and_apply_catch(-1.0, -1, [habitat])
+	adjust_mood(MOOD_CATCH_GAIN * (1 + int(result.rarity)))
+	stats_changed.emit()
+	return result
+
 func _log_conversation(with_name: String, with_id: int, topic: String) -> void:
 	conversations.append({
 		"with_name": with_name,
@@ -625,20 +679,25 @@ func _resolve_catch() -> void:
 ## the speed-XP shaping; pass -1 (default) to have one rolled on the spot,
 ## which is what offline batch catches do since they skip the real timer.
 ## `forced_rarity` skips the luck roll and the Secret check entirely (used
-## by the dev console).
-func _roll_and_apply_catch(catch_duration: float = -1.0, forced_rarity: int = -1) -> Dictionary:
+## by the dev console). `override_habitats`, when non-empty, rolls from
+## those habitats instead of this fisherman's spot — used by expeditions to
+## target an EXPEDITION_HABITATS entry no spot can reach. Secret catches are
+## deliberately skipped in that case: Secret stays exclusive to normal spot
+## fishing, and expedition habitats were built with no Secret entries.
+func _roll_and_apply_catch(catch_duration: float = -1.0, forced_rarity: int = -1, override_habitats: Array = []) -> Dictionary:
 	if catch_duration < 0.0:
 		catch_duration = _rolled_catch_time()
+	var habitats := override_habitats if not override_habitats.is_empty() else _spot_habitats()
 	var caught_rarity: FishRarity.Tier
 	var caught_species: FishSpecies = null
 	if forced_rarity >= 0:
 		caught_rarity = forced_rarity
-	else:
+	elif override_habitats.is_empty():
 		# Secret catches sit outside the normal Luck roll: they only become
 		# possible when a hidden species' weather/season/time-of-day combo
 		# is currently in effect, and even then only a small independent
 		# chance actually lands one instead of a normal-tier catch.
-		var secret_species := FishCatalog.roll_species(FishRarity.Tier.SECRET, _spot_habitats(), _habitat_bias())
+		var secret_species := FishCatalog.roll_species(FishRarity.Tier.SECRET, habitats, _habitat_bias())
 		var secret_chance := SECRET_CATCH_BASE_CHANCE * (1.0 + get_effective_stat(luck_xp, "luck") + MetaProgress.get_secret_chance_bonus())
 		if secret_species != null and randf() < secret_chance:
 			caught_rarity = FishRarity.Tier.SECRET
@@ -647,8 +706,10 @@ func _roll_and_apply_catch(catch_duration: float = -1.0, forced_rarity: int = -1
 			caught_rarity = FishRarity.roll(get_effective_stat(luck_xp, "luck"))
 			if caught_rarity < FishRarity.Tier.RARE and get_equipment_bonus("guarantee_rare") > 0.0:
 				caught_rarity = FishRarity.Tier.RARE
+	else:
+		caught_rarity = FishRarity.roll(get_effective_stat(luck_xp, "luck"))
 	if caught_species == null:
-		var resolved := _nearest_available_tier(caught_rarity)
+		var resolved := _nearest_available_tier(caught_rarity, habitats)
 		caught_species = resolved.species
 		caught_rarity = resolved.tier
 	var caught_weight := caught_species.roll_weight(get_effective_stat(power_xp, "power"))
@@ -738,9 +799,14 @@ func _habitat_bias() -> Dictionary:
 ## Steps down first (a rolled Legendary settling for an Epic reads as bad
 ## luck), then up. Searching upward is not optional: Offshore contains no
 ## Common or Uncommon species at all, so a downward-only walk would run
-## past tier 0 and leave the caller holding a null species.
-func _nearest_available_tier(rolled: FishRarity.Tier) -> Dictionary:
-	var habitats := _spot_habitats()
+## past tier 0 and leave the caller holding a null species. `habitats`
+## defaults to this fisherman's spot when empty; an expedition passes its
+## target habitat explicitly instead — same walk, different search space,
+## and what guarantees an expedition catch (Abyssal Trench has nothing
+## below Rare, so the walk simply climbs until it finds something).
+func _nearest_available_tier(rolled: FishRarity.Tier, habitats: Array = []) -> Dictionary:
+	if habitats.is_empty():
+		habitats = _spot_habitats()
 	var bias := _habitat_bias()
 	for tier in range(int(rolled), -1, -1):
 		var species := FishCatalog.roll_species(tier, habitats, bias)
@@ -766,6 +832,8 @@ func debug_force_catch(tier: FishRarity.Tier) -> Dictionary:
 ## rolls that many catches on the spot. Returns aggregate totals for the
 ## "while you were away" summary.
 func resolve_offline_catches(duration: float) -> Dictionary:
+	if state == State.EXPEDITION:
+		return _advance_expedition_offline(duration)
 	var summary := {"catches": 0, "coins": 0, "docked": 0, "best_species": "", "best_rarity": FishRarity.Tier.COMMON, "best_weight": 0.0}
 	if duration <= 0.0:
 		return summary
@@ -791,6 +859,30 @@ func resolve_offline_catches(duration: float) -> Dictionary:
 	# nobody comes back to a mood they never actually lived through, in
 	# either direction.
 	mood = lerpf(mood, MOOD_NEUTRAL, clampf(duration * MOOD_OFFLINE_SETTLE_RATE, 0.0, 1.0))
+	return summary
+
+## Counterpart to the offline-catch simulation above, for a fisherman who
+## was mid-expedition when the game closed: the trip keeps counting down
+## against real elapsed time and can complete while offline, same as it
+## would live. Returns the same summary shape resolve_offline_catches()
+## does — a zero'd one if the trip is still running, or one built from the
+## single guaranteed catch if it just finished — so it plugs straight into
+## main.gd's existing per-fisherman aggregation and Welcome Back summary
+## with no changes needed there.
+func _advance_expedition_offline(duration: float) -> Dictionary:
+	var summary := {"catches": 0, "coins": 0, "docked": 0, "best_species": "", "best_rarity": FishRarity.Tier.COMMON, "best_weight": 0.0}
+	expedition_time_left -= duration
+	if expedition_time_left > 0.0:
+		return summary
+	var result := _resolve_expedition()
+	summary.catches = 1
+	if result.docked:
+		summary.docked = 1
+	elif result.currency == "Coins":
+		summary.coins = result.amount
+	summary.best_species = result.species.species_name
+	summary.best_rarity = result.rarity
+	summary.best_weight = result.weight
 	return summary
 
 ## Average time for one walk-to-dock/catch/walk-to-storage cycle, plus the
@@ -1068,7 +1160,15 @@ func equip_item(item) -> void:
 	equipped_items[item.slot] = item
 
 func get_stats_text() -> String:
+	if state == State.EXPEDITION:
+		return "Away — expedition, back in %s" % get_expedition_time_left_text()
 	return "Spd %d / Lck %d / Pwr %d / End %d" % [get_level(speed_xp), get_level(luck_xp), get_level(power_xp), get_level(endurance_xp)]
+
+## Minute-rounded, matching the coarseness of the rest of the Profile
+## panel's status text — a live mm:ss countdown isn't worth the churn.
+func get_expedition_time_left_text() -> String:
+	var minutes := int(ceil(expedition_time_left / 60.0))
+	return "<1m" if minutes <= 0 else "%dm" % minutes
 
 func get_slot_display(slot_name: String) -> String:
 	var item = equipped_items.get(slot_name)

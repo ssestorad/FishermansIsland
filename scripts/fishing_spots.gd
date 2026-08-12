@@ -49,7 +49,7 @@ const SPOTS := {
 	},
 	PIER: {
 		"name": "Pier",
-		"habitats": ["Harbour", "Kelp Forest", "Coral Shallows"],
+		"habitats": ["Harbour", "Kelp Forest", "Coral Shallows", "Seagrass Meadow"],
 		"cast_x": 320.0,
 		"lane_bounds": Vector2(105.0, 295.0),
 		"blurb": "The open coast. A broad mix, up to the occasional legend.",

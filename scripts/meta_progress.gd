@@ -69,6 +69,12 @@ const MAX_SECRET_CHANCE_BONUS := SECRET_CHANCE_PER_LEVEL * MAX_SECRET_CHANCE_LEV
 ## hired fishermen from 1-2 to 2-3 perks.
 const PERK_SLOT_COST := 250
 
+## One-time flat-cost unlock, same shape as the perk slot above: gates the
+## whole Expeditions feature (Fisherman.send_on_expedition()) rather than
+## charging a per-trip fee — the trip's own cost is purely the opportunity
+## cost of that fisherman's time, decided when the feature was designed.
+const EXPEDITIONS_COST := 300
+
 ## Fishing spots are one-time unlocks too. The pond is always available,
 ## so only these two are ever bought. Offshore is priced steeply because
 ## every catch there is Rare or better, which routes straight to the dock.
@@ -91,6 +97,7 @@ var secret_chance_level: int = 0
 var extra_perk_slot_unlocked: bool = false
 var quest_slot_level: int = 0
 var unlocked_spots: Array = []
+var expeditions_unlocked: bool = false
 
 func get_global_luck_bonus() -> float:
 	return luck_level * LUCK_PER_LEVEL
@@ -137,6 +144,9 @@ func get_secret_chance_bonus() -> float:
 
 func has_extra_perk_slot() -> bool:
 	return extra_perk_slot_unlocked
+
+func has_expeditions_unlocked() -> bool:
+	return expeditions_unlocked
 
 func get_quest_slot_bonus() -> int:
 	return quest_slot_level
@@ -212,6 +222,10 @@ func buy_perk_slot() -> void:
 	extra_perk_slot_unlocked = true
 	updated.emit()
 
+func buy_expeditions() -> void:
+	expeditions_unlocked = true
+	updated.emit()
+
 func buy_quest_slot() -> void:
 	if quest_slot_level >= MAX_QUEST_SLOT_LEVEL:
 		return
@@ -235,6 +249,7 @@ func load_state(data: Dictionary) -> void:
 	secret_chance_level = int(data.get("secret_chance_level", 0))
 	extra_perk_slot_unlocked = bool(data.get("extra_perk_slot_unlocked", false))
 	quest_slot_level = int(data.get("quest_slot_level", 0))
+	expeditions_unlocked = bool(data.get("expeditions_unlocked", false))
 	# Saves from before fishing spots existed had everyone at the pier, so
 	# it is granted rather than sold back to them.
 	unlocked_spots = data.get("unlocked_spots", ["pier"])

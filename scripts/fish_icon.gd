@@ -7,7 +7,7 @@ extends Sprite2D
 ## Regenerate both with tools/generate_fish_sprites.py.
 const BODY_ATLAS := preload("res://assets/sprites/fish/fish_atlas.png")
 const OUTLINE_ATLAS := preload("res://assets/sprites/fish/fish_atlas_outline.png")
-const COLUMNS := 10
+const COLUMNS := 12
 const ROWS := 8
 const MODEL_COUNT := COLUMNS * ROWS
 

@@ -140,6 +140,14 @@ const FAMILIES := [
 		"blurb": "Sharp edges, bright colours, unkind to nets.",
 		"set": {2: [["power", 0.06]], 4: [["power", 0.14]]},
 	},
+	{
+		"family": "Meadowdrift", "stems": ["Meadowdrift", "Meadowdrift", "Grasswoven", "Grasswoven"],
+		"slots": ["Outfit", "Charm", "Bait"], "rarities": ["Uncommon", "Rare", "Epic", "Legendary"],
+		"axes": ["luck", "endurance"],
+		"habitat_bias": {"Seagrass Meadow": 2.4},
+		"blurb": "Woven through with real blades of grass so the meadow's own grazers don't spook.",
+		"set": {2: [["endurance", 0.06]], 3: [["luck", 0.12]]},
+	},
 
 	# --- Weather and time lines: the conditional heart of the system -----
 	{

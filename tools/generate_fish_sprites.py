@@ -30,7 +30,7 @@ import random
 from PIL import Image
 
 FRAME_W, FRAME_H = 32, 16
-COLUMNS, ROWS = 10, 8
+COLUMNS, ROWS = 12, 8
 MODEL_COUNT = COLUMNS * ROWS
 CENTER_Y = 7.5
 OUT_PATH = os.path.join("assets", "sprites", "fish", "fish_atlas.png")
@@ -442,6 +442,34 @@ SPECS = [
     {"name": "fangtooth", "palette": "abyss", "body_len": 9, "body_h": 3.2, "head_h": 0.95, "peak": 0.25, "tail": "point", "tail_len": 3, "snout": 1},
     {"name": "oarfish", "palette": "silver", "body_len": 24, "body_h": 2.0, "taper": "linear", "tail": "point", "tail_len": 3, "dorsal": (0.0, 1.0, 3.0)},
     {"name": "goblinshark", "palette": "rose", "body_len": 19, "body_h": 3.2, "head_h": 0.6, "peak": 0.4, "tail": "long", "tail_len": 6, "snout": 4},
+    # Marine reptiles and mammals: all still fit the head-to-tail silhouette
+    # system (torpedo/oval body plans), unlike octopus and crab (radial,
+    # limbs to the sides) which stay declined for the same reason starfish
+    # was — see the "seahorse"/"jellyfish" comment above. Several of these
+    # lean on `dorsal: False` for a real distinguishing trait: belugas,
+    # narwhals, manatees, walruses and seals genuinely have no dorsal fin,
+    # unlike every fish model above.
+    {"name": "turtle", "palette": "olive", "body_len": 10, "body_h": 4.8, "head_h": 0.4, "tail_h": 0.15, "peak": 0.5, "back_bias": 1.15, "belly_bias": 0.85, "taper": "linear", "tail": "round", "tail_len": 2, "tail_flare": 0.3, "snout": 1, "dorsal": False, "pattern": "bars"},
+    {"name": "dolphin", "palette": "steel", "body_len": 15, "body_h": 3.4, "head_h": 0.55, "tail_h": 0.3, "peak": 0.38, "tail": "fan", "tail_len": 6, "tail_flare": 0.55, "snout": 2, "dorsal": (0.42, 0.62, 1.8)},
+    # The tall dorsal fin is the one silhouette trait everyone recognizes;
+    # kept the palette dark and plain rather than fighting the fixed
+    # per-palette pattern colour for a true black/white patch look.
+    {"name": "orca", "palette": "slate", "body_len": 17, "body_h": 4.2, "head_h": 0.6, "tail_h": 0.35, "peak": 0.4, "tail": "fan", "tail_len": 6, "tail_flare": 0.7, "snout": 1, "dorsal": (0.4, 0.62, 3.4)},
+    {"name": "whale", "palette": "steel", "body_len": 19, "body_h": 4.6, "head_h": 0.5, "tail_h": 0.3, "peak": 0.35, "back_bias": 1.1, "tail": "fan", "tail_len": 9, "tail_flare": 1.0, "dorsal": (0.55, 0.68, 0.9), "pattern": "spots"},
+    {"name": "shrimp", "palette": "rose", "body_len": 6, "body_h": 1.8, "head_h": 0.6, "tail_h": 0.25, "peak": 0.35, "tail": "fan", "tail_len": 3, "tail_flare": 0.6, "snout": 2, "dorsal": False, "pectoral": False, "pattern": "bars"},
+    {"name": "flyingfish", "palette": "silver", "body_len": 10, "body_h": 2.2, "head_h": 0.5, "tail_h": 0.35, "peak": 0.3, "tail": "long", "tail_len": 5, "tail_flare": 0.3, "snout": 1, "dorsal": (0.3, 0.55, 1.2)},
+    {"name": "beluga", "palette": "pearl", "body_len": 13, "body_h": 3.6, "head_h": 0.7, "tail_h": 0.25, "peak": 0.45, "back_bias": 1.05, "tail": "fan", "tail_len": 5, "tail_flare": 0.5, "dorsal": False},
+    {"name": "narwhal", "palette": "silver", "body_len": 13, "body_h": 3.2, "head_h": 0.55, "tail_h": 0.25, "peak": 0.4, "tail": "fan", "tail_len": 5, "tail_flare": 0.45, "snout": 4, "dorsal": False, "pattern": "spots"},
+    {"name": "manatee", "palette": "slate", "body_len": 12, "body_h": 4.4, "head_h": 0.55, "tail_h": 0.3, "peak": 0.55, "back_bias": 0.95, "belly_bias": 1.15, "taper": "linear", "tail": "round", "tail_len": 4, "tail_flare": 0.4, "snout": 1, "dorsal": False},
+    {"name": "leopardseal", "palette": "slate", "body_len": 13, "body_h": 2.8, "head_h": 0.55, "tail_h": 0.2, "peak": 0.35, "tail": "point", "tail_len": 3, "snout": 2, "dorsal": False, "pattern": "spots"},
+    {"name": "seadragon", "palette": "emerald", "body_len": 10, "body_h": 2.8, "head_h": 0.6, "tail_h": 0.15, "peak": 0.35, "back_bias": 1.2, "tail": "point", "tail_len": 7, "tail_flare": 0.2, "snout": 3, "dorsal": (0.2, 0.55, 2.0), "anal": (0.5, 0.8, 1.6), "pectoral": False, "pattern": "line"},
+    {"name": "sawfish", "palette": "sand", "body_len": 16, "body_h": 3.0, "head_h": 0.45, "tail_h": 0.3, "peak": 0.3, "tail": "long", "tail_len": 6, "snout": 4, "dorsal": (0.55, 0.75, 1.6)},
+    {"name": "walrus", "palette": "copper", "body_len": 13, "body_h": 4.4, "head_h": 0.6, "tail_h": 0.3, "peak": 0.5, "back_bias": 1.0, "belly_bias": 1.1, "taper": "linear", "tail": "round", "tail_len": 3, "snout": 4, "dorsal": False},
+    {"name": "whaleshark", "palette": "abyss", "body_len": 20, "body_h": 5.0, "head_h": 0.7, "tail_h": 0.4, "peak": 0.42, "back_bias": 1.1, "tail": "long", "tail_len": 8, "tail_flare": 0.5, "snout": 1, "dorsal": (0.45, 0.65, 2.2), "pattern": "spots"},
+    {"name": "elephantseal", "palette": "sand", "body_len": 15, "body_h": 4.6, "head_h": 0.55, "tail_h": 0.25, "peak": 0.5, "back_bias": 1.0, "belly_bias": 1.15, "taper": "linear", "tail": "round", "tail_len": 3, "snout": 3, "dorsal": False},
+    # The near-absent tail is the point: a real ocean sunfish looks "cut
+    # off" right behind its huge mirrored dorsal/anal fins.
+    {"name": "molamola", "palette": "pearl", "body_len": 9, "body_h": 5.6, "head_h": 0.5, "tail_h": 0.2, "peak": 0.55, "tail": "round", "tail_len": 1, "tail_flare": 0.2, "dorsal": (0.35, 0.55, 3.4), "anal": (0.35, 0.55, 3.0), "pattern": "spots"},
 ]
 
 

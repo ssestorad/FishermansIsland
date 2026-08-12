@@ -7,7 +7,7 @@ expanded by the player over time — while the game keeps running, including whe
 ## Status
 
 Playable prototype with a full core loop: hire, equip and assign fishermen across four fishing
-spots, watch them work through a day/night and seasonal cycle, fill a 182-species fish album, and
+spots, watch them work through a day/night and seasonal cycle, fill a 204-species fish album, and
 spend Scales on permanent upgrades. See [Project structure](#project-structure) below for where
 each system lives, or the [wiki](../../wiki) for the deeper design notes.
 
@@ -51,11 +51,12 @@ screen.
 - **Fishing spots** — pond, pier and offshore jetty. Each reaches a different slice of the fish
   catalog, from Common-through-Epic at the pond up to Rare-and-above offshore. The pier and jetty
   are meta-shop unlocks; the jetty is only drawn once bought.
-- **Gear** — 329 items generated from 28 families across 5 slots (Rod/Hat/Outfit/Charm/Bait).
+- **Gear** — 365 items generated from 31 families across 5 slots (Rod/Hat/Outfit/Charm/Bait).
   Conditions are live effects rather than shop filters, so a storm rod really is better in a
   storm, and bait steers *which* species surface. See the [wiki](../../wiki/Gear).
-- **Fish** — 182 hand-authored species (a mix of invented and real-world fish) across 12 habitats
-  and 7 tiers, including a hidden Secret tier. See the [wiki](../../wiki/Fish).
+- **Fish** — 204 hand-authored species (a mix of invented and real-world fish, including several
+  marine mammals and a sea turtle) across 13 habitats and 7 tiers, including a hidden Secret tier.
+  See the [wiki](../../wiki/Fish).
 - **The world clock** — nested day/night, weather, and season cycles that bias stats and gate both
   species and gear bonuses.
 - **Meta-progression** — 17 permanent upgrades paid for in Scales: the two fishing-spot unlocks,
@@ -77,9 +78,9 @@ Everything visual is produced by Python scripts under `tools/` using
   16×24 frames) from ASCII pixel maps and a per-variant palette. Columns are stand, two walk
   poses, two fishing poses, a strike, two eating/drinking poses and sitting; rows are the down,
   right and up facings, with "left" mirrored at runtime.
-- `generate_fish_sprites.py` builds two aligned 256×64 atlases: a full-colour body and a separate
-  white outline mask. The Album tints the *mask* with a fish's rarity colour, so the generated
-  body colours stay clean.
+- `generate_fish_sprites.py` builds two aligned atlases (grid size grows with the model count,
+  see `COLUMNS`/`ROWS` in the script): a full-colour body and a separate white outline mask. The
+  Album tints the *mask* with a fish's rarity colour, so the generated body colours stay clean.
 - `generate_pixel_font.py` builds the UI font — a 108-glyph bitmap font covering ASCII plus the
   symbols the interface actually uses. It only looks right at its native 10px or an exact integer
   multiple, which is why every font size in the project is 10, 20 or 30.

@@ -444,6 +444,12 @@ custom_minimum_size = Vector2(0, 22)
 theme_override_font_sizes/font_size = 10
 text = "Fishing: Pond"
 
+[node name="ExpeditionButton" type="Button" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 22)
+theme_override_font_sizes/font_size = 10
+text = "Send on Expedition"
+
 [node name="TabRow" type="HBoxContainer" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer"]
 layout_mode = 2
 theme_override_constants/separation = 4
@@ -1085,7 +1091,7 @@ theme_type_variation = &"TitleLabel"
 theme_override_font_sizes/font_size = 20
 clip_text = true
 text_overrun_behavior = 3
-text = "Fish Album (0/182)"
+text = "Fish Album (0/204)"
 
 [node name="CloseButton" type="Button" parent="CanvasLayer/AlbumPanel/MarginContainer/VBoxContainer/HeaderRow"]
 layout_mode = 2
@@ -1199,7 +1205,7 @@ layout_mode = 2
 theme_type_variation = &"MutedLabel"
 theme_override_font_sizes/font_size = 10
 horizontal_alignment = 1
-text = "All — 1 / 182"
+text = "All — 1 / 204"
 
 [node name="SpeciesNameLabel" type="Label" parent="CanvasLayer/AlbumPanel/MarginContainer/VBoxContainer/CardScroll/CardArea"]
 layout_mode = 2

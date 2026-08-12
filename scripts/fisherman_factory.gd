@@ -107,6 +107,15 @@ static func build(index: int, saved_data: Dictionary = {}, candidate: Dictionary
 					fisherman.equipped_items[slot] = item
 		if saved_data.has("appearance_variant"):
 			fisherman.set_appearance_variant(int(saved_data.get("appearance_variant")))
+		# Every other State value deliberately resets to WALK_TO_DOCK on
+		# load (see the state var's own default) — but a 40-minute
+		# expedition needs to actually survive a save/load, so this one
+		# state is restored explicitly when a saved trip was in progress.
+		var saved_expedition_habitat := str(saved_data.get("expedition_habitat", ""))
+		if not saved_expedition_habitat.is_empty():
+			fisherman.expedition_habitat = saved_expedition_habitat
+			fisherman.expedition_time_left = float(saved_data.get("expedition_time_left", 0.0))
+			fisherman.state = fisherman.State.EXPEDITION
 	elif not candidate.is_empty():
 		# A hire picked from roll_candidates() — every field below was
 		# already rolled and shown to the player, so it's applied verbatim

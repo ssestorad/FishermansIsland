@@ -27,6 +27,7 @@ const HABITATS := [
 	"Harbour",
 	"Kelp Forest",
 	"Coral Shallows",
+	"Seagrass Meadow",
 	"Open Water",
 	"Storm Front",
 	"Ice Shelf",
@@ -36,17 +37,16 @@ const HABITATS := [
 ]
 
 ## Habitats deliberately not attached to any FishingSpots entry — reachable
-## through no normal fishing spot, reserved for the not-yet-built
-## Expeditions feature (see project memory/backlog). Still has to be in
-## HABITATS above (FishCatalog._build() errors on a species referencing a
-## habitat that isn't), but nothing about being in HABITATS makes a habitat
-## reachable — only a spot listing it in its own "habitats" array does, and
-## none does for these on purpose. AlbumPanelController checks this list to
-## keep the content out of every browsing view until Expeditions ships and
-## actually decides how/when a player first sees it — the same "exists in
-## the catalog but stays hidden" treatment the Secret tier already gets,
-## just without a catch-based unlock trigger since there's no way to catch
-## one yet at all.
+## through no normal fishing spot, only through Fisherman.send_on_expedition()
+## (see fisherman.gd). Still has to be in HABITATS above (FishCatalog._build()
+## errors on a species referencing a habitat that isn't), but nothing about
+## being in HABITATS makes a habitat reachable — only a spot listing it in
+## its own "habitats" array does, and none does for these on purpose.
+## AlbumPanelController checks this list to keep the content out of every
+## browsing view — the same "exists in the catalog but stays hidden"
+## treatment the Secret tier gets, just unconditional rather than
+## catch-triggered, since an expedition catch is guaranteed rather than a
+## rare event worth celebrating with a reveal.
 const EXPEDITION_HABITATS := ["Abyssal Trench"]
 
 static func is_expedition_only(habitat: String) -> bool:
@@ -99,7 +99,7 @@ const SPECIES := [
 	{"n": "River Sturgeon", "t": "Epic", "h": "River Bend", "m": 29, "w": [12.0, 30.0], "v": 34, "d": "Armoured in bony plates and older than the harbour. Swims the bend like it owns the deed."},
 	{"n": "Great Wels", "t": "Epic", "h": "River Bend", "m": 30, "w": [15.0, 40.0], "v": 38, "d": "A catfish grown past reason in the deepest pool. Ducks have gone missing. So have oars.", "night": true, "pick": 0.7},
 
-	# --- Brackish Shallows (11) -----------------------------------------
+	# --- Brackish Shallows (12) -----------------------------------------
 	# Where the pond's outflow meets the tide. A real-world-heavy mix —
 	# half the roster here are genuine estuary species, sitting alongside
 	# the island's usual invented ones rather than being sorted apart from
@@ -114,6 +114,7 @@ const SPECIES := [
 	{"n": "Tideclaw Eel", "t": "Rare", "h": "Brackish Shallows", "m": 18, "w": [2.0, 6.0], "v": 10, "d": "Buries itself in the silt by day and hunts the falling tide by night.", "night": true},
 	{"n": "Common Snook", "t": "Epic", "h": "Brackish Shallows", "m": 54, "w": [6.0, 16.0], "v": 32, "d": "A black line runs its whole length, straight as a rule, right to the tip of the tail."},
 	{"n": "Brackish Bull", "t": "Epic", "h": "Brackish Shallows", "m": 26, "w": [8.0, 20.0], "v": 34, "d": "A shark that shouldn't tolerate the low salt at all, and does anyway, out of spite.", "night": true},
+	{"n": "Largetooth Sawfish", "t": "Epic", "h": "Brackish Shallows", "m": 91, "w": [20.0, 45.0], "v": 34, "d": "Sweeps its toothed blade sideways through a baitball and lets the current do the sorting."},
 	{"n": "Silver King Tarpon", "t": "Legendary", "h": "Brackish Shallows", "m": 55, "w": [20.0, 60.0], "v": 70, "d": "Rolls at the surface like a coin flipped by something enormous, then is simply gone."},
 
 	# --- Tidal Flats (12) ------------------------------------------------
@@ -132,7 +133,7 @@ const SPECIES := [
 	{"n": "Tidewalker", "t": "Epic", "h": "Tidal Flats", "m": 58, "w": [7.0, 18.0], "v": 33, "d": "Crosses the exposed flat between pools on fins better suited to walking than swimming."},
 	{"n": "The Flatking", "t": "Legendary", "h": "Tidal Flats", "m": 59, "w": [15.0, 40.0], "v": 68, "d": "So old and so still that the tideline has learned to run around it rather than over."},
 
-	# --- Harbour (20) --------------------------------------------------
+	# --- Harbour (21) --------------------------------------------------
 	# The working water around the dock: pilings, ropes, spilled bait and
 	# whatever the boats bring in with them.
 	{"n": "Harbour Sprat", "t": "Common", "h": "Harbour", "m": 2, "w": [0.1, 0.4], "v": 1, "d": "Boils under the lamps at night, feeding on everything the day's cleaning washed off the deck."},
@@ -155,8 +156,9 @@ const SPECIES := [
 	{"n": "Ballast Grouper", "t": "Rare", "h": "Harbour", "m": 12, "w": [6.0, 16.0], "v": 16, "d": "Took up residence in a scuttled hull and grew to fit the cabin."},
 	{"n": "Ghost Net Eel", "t": "Rare", "h": "Harbour", "m": 18, "w": [3.0, 9.0], "v": 14, "d": "Threads a lost net every night without ever being caught by it.", "night": true, "pick": 0.6},
 	{"n": "Ballan Wrasse", "t": "Rare", "h": "Harbour", "m": 15, "w": [2.0, 6.5], "v": 14, "d": "Changes colour twice in its life and personality along with it."},
+	{"n": "Harbor Seal", "t": "Rare", "h": "Harbour", "m": 89, "w": [6.0, 15.0], "v": 13, "d": "Hauls out on the same slipway every evening and eyes the day's catch with open interest."},
 
-	# --- Kelp Forest (23) ----------------------------------------------
+	# --- Kelp Forest (24) ----------------------------------------------
 	# Cold green water and standing weed, thick enough to lose a boat in.
 	{"n": "Kelp Blenny", "t": "Common", "h": "Kelp Forest", "m": 3, "w": [0.1, 0.5], "v": 2, "d": "Green as the fronds it clings to, right down to its eyes."},
 	{"n": "Weed Pipefish", "t": "Common", "h": "Kelp Forest", "m": 25, "w": [0.1, 0.4], "v": 2, "d": "Hangs vertically among the stems and is missed by nearly everyone."},
@@ -177,6 +179,7 @@ const SPECIES := [
 	{"n": "Emerald Wrasse", "t": "Rare", "h": "Kelp Forest", "m": 10, "w": [2.0, 6.5], "v": 15, "d": "Impossibly green, and worth more to collectors than to cooks.", "pick": 0.6},
 	{"n": "Lingcod", "t": "Rare", "h": "Kelp Forest", "m": 66, "w": [5.0, 14.0], "v": 15, "d": "Not a cod at all, and every bit as territorial as its teeth suggest."},
 	{"n": "Wolf Eel", "t": "Rare", "h": "Kelp Forest", "m": 67, "w": [3.0, 9.0], "v": 13, "d": "Not an eel either, though the current has never once asked it to prove that."},
+	{"n": "Weedy Sea Dragon", "t": "Rare", "h": "Kelp Forest", "m": 90, "w": [0.15, 0.5], "v": 13, "d": "Trails leafy fins that pass for kelp until the moment it decides to move."},
 	{"n": "Kelp Lord", "t": "Epic", "h": "Kelp Forest", "m": 12, "w": [10.0, 26.0], "v": 32, "d": "The forest's resident bulk. Holds a clearing among the stipes and tolerates no rivals."},
 	{"n": "Bull Kelp Shark", "t": "Epic", "h": "Kelp Forest", "m": 26, "w": [14.0, 34.0], "v": 36, "d": "Small as sharks go, and entirely convinced otherwise."},
 	{"n": "Tanglefin", "t": "Epic", "h": "Kelp Forest", "m": 24, "w": [8.0, 22.0], "v": 34, "d": "Trails fins like torn weed and vanishes the moment the forest closes behind it.", "pick": 0.7},
@@ -210,25 +213,44 @@ const SPECIES := [
 	{"n": "Giant Grouper", "t": "Legendary", "h": "Coral Shallows", "m": 72, "w": [40.0, 100.0], "v": 84, "d": "Big enough to swallow smaller reef fish whole, and unbothered enough to do it in front of divers."},
 	{"n": "Sunlit Mirage", "t": "Secret", "h": "Coral Shallows", "m": 40, "w": [18.0, 45.0], "v": 320, "d": "Seen only at high summer noon, and only by fishermen nobody believes afterwards.", "weather": "Sunny", "season": "Summer", "night": false},
 
-	# --- Open Water (14) -----------------------------------------------
+	# --- Seagrass Meadow (7) --------------------------------------------
+	# New this round: a shallow warm-water bed of grass rather than reef or
+	# rock, reached from the same Pier as Harbour/Kelp Forest/Coral
+	# Shallows. Home to grazers and dozers rather than reef predators, which
+	# keeps its ceiling modest (Epic) next to Coral Shallows' Secret tier.
+	{"n": "Grass Shrimp", "t": "Common", "h": "Seagrass Meadow", "m": 84, "w": [0.02, 0.08], "v": 1, "d": "Nearly transparent and nearly weightless, but the meadow would starve without it."},
+	{"n": "Pinfish", "t": "Common", "h": "Seagrass Meadow", "m": 2, "w": [0.05, 0.2], "v": 1, "d": "Small, spiny-finned and everywhere at once. Every bigger fish in the meadow eats one eventually."},
+	{"n": "Meadow Drifter", "t": "Uncommon", "h": "Seagrass Meadow", "m": 3, "w": [0.2, 0.8], "v": 5, "d": "Hangs motionless between the blades until the current decides otherwise for it."},
+	{"n": "Green Sea Turtle", "t": "Rare", "h": "Seagrass Meadow", "m": 80, "w": [6.0, 15.0], "v": 14, "d": "Grazes the meadow like a slow-motion lawnmower, and has done so for longer than the pier has stood."},
+	{"n": "Southern Stingray", "t": "Rare", "h": "Seagrass Meadow", "m": 28, "w": [3.0, 10.0], "v": 12, "d": "Buries itself under a skin of sand so fine that only the eyes give it away."},
+	{"n": "Loggerhead Turtle", "t": "Epic", "h": "Seagrass Meadow", "m": 80, "w": [20.0, 50.0], "v": 35, "d": "Bigger-headed and stronger-jawed than its green cousin, built for cracking whelks whole."},
+	{"n": "Florida Manatee", "t": "Epic", "h": "Seagrass Meadow", "m": 88, "w": [25.0, 55.0], "v": 33, "d": "Drifts through the grass at a pace that suggests it has never once been in a hurry."},
+
+	# --- Open Water (19) -----------------------------------------------
 	# Off the shelf entirely: no bottom, no cover, nothing but fast fish.
 	{"n": "Blue Runner", "t": "Rare", "h": "Open Water", "m": 16, "w": [2.0, 6.5], "v": 13, "d": "Never stops moving, not even to sleep. Nothing out here can afford to."},
 	{"n": "Skipjack", "t": "Rare", "h": "Open Water", "m": 2, "w": [3.0, 9.0], "v": 14, "d": "Warm-blooded and always hungry, burning through the open sea in silver waves."},
 	{"n": "Bonito", "t": "Rare", "h": "Open Water", "m": 2, "w": [1.5, 5.0], "v": 12, "d": "Smaller and faster than its tuna cousins, and just as impossible to keep up with."},
 	{"n": "Albacore", "t": "Rare", "h": "Open Water", "m": 15, "w": [4.0, 12.0], "v": 16, "d": "Pale-fleshed and long-finned, running just under the surface in loose schools."},
 	{"n": "Wahoo", "t": "Rare", "h": "Open Water", "m": 74, "w": [5.0, 14.0], "v": 17, "d": "Barred like a tiger and faster than almost anything else that swims."},
+	{"n": "Spinner Dolphin", "t": "Rare", "h": "Open Water", "m": 81, "w": [5.0, 14.0], "v": 13, "d": "Clears the water in a full corkscrew for no reason anyone has ever pinned down."},
+	{"n": "Ocean Sunfish", "t": "Rare", "h": "Open Water", "m": 95, "w": [8.0, 16.0], "v": 15, "d": "Looks unfinished, like the back half of a much bigger fish was never drawn on."},
 	{"n": "Yellowfin Tuna", "t": "Epic", "h": "Open Water", "m": 15, "w": [18.0, 45.0], "v": 40, "d": "Built entirely for speed, down to fins that fold into slots so as not to spoil the line."},
 	{"n": "Blue Shark", "t": "Epic", "h": "Open Water", "m": 26, "w": [20.0, 55.0], "v": 38, "d": "Follows a boat for days on the chance of something going over the side."},
 	{"n": "Hammerhead", "t": "Epic", "h": "Open Water", "m": 27, "w": [24.0, 60.0], "v": 42, "d": "Sweeps that ridiculous head across the sand and reads the seabed like a page."},
 	{"n": "Broadbill Swordfish", "t": "Epic", "h": "Open Water", "m": 22, "w": [22.0, 58.0], "v": 44, "d": "Hunts by feel in water too dark to see, then slashes through the shoal sideways."},
 	{"n": "Mahi-Mahi", "t": "Epic", "h": "Open Water", "m": 73, "w": [8.0, 25.0], "v": 39, "d": "Lights up gold and green boatside, then fades to grey the moment it stops fighting."},
+	{"n": "Bottlenose Dolphin", "t": "Epic", "h": "Open Water", "m": 81, "w": [30.0, 60.0], "v": 38, "d": "Circles the boat out of what looks unmistakably like curiosity, then loses interest just as fast."},
 	{"n": "Blue Marlin", "t": "Legendary", "h": "Open Water", "m": 23, "w": [40.0, 95.0], "v": 82, "d": "The fight every fisherman on the island claims to have had once."},
 	{"n": "Great White", "t": "Legendary", "h": "Open Water", "m": 46, "w": [60.0, 140.0], "v": 88, "d": "Arrives without warning, leaves without hurry, and ends the day's fishing either way."},
 	{"n": "Thresher", "t": "Legendary", "h": "Open Water", "m": 47, "w": [35.0, 85.0], "v": 76, "d": "Stuns whole shoals with a tail longer than the rest of it.", "pick": 0.7},
+	{"n": "Humpback Whale", "t": "Legendary", "h": "Open Water", "m": 83, "w": [90.0, 180.0], "v": 82, "d": "Surfaces once, blows a column of spray taller than the mast, and is gone for twenty minutes."},
+	{"n": "Whale Shark", "t": "Legendary", "h": "Open Water", "m": 93, "w": [100.0, 195.0], "v": 88, "d": "The largest fish in the sea, and the gentlest — it filters plankton and ignores the boat entirely."},
 	{"n": "Ocean Leviathan", "t": "Mythic", "h": "Open Water", "m": 31, "w": [120.0, 300.0], "v": 190, "d": "Charted as an island twice. Both charts were withdrawn."},
 
-	# --- Storm Front (7) -----------------------------------------------
+	# --- Storm Front (8) -----------------------------------------------
 	# Only reachable while the weather is actively against you.
+	{"n": "Atlantic Flying Fish", "t": "Rare", "h": "Storm Front", "m": 85, "w": [0.3, 1.0], "v": 13, "d": "Breaks the surface ahead of the swell and glides the length of the boat without a single wingbeat.", "weather": "Stormy"},
 	{"n": "Squallfish", "t": "Epic", "h": "Storm Front", "m": 24, "w": [10.0, 26.0], "v": 36, "d": "Rides the front edge of a storm, feeding on everything the swell throws up.", "weather": "Stormy"},
 	{"n": "Rain Piercer", "t": "Epic", "h": "Storm Front", "m": 25, "w": [6.0, 18.0], "v": 34, "d": "Leaps clean out of the chop for insects driven down by the rain.", "weather": "Rainy"},
 	{"n": "Thunder Marlin", "t": "Legendary", "h": "Storm Front", "m": 23, "w": [45.0, 110.0], "v": 86, "d": "Runs ahead of the lightning. Crews claim the line hums before it strikes.", "weather": "Stormy"},
@@ -237,7 +259,7 @@ const SPECIES := [
 	{"n": "Stormheart Kraken", "t": "Mythic", "h": "Storm Front", "m": 37, "w": [110.0, 260.0], "v": 200, "d": "Takes the storm as an invitation. The harbour bell is rung when it is sighted.", "weather": "Stormy", "pick": 0.6},
 	{"n": "The Drowned King", "t": "Secret", "h": "Storm Front", "m": 41, "w": [150.0, 400.0], "v": 420, "d": "Rises only in a winter storm at dead of night, crowned in weed, and looks straight at the boat.", "weather": "Stormy", "season": "Winter", "night": true},
 
-	# --- Ice Shelf (13) -------------------------------------------------
+	# --- Ice Shelf (19) -------------------------------------------------
 	# Winter water at the edge of the pack ice.
 	{"n": "Frost Char", "t": "Rare", "h": "Ice Shelf", "m": 7, "w": [2.0, 6.0], "v": 14, "d": "Belly turns furnace-orange against water cold enough to stop a hand.", "season": "Winter"},
 	{"n": "Icecap Cod", "t": "Rare", "h": "Ice Shelf", "m": 6, "w": [4.0, 11.0], "v": 15, "d": "Carries its own antifreeze. Keeps feeding while everything else shuts down.", "season": "Winter"},
@@ -246,11 +268,17 @@ const SPECIES := [
 	{"n": "Atlantic Wolffish", "t": "Rare", "h": "Ice Shelf", "m": 18, "w": [3.0, 9.0], "v": 15, "d": "A face only a marine biologist could love, and teeth built for crushing shells whole."},
 	{"n": "Glacier Halibut", "t": "Epic", "h": "Ice Shelf", "m": 36, "w": [25.0, 65.0], "v": 42, "d": "Lies under the shelf like a second floor of ice, waiting out the whole season.", "season": "Winter"},
 	{"n": "Blizzard Lancet", "t": "Epic", "h": "Ice Shelf", "m": 25, "w": [8.0, 22.0], "v": 40, "d": "Only rises through the ice holes when the wind is bad enough to keep sensible people ashore.", "weather": "Blizzard"},
+	{"n": "Walrus", "t": "Epic", "h": "Ice Shelf", "m": 92, "w": [35.0, 62.0], "v": 40, "d": "Hauls out on the pack ice in a pile of its own kind and complains loudly about the company."},
+	{"n": "Leopard Seal", "t": "Epic", "h": "Ice Shelf", "m": 89, "w": [25.0, 50.0], "v": 36, "d": "The shelf's only predator with a sense of humour about it, which is not a comfort to anything smaller."},
 	{"n": "Winter Sturgeon", "t": "Legendary", "h": "Ice Shelf", "m": 29, "w": [50.0, 120.0], "v": 80, "d": "Moves beneath the pack ice at a pace that suggests it has nowhere in particular to be.", "season": "Winter"},
 	{"n": "Hoarfrost Ray", "t": "Legendary", "h": "Ice Shelf", "m": 28, "w": [28.0, 70.0], "v": 76, "d": "Pale enough to read the seabed through, and cold to the touch long after landing.", "season": "Winter", "pick": 0.7},
 	{"n": "Greenland Shark", "t": "Legendary", "h": "Ice Shelf", "m": 75, "w": [90.0, 200.0], "v": 90, "d": "Older than the island itself, moving so slowly that barnacles grow on its own eyes."},
+	{"n": "Beluga Whale", "t": "Legendary", "h": "Ice Shelf", "m": 86, "w": [55.0, 110.0], "v": 72, "d": "Chatters and whistles under the ice loud enough to hear straight through the hull.", "season": "Winter"},
+	{"n": "Narwhal", "t": "Legendary", "h": "Ice Shelf", "m": 87, "w": [45.0, 95.0], "v": 76, "d": "Carries a single spiralled tusk longer than a man is tall, for reasons still argued over.", "season": "Winter"},
+	{"n": "Southern Elephant Seal", "t": "Legendary", "h": "Ice Shelf", "m": 94, "w": [80.0, 160.0], "v": 80, "d": "The bull's bellow carries across the whole shelf and settles every argument before it starts."},
 	{"n": "Frostbound Wyrm", "t": "Mythic", "h": "Ice Shelf", "m": 38, "w": [100.0, 240.0], "v": 185, "d": "Cuts up through the pack from below. The crack is heard well before anything is seen.", "weather": "Blizzard"},
 	{"n": "Whitewater Behemoth", "t": "Mythic", "h": "Ice Shelf", "m": 39, "w": [130.0, 320.0], "v": 205, "d": "Breaks the shelf apart surfacing, and the ice takes a week to close again.", "season": "Winter", "pick": 0.7},
+	{"n": "Orca", "t": "Mythic", "h": "Ice Shelf", "m": 82, "w": [150.0, 330.0], "v": 205, "d": "Hunts in a coordinated pod that reads the ice floes better than any chart the harbour owns."},
 	{"n": "Glassfin Wraith", "t": "Secret", "h": "Ice Shelf", "m": 42, "w": [40.0, 110.0], "v": 360, "d": "Transparent from nose to tail. Visible only as a bend in the lamplight, and only in fog after dark.", "weather": "Foggy", "night": true},
 
 	# --- The Deep (14) -------------------------------------------------

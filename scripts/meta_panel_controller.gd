@@ -57,6 +57,7 @@ const DOCK_CAPACITY_COLOR := Color(0.3, 0.6, 0.7)
 const NEEDS_SERVICE_COLOR := Color(0.6, 0.55, 0.35)
 const SHOP_RARITY_COLOR := Color(0.75, 0.55, 0.85)
 const PERK_SLOT_COLOR := Color(0.4, 0.65, 0.55)
+const EXPEDITIONS_COLOR := Color(0.32, 0.3, 0.55)
 const SPOT_COLOR := Color(0.28, 0.55, 0.62)
 const SECRET_CHANCE_COLOR := Color(0.35, 0.22, 0.5)
 const QUEST_SLOT_COLOR := Color(0.65, 0.5, 0.25)
@@ -71,10 +72,11 @@ const QUEST_SLOT_COLOR := Color(0.65, 0.5, 0.25)
 ## id-keyed idiom QuestManager.UPGRADE_LABELS/_upgrade_level() already
 ## uses for reading MetaProgress state generically.
 ##
-## Three upgrades stay hand-written rather than forced into this table:
+## Four upgrades stay hand-written rather than forced into this table:
 ## fishing spots (id-keyed one-time unlocks, not leveled), Extra Perk Slot
-## (one-time flat cost, no level), and Secret Catch Chance (hidden until
-## Album.has_caught_secret(), needs its own visibility gate).
+## and Expeditions (both one-time flat-cost unlocks, no level), and Secret
+## Catch Chance (hidden until Album.has_caught_secret(), needs its own
+## visibility gate).
 const UPGRADES := [
 	{"id": "slot", "color": SLOT_COLOR, "base_cost": SLOT_BASE_COST, "growth": SLOT_GROWTH,
 	 "max_level": SLOT_MAX_LEVEL, "max_subtitle": "Maxed out (30 total)"},
@@ -99,6 +101,7 @@ const UPGRADES := [
 var _upgrade_rows: Dictionary = {}
 var _perk_slot_row: ListRow
 var _secret_chance_row: ListRow
+var _expeditions_row: ListRow
 ## id -> row, for the buyable fishing spots (the pond is free).
 var _spot_rows: Dictionary = {}
 
@@ -134,6 +137,7 @@ func _build() -> void:
 
 	_perk_slot_row = _make_row(_on_buy_perk_slot)
 	_secret_chance_row = _make_row(_on_buy_secret_chance)
+	_expeditions_row = _make_row(_on_buy_expeditions)
 
 	refresh()
 
@@ -152,6 +156,7 @@ func refresh() -> void:
 		_refresh_upgrade(upgrade)
 	_refresh_perk_slot()
 	_refresh_secret_chance()
+	_refresh_expeditions()
 
 ## One-time unlocks rather than levels, so a bought spot shows what it
 ## gives rather than a price.
@@ -302,6 +307,25 @@ func _on_buy_perk_slot() -> void:
 		return
 	if Economy.spend_scales(MetaProgress.PERK_SLOT_COST):
 		MetaProgress.buy_perk_slot()
+
+func _refresh_expeditions() -> void:
+	if MetaProgress.has_expeditions_unlocked():
+		_expeditions_row.setup("Expeditions", "Send a fisherman off-island for a rare catch", "MAX", EXPEDITIONS_COLOR)
+		_expeditions_row.disabled = true
+		return
+	_expeditions_row.setup(
+		"Expeditions",
+		"Unlocks a long off-island trip with a guaranteed rare+ catch",
+		"%d Scales" % MetaProgress.EXPEDITIONS_COST,
+		EXPEDITIONS_COLOR
+	)
+	_expeditions_row.disabled = Economy.scales < MetaProgress.EXPEDITIONS_COST
+
+func _on_buy_expeditions() -> void:
+	if MetaProgress.has_expeditions_unlocked():
+		return
+	if Economy.spend_scales(MetaProgress.EXPEDITIONS_COST):
+		MetaProgress.buy_expeditions()
 
 func _on_buy_secret_chance() -> void:
 	if not Album.has_caught_secret():
