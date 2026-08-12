@@ -107,6 +107,10 @@ func _load_game() -> void:
 	# footprint, and the bench cluster's footprint grows with the purchased
 	# bench capacity.
 	NeedStations.load_state(data.get("stations", {}))
+	# Must load before the fisherman loop below: it holds the id counter,
+	# and every fisherman either reserves its saved id against it or mints
+	# a fresh one from it.
+	SocialHub.load_state(data.get("social", {}))
 	QuestManager.load_state(data.get("quests", {}))
 	var saved_fishermen: Array = data.get("fishermen", [])
 	if saved_fishermen.is_empty():
@@ -287,6 +291,11 @@ func _on_dismiss_requested(fisherman: Node) -> void:
 		var item = fisherman.equipped_items[slot]
 		if item != null:
 			Inventory.add_item(item)
+	# Someone dismissed mid-need still holds a slot, and freeing the node
+	# is not what releases it — without this a bench (or a spot at the
+	# gathering point) stays occupied by a fisherman who no longer exists.
+	fisherman.release_claimed_slots()
+	SocialHub.forget_fisherman(fisherman.fisherman_id)
 	fishermen.erase(fisherman)
 	fisherman.queue_free()
 	_update_hire_button()

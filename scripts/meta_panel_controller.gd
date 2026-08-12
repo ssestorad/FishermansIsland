@@ -87,7 +87,7 @@ const UPGRADES := [
 	{"id": "coin_gain", "color": COIN_GAIN_COLOR, "base_cost": COIN_GAIN_BASE_COST, "growth": COIN_GAIN_GROWTH, "max_level": -1},
 	{"id": "offline", "color": OFFLINE_COLOR, "base_cost": OFFLINE_BASE_COST, "growth": OFFLINE_GROWTH, "max_level": OFFLINE_MAX_LEVEL},
 	{"id": "bench", "color": BENCH_COLOR, "base_cost": BENCH_BASE_COST, "growth": BENCH_GROWTH, "max_level": -1},
-	{"id": "dock_capacity", "color": DOCK_CAPACITY_COLOR, "base_cost": DOCK_CAPACITY_BASE_COST, "growth": DOCK_CAPACITY_GROWTH, "max_level": -1},
+	{"id": "dock_capacity", "color": DOCK_CAPACITY_COLOR, "base_cost": DOCK_CAPACITY_BASE_COST, "growth": DOCK_CAPACITY_GROWTH, "max_level": MetaProgress.MAX_DOCK_CAPACITY_LEVEL},
 	{"id": "needs_service", "color": NEEDS_SERVICE_COLOR, "base_cost": NEEDS_SERVICE_BASE_COST, "growth": NEEDS_SERVICE_GROWTH, "max_level": NEEDS_SERVICE_MAX_LEVEL},
 	{"id": "shop_rarity", "color": SHOP_RARITY_COLOR, "base_cost": SHOP_RARITY_BASE_COST, "growth": SHOP_RARITY_GROWTH, "max_level": SHOP_RARITY_MAX_LEVEL},
 	{"id": "quest_slot", "color": QUEST_SLOT_COLOR, "base_cost": QUEST_SLOT_BASE_COST, "growth": QUEST_SLOT_GROWTH, "max_level": QUEST_SLOT_MAX_LEVEL},

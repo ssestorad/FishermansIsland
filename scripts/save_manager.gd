@@ -42,6 +42,7 @@ func save_game(fishermen: Array) -> void:
 			"unlocked_spots": MetaProgress.unlocked_spots,
 		},
 		"stations": NeedStations.save_state(),
+		"social": SocialHub.save_state(),
 		"quests": QuestManager.save_state(),
 		"fishermen": fishermen_data,
 	}
@@ -85,6 +86,9 @@ func _serialize_fisherman(fisherman: Node) -> Dictionary:
 		"best_catch_tier": fisherman.best_catch_tier,
 		"is_favorite": fisherman.is_favorite,
 		"fishing_spot": fisherman.fishing_spot,
+		"mood": fisherman.mood,
+		"fisherman_id": fisherman.fisherman_id,
+		"conversations": fisherman.conversations,
 	}
 
 ## Items are looked up by name from the live catalog rather than

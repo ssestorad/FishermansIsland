@@ -7,7 +7,7 @@ extends Node2D
 ## dependency on fishermen, panels, or save data beyond NeedStations.
 
 const STATION_SCENE := preload("res://scenes/entities/Station.tscn")
-const STATION_IDS := ["storage", "grill", "beer", "benches"]
+const STATION_IDS := ["storage", "grill", "beer", "benches", "phone", "gathering"]
 
 ## Station currently stuck to the cursor, or null.
 var _carried_station: Node = null

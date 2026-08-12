@@ -443,6 +443,32 @@ custom_minimum_size = Vector2(0, 22)
 theme_override_font_sizes/font_size = 10
 text = "Fishing: Pond"
 
+[node name="TabRow" type="HBoxContainer" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="SkillsTabButton" type="Button" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer/TabRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = &"TabButton"
+theme_override_font_sizes/font_size = 10
+disabled = true
+text = "Skills"
+
+[node name="NeedsTabButton" type="Button" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer/TabRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = &"TabButton"
+theme_override_font_sizes/font_size = 10
+text = "Needs"
+
+[node name="SocialTabButton" type="Button" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer/TabRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = &"TabButton"
+theme_override_font_sizes/font_size = 10
+text = "Social"
+
 [node name="StatsScroll" type="ScrollContainer" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer"]
 layout_mode = 2
 size_flags_vertical = 3
@@ -452,12 +478,17 @@ layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 6
 
-[node name="SpeedLabel" type="Label" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer/StatsScroll/StatsBlock"]
+[node name="SkillsTab" type="VBoxContainer" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer/StatsScroll/StatsBlock"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 6
+
+[node name="SpeedLabel" type="Label" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer/StatsScroll/StatsBlock/SkillsTab"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.25, 0.4, 0.6, 1)
 text = "Speed: Lvl 0"
 
-[node name="SpeedBar" type="ProgressBar" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer/StatsScroll/StatsBlock"]
+[node name="SpeedBar" type="ProgressBar" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer/StatsScroll/StatsBlock/SkillsTab"]
 layout_mode = 2
 custom_minimum_size = Vector2(0, 8)
 theme_type_variation = &"SpeedBar"
@@ -465,12 +496,12 @@ max_value = 1.0
 step = 0.01
 show_percentage = false
 
-[node name="LuckLabel" type="Label" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer/StatsScroll/StatsBlock"]
+[node name="LuckLabel" type="Label" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer/StatsScroll/StatsBlock/SkillsTab"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.3, 0.55, 0.28, 1)
 text = "Luck: Lvl 0"
 
-[node name="LuckBar" type="ProgressBar" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer/StatsScroll/StatsBlock"]
+[node name="LuckBar" type="ProgressBar" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer/StatsScroll/StatsBlock/SkillsTab"]
 layout_mode = 2
 custom_minimum_size = Vector2(0, 8)
 theme_type_variation = &"LuckBar"
@@ -478,12 +509,12 @@ max_value = 1.0
 step = 0.01
 show_percentage = false
 
-[node name="PowerLabel" type="Label" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer/StatsScroll/StatsBlock"]
+[node name="PowerLabel" type="Label" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer/StatsScroll/StatsBlock/SkillsTab"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.6, 0.3, 0.2, 1)
 text = "Power: Lvl 0"
 
-[node name="PowerBar" type="ProgressBar" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer/StatsScroll/StatsBlock"]
+[node name="PowerBar" type="ProgressBar" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer/StatsScroll/StatsBlock/SkillsTab"]
 layout_mode = 2
 custom_minimum_size = Vector2(0, 8)
 theme_type_variation = &"PowerBar"
@@ -491,12 +522,12 @@ max_value = 1.0
 step = 0.01
 show_percentage = false
 
-[node name="EnduranceLabel" type="Label" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer/StatsScroll/StatsBlock"]
+[node name="EnduranceLabel" type="Label" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer/StatsScroll/StatsBlock/SkillsTab"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.45, 0.35, 0.6, 1)
 text = "Endurance: Lvl 0"
 
-[node name="EnduranceBar" type="ProgressBar" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer/StatsScroll/StatsBlock"]
+[node name="EnduranceBar" type="ProgressBar" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer/StatsScroll/StatsBlock/SkillsTab"]
 layout_mode = 2
 custom_minimum_size = Vector2(0, 8)
 theme_type_variation = &"EnduranceBar"
@@ -504,57 +535,12 @@ max_value = 1.0
 step = 0.01
 show_percentage = false
 
-[node name="NeedsHeader" type="Label" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer/StatsScroll/StatsBlock"]
-layout_mode = 2
-theme_type_variation = &"MutedLabel"
-theme_override_font_sizes/font_size = 10
-text = "Needs"
-
-[node name="HungerLabel" type="Label" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer/StatsScroll/StatsBlock"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.75, 0.45, 0.2, 1)
-text = "Hunger: OK"
-
-[node name="HungerBar" type="ProgressBar" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer/StatsScroll/StatsBlock"]
-layout_mode = 2
-custom_minimum_size = Vector2(0, 8)
-theme_type_variation = &"HungerBar"
-max_value = 1.0
-step = 0.01
-show_percentage = false
-
-[node name="ThirstLabel" type="Label" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer/StatsScroll/StatsBlock"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.25, 0.5, 0.65, 1)
-text = "Thirst: OK"
-
-[node name="ThirstBar" type="ProgressBar" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer/StatsScroll/StatsBlock"]
-layout_mode = 2
-custom_minimum_size = Vector2(0, 8)
-theme_type_variation = &"ThirstBar"
-max_value = 1.0
-step = 0.01
-show_percentage = false
-
-[node name="RestLabel" type="Label" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer/StatsScroll/StatsBlock"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.4, 0.42, 0.5, 1)
-text = "Rest: OK"
-
-[node name="RestBar" type="ProgressBar" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer/StatsScroll/StatsBlock"]
-layout_mode = 2
-custom_minimum_size = Vector2(0, 8)
-theme_type_variation = &"RestBar"
-max_value = 1.0
-step = 0.01
-show_percentage = false
-
-[node name="EquipmentSlots" type="HBoxContainer" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer/StatsScroll/StatsBlock"]
+[node name="EquipmentSlots" type="HBoxContainer" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer/StatsScroll/StatsBlock/SkillsTab"]
 layout_mode = 2
 theme_override_constants/separation = 6
 alignment = 1
 
-[node name="RodSlot" type="Button" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer/StatsScroll/StatsBlock/EquipmentSlots"]
+[node name="RodSlot" type="Button" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer/StatsScroll/StatsBlock/SkillsTab/EquipmentSlots"]
 layout_mode = 2
 custom_minimum_size = Vector2(48, 44)
 size_flags_horizontal = 0
@@ -563,7 +549,7 @@ theme_override_font_sizes/font_size = 10
 text = "Rod
 —"
 
-[node name="HatSlot" type="Button" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer/StatsScroll/StatsBlock/EquipmentSlots"]
+[node name="HatSlot" type="Button" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer/StatsScroll/StatsBlock/SkillsTab/EquipmentSlots"]
 layout_mode = 2
 custom_minimum_size = Vector2(48, 44)
 size_flags_horizontal = 0
@@ -572,7 +558,7 @@ theme_override_font_sizes/font_size = 10
 text = "Hat
 —"
 
-[node name="OutfitSlot" type="Button" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer/StatsScroll/StatsBlock/EquipmentSlots"]
+[node name="OutfitSlot" type="Button" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer/StatsScroll/StatsBlock/SkillsTab/EquipmentSlots"]
 layout_mode = 2
 custom_minimum_size = Vector2(48, 44)
 size_flags_horizontal = 0
@@ -581,7 +567,7 @@ theme_override_font_sizes/font_size = 10
 text = "Outfit
 —"
 
-[node name="CharmSlot" type="Button" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer/StatsScroll/StatsBlock/EquipmentSlots"]
+[node name="CharmSlot" type="Button" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer/StatsScroll/StatsBlock/SkillsTab/EquipmentSlots"]
 layout_mode = 2
 custom_minimum_size = Vector2(48, 44)
 size_flags_horizontal = 0
@@ -590,7 +576,7 @@ theme_override_font_sizes/font_size = 10
 text = "Charm
 —"
 
-[node name="BaitSlot" type="Button" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer/StatsScroll/StatsBlock/EquipmentSlots"]
+[node name="BaitSlot" type="Button" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer/StatsScroll/StatsBlock/SkillsTab/EquipmentSlots"]
 layout_mode = 2
 custom_minimum_size = Vector2(48, 44)
 size_flags_horizontal = 0
@@ -599,22 +585,116 @@ theme_override_font_sizes/font_size = 10
 text = "Bait
 —"
 
-[node name="PerksLabel" type="Label" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer/StatsScroll/StatsBlock"]
+[node name="PerksLabel" type="Label" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer/StatsScroll/StatsBlock/SkillsTab"]
 layout_mode = 2
 theme_type_variation = &"MutedLabel"
 autowrap_mode = 3
 text = "Perks: —"
 
-[node name="HistoryTitleLabel" type="Label" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer/StatsScroll/StatsBlock"]
+[node name="HistoryTitleLabel" type="Label" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer/StatsScroll/StatsBlock/SkillsTab"]
 layout_mode = 2
 theme_type_variation = &"MutedLabel"
 text = "Recent catches"
 
-[node name="HistoryLabel" type="Label" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer/StatsScroll/StatsBlock"]
+[node name="HistoryLabel" type="Label" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer/StatsScroll/StatsBlock/SkillsTab"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 10
 autowrap_mode = 3
 text = "No catches yet."
+
+[node name="NeedsTab" type="VBoxContainer" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer/StatsScroll/StatsBlock"]
+visible = false
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 6
+
+[node name="HungerLabel" type="Label" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer/StatsScroll/StatsBlock/NeedsTab"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.75, 0.45, 0.2, 1)
+text = "Hunger: OK"
+
+[node name="HungerBar" type="ProgressBar" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer/StatsScroll/StatsBlock/NeedsTab"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 8)
+theme_type_variation = &"HungerBar"
+max_value = 1.0
+step = 0.01
+show_percentage = false
+
+[node name="ThirstLabel" type="Label" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer/StatsScroll/StatsBlock/NeedsTab"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.25, 0.5, 0.65, 1)
+text = "Thirst: OK"
+
+[node name="ThirstBar" type="ProgressBar" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer/StatsScroll/StatsBlock/NeedsTab"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 8)
+theme_type_variation = &"ThirstBar"
+max_value = 1.0
+step = 0.01
+show_percentage = false
+
+[node name="RestLabel" type="Label" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer/StatsScroll/StatsBlock/NeedsTab"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.4, 0.42, 0.5, 1)
+text = "Rest: OK"
+
+[node name="RestBar" type="ProgressBar" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer/StatsScroll/StatsBlock/NeedsTab"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 8)
+theme_type_variation = &"RestBar"
+max_value = 1.0
+step = 0.01
+show_percentage = false
+
+[node name="SocialLabel" type="Label" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer/StatsScroll/StatsBlock/NeedsTab"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.32, 0.48, 0.32, 1)
+text = "Company: OK"
+
+[node name="SocialBar" type="ProgressBar" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer/StatsScroll/StatsBlock/NeedsTab"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 8)
+theme_type_variation = &"SocialBar"
+max_value = 1.0
+step = 0.01
+show_percentage = false
+
+[node name="MoodLabel" type="Label" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer/StatsScroll/StatsBlock/NeedsTab"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.72, 0.55, 0.2, 1)
+text = "Mood: Content"
+
+[node name="MoodBar" type="ProgressBar" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer/StatsScroll/StatsBlock/NeedsTab"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 8)
+theme_type_variation = &"MoodBar"
+max_value = 1.0
+step = 0.01
+show_percentage = false
+
+[node name="SocialTab" type="VBoxContainer" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer/StatsScroll/StatsBlock"]
+visible = false
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 6
+
+[node name="FriendsLabel" type="Label" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer/StatsScroll/StatsBlock/SocialTab"]
+layout_mode = 2
+theme_type_variation = &"MutedLabel"
+autowrap_mode = 3
+text = "No friends yet."
+
+[node name="ConversationsTitleLabel" type="Label" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer/StatsScroll/StatsBlock/SocialTab"]
+layout_mode = 2
+theme_type_variation = &"MutedLabel"
+text = "Recent conversations"
+
+[node name="ConversationsLabel" type="Label" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer/StatsScroll/StatsBlock/SocialTab"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 10
+autowrap_mode = 3
+text = "Hasn't talked to anyone yet."
 
 [node name="DismissButton" type="Button" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer"]
 layout_mode = 2

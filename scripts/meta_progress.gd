@@ -37,8 +37,13 @@ const MAX_NEEDS_SERVICE_LEVEL := 10
 const MAX_NEEDS_SERVICE_BONUS := NEEDS_SERVICE_PER_LEVEL * MAX_NEEDS_SERVICE_LEVEL
 
 ## Raw-count upgrade, same shape as bench capacity: DockInventory's base
-## capacity (60) plus this many extra slots per level.
+## capacity (60) plus this many extra slots per level. Capped (unlike
+## bench capacity) at a 200-entry dock — DockPanelController rebuilds
+## every row from scratch on each DockInventory.updated signal while the
+## panel is open, and past ~200 entries that full rebuild noticeably
+## stutters the game.
 const DOCK_CAPACITY_PER_LEVEL := 10
+const MAX_DOCK_CAPACITY_LEVEL := 14
 
 ## Extra concurrent slots on the Quest board, on top of
 ## QuestManager.ACTIVE_QUEST_COUNT. Capped (unlike bench/dock capacity) so
@@ -118,7 +123,11 @@ func get_needs_service_bonus() -> float:
 	return clampf(needs_service_level * NEEDS_SERVICE_PER_LEVEL, 0.0, MAX_NEEDS_SERVICE_BONUS)
 
 func get_dock_capacity_bonus() -> int:
-	return dock_capacity_level * DOCK_CAPACITY_PER_LEVEL
+	# Defensive floor to match buy_dock_capacity()'s cap, same
+	# getter-clamps-too spirit as _max_fishermen_slots() in main.gd — also
+	# what actually retroactively shrinks a save whose dock_capacity_level
+	# was bought past 14 before this cap existed.
+	return mini(dock_capacity_level, MAX_DOCK_CAPACITY_LEVEL) * DOCK_CAPACITY_PER_LEVEL
 
 func get_hire_discount() -> float:
 	return clampf(hire_discount_level * HIRE_DISCOUNT_PER_LEVEL, 0.0, MAX_HIRE_DISCOUNT)
@@ -186,6 +195,8 @@ func buy_needs_service() -> void:
 	updated.emit()
 
 func buy_dock_capacity() -> void:
+	if dock_capacity_level >= MAX_DOCK_CAPACITY_LEVEL:
+		return
 	dock_capacity_level += 1
 	updated.emit()
 

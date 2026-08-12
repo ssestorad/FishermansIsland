@@ -47,6 +47,27 @@ static func build(index: int, saved_data: Dictionary = {}) -> Node:
 		fisherman.catch_history = loaded_history
 		fisherman.best_catch_tier = int(saved_data.get("best_catch_tier", 0))
 		fisherman.is_favorite = bool(saved_data.get("is_favorite", false))
+		# Saves predating the mood system load everyone at neutral. The
+		# constant is read off the instance because fisherman.gd has no
+		# class_name — same duck typing the rest of this function uses.
+		fisherman.mood = float(saved_data.get("mood", fisherman.MOOD_NEUTRAL))
+		# A save predating the social system has no id; leaving it at 0
+		# makes _ready() mint a fresh one. Reserving a loaded id keeps the
+		# counter ahead so a later hire can't be handed a duplicate.
+		fisherman.fisherman_id = int(saved_data.get("fisherman_id", 0))
+		if fisherman.fisherman_id > 0:
+			SocialHub.reserve_id(fisherman.fisherman_id)
+		var raw_conversations: Array = saved_data.get("conversations", [])
+		var loaded_conversations: Array = []
+		for raw in raw_conversations:
+			if raw is Dictionary and raw.has("topic") and raw.has("day"):
+				loaded_conversations.append({
+					"with_name": str(raw.get("with_name", "")),
+					"with_id": int(raw.get("with_id", 0)),
+					"topic": str(raw.topic),
+					"day": int(raw.day),
+				})
+		fisherman.conversations = loaded_conversations
 		# Saves from before fishing spots existed have everyone at the
 		# pier, which is where they all used to stand.
 		fisherman.fishing_spot = str(saved_data.get("fishing_spot", FishingSpots.PIER))

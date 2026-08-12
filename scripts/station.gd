@@ -54,6 +54,10 @@ func _draw() -> void:
 			_draw_storage()
 		"benches":
 			_draw_benches()
+		"phone":
+			_draw_phone()
+		"gathering":
+			_draw_gathering()
 	if is_carried:
 		_draw_outline(VALID_COLOR if placement_valid else INVALID_COLOR)
 	elif is_hovered:
@@ -85,6 +89,20 @@ func _draw_benches() -> void:
 	for bench_pos in NeedStations.bench_positions():
 		var offset: Vector2 = bench_pos - NeedStations.bench_origin
 		draw_rect(Rect2(offset + Vector2(-7, -2), Vector2(14, 4)), Color(0.55, 0.4, 0.24))
+
+## A landline on a pole: post, boxy body, handset resting across the top.
+func _draw_phone() -> void:
+	draw_rect(Rect2(-1, -4, 2, 14), Color(0.34, 0.3, 0.26))
+	draw_rect(Rect2(-4, -9, 8, 6), Color(0.2, 0.24, 0.3))
+	draw_rect(Rect2(-4, -11, 8, 2), Color(0.12, 0.14, 0.18))
+	draw_rect(Rect2(-3, -7, 2, 2), Color(0.6, 0.65, 0.7))
+
+## Placeholder for the shared space, as asked for: a plain marked-out
+## square of ground. Deliberately flat and obvious rather than pretending
+## to be finished art.
+func _draw_gathering() -> void:
+	draw_rect(Rect2(-20, -7, 40, 14), Color(0.85, 0.75, 0.3, 0.55))
+	draw_rect(Rect2(-20, -7, 40, 14), Color(0.7, 0.6, 0.2), false, 1.0)
 
 func _on_click_area_input_event(_viewport: Node, event: InputEvent, _shape_idx: int) -> void:
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_RIGHT:

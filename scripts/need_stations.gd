@@ -17,6 +17,11 @@ const DEFAULT_BENCH_ORIGIN := Vector2(220.0, 84.0)
 ## The single shared point every catch is carried to, whichever row the
 ## fisherman fishes from.
 const DEFAULT_STORAGE_POSITION := Vector2(80.0, 90.0)
+## Social need: a phone on a pole to call home from alone, and a shared
+## patch of ground where two fishermen who happen to be there at the same
+## time end up talking to each other.
+const DEFAULT_PHONE_POSITION := Vector2(120.0, 120.0)
+const DEFAULT_GATHERING_POSITION := Vector2(180.0, 120.0)
 
 const BENCH_SPACING := 20.0
 ## Wrap into a new row after this many, so a heavily-upgraded bench count
@@ -30,6 +35,8 @@ const FOOTPRINTS := {
 	"grill": Vector2(14.0, 12.0),
 	"beer": Vector2(16.0, 16.0),
 	"storage": Vector2(22.0, 18.0),
+	"phone": Vector2(8.0, 20.0),
+	"gathering": Vector2(40.0, 14.0),
 }
 const BENCH_FOOTPRINT := Vector2(16.0, 6.0)
 
@@ -37,6 +44,8 @@ var grill_position := DEFAULT_GRILL_POSITION
 var beer_position := DEFAULT_BEER_POSITION
 var bench_origin := DEFAULT_BENCH_ORIGIN
 var storage_position := DEFAULT_STORAGE_POSITION
+var phone_position := DEFAULT_PHONE_POSITION
+var gathering_position := DEFAULT_GATHERING_POSITION
 
 ## slot index -> true while a fisherman is occupying it.
 var _claimed: Dictionary = {}
@@ -68,7 +77,10 @@ func release_bench(index: int) -> void:
 ## re-resolve its target after a station moves instead of finishing a trip
 ## to where the station used to be. Bench slots keep their index across a
 ## move, so a claim stays valid.
-func position_for_need(need: String, bench_index: int = -1):
+## `slot_index` covers both the bench pool and the gathering spot's
+## standing spots; -1 means the caller holds no slot, which for "social"
+## means they went to the phone instead.
+func position_for_need(need: String, slot_index: int = -1):
 	match need:
 		"hunger":
 			return grill_position
@@ -76,8 +88,15 @@ func position_for_need(need: String, bench_index: int = -1):
 			return beer_position
 		"rest":
 			var positions := bench_positions()
-			if bench_index >= 0 and bench_index < positions.size():
-				return positions[bench_index]
+			if slot_index >= 0 and slot_index < positions.size():
+				return positions[slot_index]
+			return null
+		"social":
+			if slot_index < 0:
+				return phone_position
+			var spots := SocialHub.gathering_positions()
+			if slot_index < spots.size():
+				return spots[slot_index]
 			return null
 	return null
 
@@ -91,6 +110,10 @@ func get_station_position(id: String) -> Vector2:
 			return bench_origin
 		"storage":
 			return storage_position
+		"phone":
+			return phone_position
+		"gathering":
+			return gathering_position
 	return Vector2.ZERO
 
 ## The whole bench cluster moves as one object, so its footprint spans
@@ -126,6 +149,10 @@ func move_station(id: String, position: Vector2) -> void:
 			bench_origin = snapped
 		"storage":
 			storage_position = snapped
+		"phone":
+			phone_position = snapped
+		"gathering":
+			gathering_position = snapped
 		_:
 			return
 	stations_moved.emit()
@@ -136,6 +163,8 @@ func save_state() -> Dictionary:
 		"beer": [beer_position.x, beer_position.y],
 		"benches": [bench_origin.x, bench_origin.y],
 		"storage": [storage_position.x, storage_position.y],
+		"phone": [phone_position.x, phone_position.y],
+		"gathering": [gathering_position.x, gathering_position.y],
 	}
 
 ## Must run after MetaProgress.load_state(): the bench footprint depends
@@ -145,7 +174,9 @@ func load_state(data: Dictionary) -> void:
 	beer_position = _read(data, "beer", DEFAULT_BEER_POSITION)
 	bench_origin = _read(data, "benches", DEFAULT_BENCH_ORIGIN)
 	storage_position = _read(data, "storage", DEFAULT_STORAGE_POSITION)
-	for id in ["grill", "beer", "benches", "storage"]:
+	phone_position = _read(data, "phone", DEFAULT_PHONE_POSITION)
+	gathering_position = _read(data, "gathering", DEFAULT_GATHERING_POSITION)
+	for id in ["grill", "beer", "benches", "storage", "phone", "gathering"]:
 		var clamped := WorldLayout.clamp_position(get_station_position(id), footprint_size(id))
 		match id:
 			"grill":
@@ -156,6 +187,10 @@ func load_state(data: Dictionary) -> void:
 				bench_origin = clamped
 			"storage":
 				storage_position = clamped
+			"phone":
+				phone_position = clamped
+			"gathering":
+				gathering_position = clamped
 	stations_moved.emit()
 
 func _read(data: Dictionary, key: String, fallback: Vector2) -> Vector2:

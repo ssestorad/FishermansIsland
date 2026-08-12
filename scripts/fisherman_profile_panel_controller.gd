@@ -8,23 +8,35 @@ signal slot_clicked(fisherman, slot_name)
 @onready var rank_label: Label = $MarginContainer/VBoxContainer/RankLabel
 @onready var spot_button: Button = $MarginContainer/VBoxContainer/SpotButton
 @onready var favorite_button: Button = $MarginContainer/VBoxContainer/HeaderRow/FavoriteButton
-@onready var speed_label: Label = $MarginContainer/VBoxContainer/StatsScroll/StatsBlock/SpeedLabel
-@onready var speed_bar: ProgressBar = $MarginContainer/VBoxContainer/StatsScroll/StatsBlock/SpeedBar
-@onready var luck_label: Label = $MarginContainer/VBoxContainer/StatsScroll/StatsBlock/LuckLabel
-@onready var luck_bar: ProgressBar = $MarginContainer/VBoxContainer/StatsScroll/StatsBlock/LuckBar
-@onready var power_label: Label = $MarginContainer/VBoxContainer/StatsScroll/StatsBlock/PowerLabel
-@onready var power_bar: ProgressBar = $MarginContainer/VBoxContainer/StatsScroll/StatsBlock/PowerBar
-@onready var endurance_label: Label = $MarginContainer/VBoxContainer/StatsScroll/StatsBlock/EnduranceLabel
-@onready var endurance_bar: ProgressBar = $MarginContainer/VBoxContainer/StatsScroll/StatsBlock/EnduranceBar
-@onready var hunger_label: Label = $MarginContainer/VBoxContainer/StatsScroll/StatsBlock/HungerLabel
-@onready var hunger_bar: ProgressBar = $MarginContainer/VBoxContainer/StatsScroll/StatsBlock/HungerBar
-@onready var thirst_label: Label = $MarginContainer/VBoxContainer/StatsScroll/StatsBlock/ThirstLabel
-@onready var thirst_bar: ProgressBar = $MarginContainer/VBoxContainer/StatsScroll/StatsBlock/ThirstBar
-@onready var rest_label: Label = $MarginContainer/VBoxContainer/StatsScroll/StatsBlock/RestLabel
-@onready var rest_bar: ProgressBar = $MarginContainer/VBoxContainer/StatsScroll/StatsBlock/RestBar
-@onready var equipment_slots: HBoxContainer = $MarginContainer/VBoxContainer/StatsScroll/StatsBlock/EquipmentSlots
-@onready var perks_label: Label = $MarginContainer/VBoxContainer/StatsScroll/StatsBlock/PerksLabel
-@onready var history_label: Label = $MarginContainer/VBoxContainer/StatsScroll/StatsBlock/HistoryLabel
+@onready var skills_tab: VBoxContainer = $MarginContainer/VBoxContainer/StatsScroll/StatsBlock/SkillsTab
+@onready var needs_tab: VBoxContainer = $MarginContainer/VBoxContainer/StatsScroll/StatsBlock/NeedsTab
+@onready var social_tab: VBoxContainer = $MarginContainer/VBoxContainer/StatsScroll/StatsBlock/SocialTab
+@onready var skills_tab_button: Button = $MarginContainer/VBoxContainer/TabRow/SkillsTabButton
+@onready var needs_tab_button: Button = $MarginContainer/VBoxContainer/TabRow/NeedsTabButton
+@onready var social_tab_button: Button = $MarginContainer/VBoxContainer/TabRow/SocialTabButton
+@onready var speed_label: Label = $MarginContainer/VBoxContainer/StatsScroll/StatsBlock/SkillsTab/SpeedLabel
+@onready var speed_bar: ProgressBar = $MarginContainer/VBoxContainer/StatsScroll/StatsBlock/SkillsTab/SpeedBar
+@onready var luck_label: Label = $MarginContainer/VBoxContainer/StatsScroll/StatsBlock/SkillsTab/LuckLabel
+@onready var luck_bar: ProgressBar = $MarginContainer/VBoxContainer/StatsScroll/StatsBlock/SkillsTab/LuckBar
+@onready var power_label: Label = $MarginContainer/VBoxContainer/StatsScroll/StatsBlock/SkillsTab/PowerLabel
+@onready var power_bar: ProgressBar = $MarginContainer/VBoxContainer/StatsScroll/StatsBlock/SkillsTab/PowerBar
+@onready var endurance_label: Label = $MarginContainer/VBoxContainer/StatsScroll/StatsBlock/SkillsTab/EnduranceLabel
+@onready var endurance_bar: ProgressBar = $MarginContainer/VBoxContainer/StatsScroll/StatsBlock/SkillsTab/EnduranceBar
+@onready var hunger_label: Label = $MarginContainer/VBoxContainer/StatsScroll/StatsBlock/NeedsTab/HungerLabel
+@onready var hunger_bar: ProgressBar = $MarginContainer/VBoxContainer/StatsScroll/StatsBlock/NeedsTab/HungerBar
+@onready var thirst_label: Label = $MarginContainer/VBoxContainer/StatsScroll/StatsBlock/NeedsTab/ThirstLabel
+@onready var thirst_bar: ProgressBar = $MarginContainer/VBoxContainer/StatsScroll/StatsBlock/NeedsTab/ThirstBar
+@onready var rest_label: Label = $MarginContainer/VBoxContainer/StatsScroll/StatsBlock/NeedsTab/RestLabel
+@onready var rest_bar: ProgressBar = $MarginContainer/VBoxContainer/StatsScroll/StatsBlock/NeedsTab/RestBar
+@onready var social_label: Label = $MarginContainer/VBoxContainer/StatsScroll/StatsBlock/NeedsTab/SocialLabel
+@onready var social_bar: ProgressBar = $MarginContainer/VBoxContainer/StatsScroll/StatsBlock/NeedsTab/SocialBar
+@onready var mood_label: Label = $MarginContainer/VBoxContainer/StatsScroll/StatsBlock/NeedsTab/MoodLabel
+@onready var mood_bar: ProgressBar = $MarginContainer/VBoxContainer/StatsScroll/StatsBlock/NeedsTab/MoodBar
+@onready var friends_label: Label = $MarginContainer/VBoxContainer/StatsScroll/StatsBlock/SocialTab/FriendsLabel
+@onready var conversations_label: Label = $MarginContainer/VBoxContainer/StatsScroll/StatsBlock/SocialTab/ConversationsLabel
+@onready var equipment_slots: HBoxContainer = $MarginContainer/VBoxContainer/StatsScroll/StatsBlock/SkillsTab/EquipmentSlots
+@onready var perks_label: Label = $MarginContainer/VBoxContainer/StatsScroll/StatsBlock/SkillsTab/PerksLabel
+@onready var history_label: Label = $MarginContainer/VBoxContainer/StatsScroll/StatsBlock/SkillsTab/HistoryLabel
 @onready var dismiss_button: Button = $MarginContainer/VBoxContainer/DismissButton
 
 ## Needs tick continuously (not just on a catch, unlike the XP bars above),
@@ -33,9 +45,17 @@ signal slot_clicked(fisherman, slot_name)
 ## (shop_panel_controller.gd), not a naive full-speed _process.
 const NEEDS_TICK_INTERVAL := 0.2  # 5/sec
 
+## The panel had grown to four stat bars, five equipment slots, five need
+## bars, perks, catch history and the social log all stacked in one
+## scroll — split into three cards instead.
+const TAB_SKILLS := "skills"
+const TAB_NEEDS := "needs"
+const TAB_SOCIAL := "social"
+
 var _fisherman: Node = null
 var _dismiss_armed: bool = false
 var _needs_tick_accumulator: float = 0.0
+var _active_tab: String = TAB_SKILLS
 
 func _on_ready() -> void:
 	for slot_button in equipment_slots.get_children():
@@ -44,7 +64,25 @@ func _on_ready() -> void:
 	dismiss_button.pressed.connect(_on_dismiss_button_pressed)
 	favorite_button.pressed.connect(_on_favorite_button_pressed)
 	spot_button.pressed.connect(_on_spot_button_pressed)
+	skills_tab_button.pressed.connect(_on_tab_pressed.bind(TAB_SKILLS))
+	needs_tab_button.pressed.connect(_on_tab_pressed.bind(TAB_NEEDS))
+	social_tab_button.pressed.connect(_on_tab_pressed.bind(TAB_SOCIAL))
 	visibility_changed.connect(_on_visibility_changed)
+	_update_tabs()
+
+func _on_tab_pressed(tab: String) -> void:
+	_active_tab = tab
+	_update_tabs()
+
+## Selected tab is marked by disabling its own button, the same way the
+## Shop and Album panels already show which tab is active.
+func _update_tabs() -> void:
+	skills_tab.visible = _active_tab == TAB_SKILLS
+	needs_tab.visible = _active_tab == TAB_NEEDS
+	social_tab.visible = _active_tab == TAB_SOCIAL
+	skills_tab_button.disabled = _active_tab == TAB_SKILLS
+	needs_tab_button.disabled = _active_tab == TAB_NEEDS
+	social_tab_button.disabled = _active_tab == TAB_SOCIAL
 
 func _process(delta: float) -> void:
 	if not visible or _fisherman == null or not is_instance_valid(_fisherman):
@@ -106,6 +144,8 @@ func refresh() -> void:
 		var slot_name: String = slot_button.name.trim_suffix("Slot")
 		slot_button.text = "%s\n%s" % [slot_name, _fisherman.get_slot_display(slot_name)]
 	history_label.text = _fisherman.get_recent_catches_text()
+	friends_label.text = _fisherman.get_friends_text()
+	conversations_label.text = _fisherman.get_conversations_text()
 	_refresh_needs()
 
 ## Separate from refresh() because needs change every frame (not just on a
@@ -115,6 +155,35 @@ func _refresh_needs() -> void:
 	_set_need_row(hunger_label, hunger_bar, "Hunger", "hunger")
 	_set_need_row(thirst_label, thirst_bar, "Thirst", "thirst")
 	_set_need_row(rest_label, rest_bar, "Rest", "rest")
+	_set_need_row(social_label, social_bar, "Company", "social")
+	_refresh_mood()
+
+## Named bands for the 0..1 mood value, coarse enough that the label isn't
+## flickering between words while the bar moves. Ascending; the first
+## entry whose ceiling the mood clears names it.
+const MOOD_BANDS := [
+	{"below": 0.2, "name": "Miserable"},
+	{"below": 0.4, "name": "Down"},
+	{"below": 0.6, "name": "Content"},
+	{"below": 0.8, "name": "Cheerful"},
+	{"below": 1.01, "name": "Elated"},
+]
+
+## Unlike the three need bars above, this one is NOT inverted — mood is
+## already "more is better", so the bar fills as the fisherman cheers up.
+## The percentage is spelled out because mood actually moves every stat;
+## hiding that would make a fisherman quietly underperform for no visible
+## reason.
+func _refresh_mood() -> void:
+	mood_bar.value = _fisherman.mood
+	var band_name := "Content"
+	for band in MOOD_BANDS:
+		if _fisherman.mood < band.below:
+			band_name = band.name
+			break
+	var percent := roundi((_fisherman.get_mood_multiplier() - 1.0) * 100.0)
+	var sign_text := "+" if percent >= 0 else ""
+	mood_label.text = "Mood: %s (%s%d%%)" % [band_name, sign_text, percent]
 
 func _set_need_row(label: Label, bar: ProgressBar, title: String, need: String) -> void:
 	# get_need_progress() is "how close to due" (0 = just serviced, 1 = due) —

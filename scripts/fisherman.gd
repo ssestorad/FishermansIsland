@@ -36,6 +36,10 @@ const SECRET_CATCH_BASE_CHANCE := 0.05
 const HUNGER_INTERVAL := 240.0
 const THIRST_INTERVAL := 300.0
 const REST_INTERVAL := 200.0
+## The fourth need: wanting someone to talk to. Serviced either alone at
+## the phone or, if there's room, at the shared gathering spot where two
+## fishermen who overlap there end up talking to each other.
+const SOCIAL_INTERVAL := 280.0
 
 ## Used only as a fallback threshold (see _fallback_need()): when the
 ## top-priority due need can't be serviced right now (Rest, bench full),
@@ -48,6 +52,41 @@ const NEED_THRESHOLD := 0.8
 ## _service_duration()); hunger/thirst stay flat so Endurance doesn't end
 ## up mattering for everything.
 const NEED_SERVICE_TIME := Vector2(2.0, 4.0)
+
+## Mood: a 0..1 value that lingers, unlike the needs it partly derives
+## from. It is stored rather than recomputed on demand precisely so it can
+## linger — a value derived from current state would snap back the instant
+## a fisherman finished eating, which reads as a second hunger bar rather
+## than a mood.
+##
+## All of these are tunable starting points, not locked balance, same as
+## the need intervals above.
+const MOOD_NEUTRAL := 0.5
+## Swing at the extremes: mood 0.0 -> x0.9 on every stat, 1.0 -> x1.1.
+const MOOD_STAT_SWING := 0.1
+## Pull back toward neutral every second, so nothing stays extreme for
+## long without something actively holding it there.
+const MOOD_DRIFT_PER_SECOND := 0.004
+## Lost per second for *each* need currently due — three at once outpaces
+## the drift above, which is the whole point.
+const MOOD_NEED_DRAIN_PER_SECOND := 0.008
+## Gained on finishing a need, for the small "that's better" beat.
+const MOOD_SERVICE_GAIN := 0.05
+## On top of the above, for the social need specifically: a real
+## conversation is worth far more than calling home alone, and talking to
+## someone you already know is worth a little more again. This is what
+## makes the friendship score feed back into the game rather than just
+## decorating the Profile panel.
+const MOOD_SOCIAL_CHAT_GAIN := 0.10
+const MOOD_SOCIAL_FRIEND_BONUS := 0.05
+const MOOD_SOCIAL_CALL_GAIN := 0.02
+## Gained per live catch, multiplied by (1 + tier index), so a Mythic
+## lifts the mood noticeably and a Common barely registers.
+const MOOD_CATCH_GAIN := 0.02
+## How fast mood settles back to neutral across an offline gap. At this
+## rate a few hours away is enough to fully settle, so nobody comes back
+## to a mood they never actually lived through.
+const MOOD_OFFLINE_SETTLE_RATE := 0.0001
 
 ## One pre-baked sheet per look (shirt/hair/beard/hat combo), laid out as
 ## a 3x3 grid of 16x24 frames: columns are stand/walk-A/walk-B, rows are
@@ -119,9 +158,38 @@ var current_need: String = ""
 var hunger_timer: float = 0.0
 var thirst_timer: float = 0.0
 var rest_timer: float = 0.0
+var social_timer: float = 0.0
 ## Set only while current_need == "rest" and a bench slot is held, so it
 ## can be released back to NeedStations when servicing finishes.
 var _claimed_bench_index: int = -1
+## Same idea for the gathering spot. -1 while servicing the social need
+## means the gathering spot was full and this fisherman went to the phone
+## instead, which is also what makes a solo call distinguishable later.
+var _claimed_gathering_index: int = -1
+
+## Stable identity, persisted. Needed because friendship scores are keyed
+## between *pairs* of fishermen and display_name is not unique — the name
+## generator has 224 combinations against a 30-fisherman roster.
+var fisherman_id: int = 0
+## Capped log of {with_name, with_id, topic, day}, newest last. Same shape
+## and capping discipline as catch_history.
+const CONVERSATION_LOG_CAP := 5
+var conversations: Array = []
+
+## Small talk, so the conversation log reads as something that happened
+## rather than a bare timestamp.
+const CONVERSATION_TOPICS := [
+	"the tide",
+	"the one that got away",
+	"bait prices",
+	"the weather turning",
+	"a torn net",
+	"who caught what",
+	"the walk back",
+]
+
+## 0 = miserable, 0.5 = neutral, 1 = elated. See the MOOD_* constants.
+var mood: float = MOOD_NEUTRAL
 
 var speed_xp: float = 0.0
 var luck_xp: float = 0.0
@@ -219,6 +287,12 @@ func _ready() -> void:
 	hunger_timer = randf_range(0.0, HUNGER_INTERVAL)
 	thirst_timer = randf_range(0.0, THIRST_INTERVAL)
 	rest_timer = randf_range(0.0, REST_INTERVAL)
+	social_timer = randf_range(0.0, SOCIAL_INTERVAL)
+	# A brand new hire gets an id here; a loaded one already had its saved
+	# id written in by FishermanFactory before this ran.
+	if fisherman_id <= 0:
+		fisherman_id = SocialHub.next_fisherman_id()
+	SocialHub.register_fisherman(fisherman_id, display_name)
 	position = home_position
 	current_target = _random_dock_point()
 	click_area.input_event.connect(_on_click_area_input_event)
@@ -242,6 +316,9 @@ func _process(delta: float) -> void:
 		hunger_timer += delta
 		thirst_timer += delta
 		rest_timer += delta
+		social_timer += delta
+
+	_tick_mood(delta)
 
 	match state:
 		State.WALK_TO_DOCK:
@@ -272,6 +349,11 @@ func _process(delta: float) -> void:
 				# the water, so turn to face the camera while it happens.
 				facing = "down"
 				wait_timer = _service_duration(current_need)
+				# Presence is registered on *arrival*, not when the slot was
+				# claimed — someone still walking over shouldn't count as
+				# company for a fisherman finishing their chat right now.
+				if current_need == "social" and _claimed_gathering_index >= 0:
+					SocialHub.begin_social(fisherman_id)
 		State.SERVICING_NEED:
 			wait_timer -= delta
 			if wait_timer <= 0.0:
@@ -314,6 +396,8 @@ func _fallback_need(blocked: String) -> String:
 		return "hunger"
 	if blocked != "thirst" and get_need_progress("thirst") >= NEED_THRESHOLD:
 		return "thirst"
+	if blocked != "social" and get_need_progress("social") >= NEED_THRESHOLD:
+		return "social"
 	return ""
 
 ## A station the player just moved may be the one this fisherman is
@@ -326,13 +410,15 @@ func _on_stations_moved() -> void:
 		State.WALK_TO_STORAGE:
 			current_target = _random_home_point()
 		State.WALK_TO_NEED:
-			var station = NeedStations.position_for_need(current_need, _claimed_bench_index)
+			var slot_index := _claimed_gathering_index if current_need == "social" else _claimed_bench_index
+			var station = NeedStations.position_for_need(current_need, slot_index)
 			if station != null:
 				current_target = station
 
-## Priority order: Hunger, then Thirst, then Rest. A fisherman with several
-## needs due at once resolves them one storage visit at a time rather than
-## chaining several detours into one long trip.
+## Priority order: Hunger, Thirst, Rest, then Social. A fisherman with
+## several needs due at once resolves them one storage visit at a time
+## rather than chaining several detours into one long trip. Social sits
+## last because wanting company is the least urgent thing on the list.
 func _due_need() -> String:
 	if hunger_timer >= HUNGER_INTERVAL:
 		return "hunger"
@@ -346,12 +432,15 @@ func _due_need() -> String:
 		if randf() < get_equipment_bonus("skip_rest_chance"):
 			return ""
 		return "rest"
+	if social_timer >= SOCIAL_INTERVAL:
+		return "social"
 	return ""
 
-## Returns the world position to walk to for `need`, claiming a bench slot
-## for "rest" (released in _finish_servicing_need()). Null if the need
-## can't be serviced right now (only possible for "rest", when every bench
-## is occupied).
+## Returns the world position to walk to for `need`, claiming a slot where
+## one is needed (released in _finish_servicing_need()). Null if the need
+## can't be serviced right now — only possible for "rest", when every
+## bench is occupied. "social" never returns null: a full gathering spot
+## sends the fisherman to the phone instead of blocking the visit.
 func _claim_need_station(need: String):
 	match need:
 		"hunger":
@@ -364,6 +453,14 @@ func _claim_need_station(need: String):
 				return null
 			_claimed_bench_index = claim.index
 			return claim.position
+		"social":
+			var spot: Dictionary = SocialHub.claim_gathering_slot(fisherman_id)
+			if spot.is_empty():
+				# Everyone else is already over there — call home instead.
+				_claimed_gathering_index = -1
+				return NeedStations.phone_position
+			_claimed_gathering_index = spot.index
+			return spot.position
 	return null
 
 ## Global reduction from the meta-shop's Needs Service Time upgrade,
@@ -388,7 +485,68 @@ func _finish_servicing_need() -> void:
 			if _claimed_bench_index >= 0:
 				NeedStations.release_bench(_claimed_bench_index)
 				_claimed_bench_index = -1
+		"social":
+			social_timer = 0.0
+			_finish_social()
+	adjust_mood(MOOD_SERVICE_GAIN)
 	current_need = ""
+
+## Works out whether this was an actual conversation or just a call home,
+## and pays out mood, friendship and a log entry accordingly. Anyone else
+## standing at the gathering spot right now counts as company.
+func _finish_social() -> void:
+	if _claimed_gathering_index < 0:
+		# Phone: a small lift, no friendships, but still worth logging so
+		# the Social card shows something for a quiet fisherman.
+		adjust_mood(MOOD_SOCIAL_CALL_GAIN)
+		_log_conversation("", 0, "called home")
+		return
+
+	SocialHub.release_gathering_slot(_claimed_gathering_index)
+	_claimed_gathering_index = -1
+	var partners: Array = SocialHub.end_social(fisherman_id)
+	if partners.is_empty():
+		# Stood around and nobody came — same payoff as calling home.
+		adjust_mood(MOOD_SOCIAL_CALL_GAIN)
+		_log_conversation("", 0, "waited for company")
+		return
+
+	var topic: String = CONVERSATION_TOPICS[randi() % CONVERSATION_TOPICS.size()]
+	var gain := MOOD_SOCIAL_CHAT_GAIN
+	for partner_id in partners:
+		if SocialHub.is_friend(fisherman_id, partner_id):
+			gain += MOOD_SOCIAL_FRIEND_BONUS
+			break
+	for partner_id in partners:
+		SocialHub.record_conversation(fisherman_id, partner_id)
+	adjust_mood(gain)
+	_log_conversation(SocialHub.name_for(partners[0]), partners[0], topic)
+
+## Hands back any shared slot this fisherman is holding. Called when they
+## are dismissed mid-need — queue_free() alone leaves the slot claimed
+## forever, since the pools track indices rather than node references.
+func release_claimed_slots() -> void:
+	if _claimed_bench_index >= 0:
+		NeedStations.release_bench(_claimed_bench_index)
+		_claimed_bench_index = -1
+	if _claimed_gathering_index >= 0:
+		SocialHub.release_gathering_slot(_claimed_gathering_index)
+		_claimed_gathering_index = -1
+
+func _log_conversation(with_name: String, with_id: int, topic: String) -> void:
+	conversations.append({
+		"with_name": with_name,
+		"with_id": with_id,
+		"topic": topic,
+		"day": WorldClock.get_day_number(),
+	})
+	if conversations.size() > CONVERSATION_LOG_CAP:
+		conversations.pop_front()
+	# Unlike mood (which moves every frame and deliberately stays silent),
+	# a conversation is a discrete event roughly every SOCIAL_INTERVAL, so
+	# it is cheap to announce and keeps the open Profile panel's Social
+	# section from going stale.
+	stats_changed.emit()
 
 func _update_sprite_animation(delta: float) -> void:
 	var moving := state == State.WALK_TO_DOCK or state == State.WALK_TO_STORAGE or state == State.WALK_TO_NEED
@@ -440,6 +598,12 @@ func _apply_sprite_frame(column: int) -> void:
 
 func _resolve_catch() -> void:
 	var result := _roll_and_apply_catch(current_catch_duration)
+	# The mood nudge lives here rather than in _roll_and_apply_catch()
+	# because this is the live-catch path only. Offline batches call that
+	# function directly, thousands of times, and would otherwise pin mood
+	# to its maximum for free after every absence — resolve_offline_catches()
+	# settles mood toward neutral once instead.
+	adjust_mood(MOOD_CATCH_GAIN * (1 + int(result.rarity)))
 	print("%s caught a %s (%s, %.1f kg)! [Spd %d / Lck %d / Pwr %d / End %d]" % [
 		display_name, result.species.species_name, FishRarity.name_for(result.rarity), result.weight,
 		get_level(speed_xp), get_level(luck_xp), get_level(power_xp), get_level(endurance_xp)
@@ -597,6 +761,10 @@ func resolve_offline_catches(duration: float) -> Dictionary:
 			summary.best_species = result.species.species_name
 			summary.best_rarity = result.rarity
 			summary.best_weight = result.weight
+	# Mood is settled once for the whole gap rather than nudged per catch:
+	# nobody comes back to a mood they never actually lived through, in
+	# either direction.
+	mood = lerpf(mood, MOOD_NEUTRAL, clampf(duration * MOOD_OFFLINE_SETTLE_RATE, 0.0, 1.0))
 	return summary
 
 ## Average time for one walk-to-dock/catch/walk-to-storage cycle, plus the
@@ -618,7 +786,7 @@ func _estimate_cycle_time() -> float:
 	var base_cycle := avg_catch + avg_walk
 	return base_cycle + _average_needs_overhead(base_cycle)
 
-## Expected extra seconds per cycle from the three periodic needs: each
+## Expected extra seconds per cycle from the four periodic needs: each
 ## costs its average service time (plus a flat approximation of the extra
 ## detour walk, since exact station geometry isn't worth modeling here)
 ## roughly once every interval/base_cycle cycles.
@@ -635,6 +803,7 @@ func _average_needs_overhead(base_cycle: float) -> float:
 	overhead += avg_service * (base_cycle / HUNGER_INTERVAL)
 	overhead += avg_service * (base_cycle / THIRST_INTERVAL)
 	overhead += avg_rest_service * (base_cycle / REST_INTERVAL)
+	overhead += avg_service * (base_cycle / SOCIAL_INTERVAL)
 	return overhead
 
 func _move_toward(target: Vector2, delta: float) -> void:
@@ -740,12 +909,27 @@ func get_need_progress(need: String) -> float:
 			return clampf(thirst_timer / THIRST_INTERVAL, 0.0, 1.0)
 		"rest":
 			return clampf(rest_timer / REST_INTERVAL, 0.0, 1.0)
+		"social":
+			return clampf(social_timer / SOCIAL_INTERVAL, 0.0, 1.0)
 	return 0.0
 
 ## True once get_need_progress() would show full — used to flag "due" in
 ## the UI without every caller re-deriving the same threshold check.
 func is_need_due(need: String) -> bool:
 	return get_need_progress(need) >= 1.0
+
+## Drift toward neutral, minus a drain for every need currently left due.
+## Deliberately does *not* emit stats_changed: mood moves every frame, and
+## that signal drives a full row re-format in the Fishermen panel. The
+## Profile panel reads mood off its own throttled ticker instead.
+func _tick_mood(delta: float) -> void:
+	var drain := 0.0
+	for need in ["hunger", "thirst", "rest", "social"]:
+		if is_need_due(need):
+			drain += MOOD_NEED_DRAIN_PER_SECOND
+	var target: float = MOOD_NEUTRAL if drain <= 0.0 else 0.0
+	var rate := MOOD_DRIFT_PER_SECOND if drain <= 0.0 else drain
+	mood = move_toward(mood, target, rate * delta)
 
 func get_equipment_bonus(axis: String) -> float:
 	var total := 0.0
@@ -831,8 +1015,21 @@ func get_effective_stat(xp: float, axis: String) -> float:
 	environment_bonus += PotionManager.get_bonus(axis)
 	environment_bonus += get_perk_bonus(axis)
 	environment_bonus += get_set_bonus(axis)
-	var raw := get_level_fraction(xp) * LEVEL_STAT_WEIGHT + get_equipment_bonus(axis) + environment_bonus
+	# Mood scales the whole stat, and must do so *inside* the clamp below.
+	# Applying it to this function's return value at a call site instead
+	# would bypass EFFECTIVE_STAT_CEILING and let a good mood push the
+	# value to 1.0, which is exactly the determinism bug that ceiling
+	# exists to prevent.
+	var raw := (get_level_fraction(xp) * LEVEL_STAT_WEIGHT + get_equipment_bonus(axis) + environment_bonus) * get_mood_multiplier()
 	return clampf(raw, 0.0, EFFECTIVE_STAT_CEILING)
+
+## Every stat is scaled by this, so a miserable fisherman is worse at
+## everything rather than mysteriously only at one thing.
+func get_mood_multiplier() -> float:
+	return 1.0 + (mood - MOOD_NEUTRAL) * 2.0 * MOOD_STAT_SWING
+
+func adjust_mood(delta_mood: float) -> void:
+	mood = clampf(mood + delta_mood, 0.0, 1.0)
 
 func equip_item(item) -> void:
 	equipped_items[item.slot] = item
@@ -853,6 +1050,34 @@ func get_recent_catches_text(count: int = 5) -> String:
 		var entry: Dictionary = catch_history[i]
 		lines.append("Day %d: %s (%s, %.1f kg)" % [entry.day, entry.species, FishRarity.name_for(entry.tier), entry.weight])
 	return "\n".join(lines)
+
+## Newest conversation first, same ordering as the catch log above. Solo
+## entries (a phone call, or standing at the spot with nobody around) have
+## no partner name and read as the thing they were.
+func get_conversations_text() -> String:
+	if conversations.is_empty():
+		return "Hasn't talked to anyone yet."
+	var lines: Array = []
+	for i in range(conversations.size() - 1, -1, -1):
+		var entry: Dictionary = conversations[i]
+		var who: String = entry.get("with_name", "")
+		if who == "":
+			lines.append("Day %d: %s" % [entry.day, entry.topic])
+		else:
+			lines.append("Day %d: %s — %s" % [entry.day, who, entry.topic])
+	return "\n".join(lines)
+
+## The fishermen this one talks to most. Names are resolved live through
+## SocialHub rather than stored, so a rename or dismissal can't leave a
+## stale name sitting in the list.
+func get_friends_text() -> String:
+	var friends: Array = SocialHub.top_friends(fisherman_id)
+	if friends.is_empty():
+		return "No friends yet."
+	var parts: Array = []
+	for friend in friends:
+		parts.append("%s (%d)" % [SocialHub.name_for(friend.id), int(friend.score)])
+	return "Friends: " + ", ".join(parts)
 
 func _draw() -> void:
 	# The rod itself is part of the sprite now; only the line is drawn,
