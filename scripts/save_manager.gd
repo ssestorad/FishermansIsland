@@ -89,6 +89,7 @@ func _serialize_fisherman(fisherman: Node) -> Dictionary:
 		"mood": fisherman.mood,
 		"fisherman_id": fisherman.fisherman_id,
 		"conversations": fisherman.conversations,
+		"favorite_weather": fisherman.favorite_weather,
 	}
 
 ## Items are looked up by name from the live catalog rather than

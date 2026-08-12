@@ -3,6 +3,9 @@ extends PanelController
 
 signal dismiss_requested(fisherman)
 signal slot_clicked(fisherman, slot_name)
+signal friend_selected(friend_id: int)
+
+const LIST_ROW_SCENE := preload("res://scenes/ui/ListRow.tscn")
 
 @onready var name_label: Label = $MarginContainer/VBoxContainer/HeaderRow/NameLabel
 @onready var rank_label: Label = $MarginContainer/VBoxContainer/RankLabel
@@ -32,7 +35,9 @@ signal slot_clicked(fisherman, slot_name)
 @onready var social_bar: ProgressBar = $MarginContainer/VBoxContainer/StatsScroll/StatsBlock/NeedsTab/SocialBar
 @onready var mood_label: Label = $MarginContainer/VBoxContainer/StatsScroll/StatsBlock/NeedsTab/MoodLabel
 @onready var mood_bar: ProgressBar = $MarginContainer/VBoxContainer/StatsScroll/StatsBlock/NeedsTab/MoodBar
-@onready var friends_label: Label = $MarginContainer/VBoxContainer/StatsScroll/StatsBlock/SocialTab/FriendsLabel
+@onready var favorite_weather_label: Label = $MarginContainer/VBoxContainer/StatsScroll/StatsBlock/NeedsTab/FavoriteWeatherLabel
+@onready var friends_empty_label: Label = $MarginContainer/VBoxContainer/StatsScroll/StatsBlock/SocialTab/FriendsEmptyLabel
+@onready var friends_list: VBoxContainer = $MarginContainer/VBoxContainer/StatsScroll/StatsBlock/SocialTab/FriendsList
 @onready var conversations_label: Label = $MarginContainer/VBoxContainer/StatsScroll/StatsBlock/SocialTab/ConversationsLabel
 @onready var equipment_slots: HBoxContainer = $MarginContainer/VBoxContainer/StatsScroll/StatsBlock/SkillsTab/EquipmentSlots
 @onready var perks_label: Label = $MarginContainer/VBoxContainer/StatsScroll/StatsBlock/SkillsTab/PerksLabel
@@ -144,9 +149,26 @@ func refresh() -> void:
 		var slot_name: String = slot_button.name.trim_suffix("Slot")
 		slot_button.text = "%s\n%s" % [slot_name, _fisherman.get_slot_display(slot_name)]
 	history_label.text = _fisherman.get_recent_catches_text()
-	friends_label.text = _fisherman.get_friends_text()
+	_refresh_friends()
 	conversations_label.text = _fisherman.get_conversations_text()
 	_refresh_needs()
+
+## Friends never change composition mid-open the way needs do, but a chat
+## finishing while the panel is open should still be reflected — cheap
+## enough to just rebuild on every refresh() rather than diffing rows.
+func _refresh_friends() -> void:
+	for child in friends_list.get_children():
+		child.queue_free()
+	var friends: Array = SocialHub.top_friends(_fisherman.fisherman_id)
+	friends_empty_label.visible = friends.is_empty()
+	for friend in friends:
+		var row: ListRow = LIST_ROW_SCENE.instantiate()
+		row.pressed.connect(_on_friend_row_pressed.bind(friend.id))
+		friends_list.add_child(row)
+		row.setup(SocialHub.name_for(friend.id), "", "%d/100" % int(friend.score))
+
+func _on_friend_row_pressed(friend_id: int) -> void:
+	friend_selected.emit(friend_id)
 
 ## Separate from refresh() because needs change every frame (not just on a
 ## catch) — called both here for an immediate value on open/catch, and
@@ -184,6 +206,7 @@ func _refresh_mood() -> void:
 	var percent := roundi((_fisherman.get_mood_multiplier() - 1.0) * 100.0)
 	var sign_text := "+" if percent >= 0 else ""
 	mood_label.text = "Mood: %s (%s%d%%)" % [band_name, sign_text, percent]
+	favorite_weather_label.text = "Favorite weather: %s" % (_fisherman.favorite_weather if not _fisherman.favorite_weather.is_empty() else "—")
 
 func _set_need_row(label: Label, bar: ProgressBar, title: String, need: String) -> void:
 	# get_need_progress() is "how close to due" (0 = just serviced, 1 = due) —

@@ -13,6 +13,14 @@ const PERKS := [
 	{"name": "Quick Feet", "description": "+15% walking speed", "effects": [["walk_speed", 0.15]], "condition": {}},
 	{"name": "Well-Rested", "description": "-15% rest time", "effects": [["rest_time", 0.15]], "condition": {}},
 	{"name": "Second Wind", "description": "+10% Endurance", "effects": [["endurance", 0.1]], "condition": {}},
+	{"name": "Iron Grip", "description": "+6% Power", "effects": [["power", 0.06]], "condition": {}},
+	{"name": "Steady Hands", "description": "+6% Speed", "effects": [["speed", 0.06]], "condition": {}},
+	{"name": "Foggy Sense", "description": "+10% Luck in fog", "effects": [["luck", 0.1]], "condition": {"weather": "Foggy"}},
+	{"name": "Rainy Focus", "description": "+8% Luck in rain", "effects": [["luck", 0.08]], "condition": {"weather": "Rainy"}},
+	{"name": "Blizzard Blood", "description": "+12% Endurance in blizzards", "effects": [["endurance", 0.12]], "condition": {"weather": "Blizzard"}},
+	{"name": "Summer Hustle", "description": "+10% Speed in Summer", "effects": [["speed", 0.1]], "condition": {"season": "Summer"}},
+	{"name": "Autumn Grind", "description": "+8% Power in Autumn", "effects": [["power", 0.08]], "condition": {"season": "Autumn"}},
+	{"name": "Spring Step", "description": "+12% walking speed in Spring", "effects": [["walk_speed", 0.12]], "condition": {"season": "Spring"}},
 ]
 
 static func find(perk_name: String) -> Dictionary:

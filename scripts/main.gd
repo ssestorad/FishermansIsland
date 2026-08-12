@@ -4,6 +4,7 @@ const STARTING_FISHERMEN_COUNT := 1
 const MAX_FISHERMEN_SLOTS := 6
 const BASE_HIRE_COST := 5
 const HIRE_COST_GROWTH := 1.25
+const HIRE_CANDIDATE_COUNT := 6
 
 const OFFLINE_EFFICIENCY := 0.5
 const OFFLINE_CAP_SECONDS := 12.0 * 3600.0
@@ -31,6 +32,7 @@ const MIN_OFFLINE_SECONDS_TO_SHOW := 60.0
 @onready var equip_panel: EquipPanelController = $CanvasLayer/EquipPanel
 @onready var item_detail_panel: ItemDetailPanelController = $CanvasLayer/ItemDetailPanel
 @onready var welcome_back_panel: WelcomeBackPanelController = $CanvasLayer/WelcomeBackPanel
+@onready var hire_panel: HirePanelController = $CanvasLayer/HirePanel
 @onready var autosave_timer: Timer = $AutosaveTimer
 @onready var world_renderer: WorldRenderer = $WorldRenderer
 @onready var station_carry: StationCarryController = $StationCarry
@@ -41,7 +43,7 @@ var _zone_a_panels: Array = []
 func _ready() -> void:
 	get_viewport().physics_object_picking = true
 	DevConsole.register_main(self)
-	_zone_a_panels = [fishermen_panel, album_panel, shop_panel, meta_panel, dock_panel, stats_panel, quest_panel]
+	_zone_a_panels = [fishermen_panel, album_panel, shop_panel, meta_panel, dock_panel, stats_panel, quest_panel, hire_panel]
 
 	if SaveManager.has_save():
 		_load_game()
@@ -66,12 +68,14 @@ func _ready() -> void:
 	fishermen_panel.fisherman_selected.connect(_show_profile)
 	profile_panel.dismiss_requested.connect(_on_dismiss_requested)
 	profile_panel.slot_clicked.connect(_on_slot_clicked)
+	profile_panel.friend_selected.connect(_on_friend_selected)
 	equip_panel.back_requested.connect(_on_equip_back_requested)
 	shop_panel.item_detail_requested.connect(_on_item_detail_requested)
 	shop_panel.potion_detail_requested.connect(_on_potion_detail_requested)
 	equip_panel.item_detail_requested.connect(_on_equip_item_detail_requested)
 	equip_panel.item_detail_dismissed.connect(item_detail_panel.hide_item)
 	shop_panel.item_detail_dismissed.connect(item_detail_panel.hide_item)
+	hire_panel.candidate_chosen.connect(_on_candidate_chosen)
 
 	autosave_timer.timeout.connect(_on_autosave_timeout)
 	MetaProgress.updated.connect(_update_hire_button)
@@ -172,8 +176,8 @@ func _spawn_starting_fishermen() -> void:
 		fisherman.power_xp = randf_range(0.0, 40.0)
 		fisherman.endurance_xp = randf_range(0.0, 40.0)
 
-func _spawn_fisherman(saved_data: Dictionary = {}) -> Node:
-	var fisherman := FishermanFactory.build(fishermen.size(), saved_data)
+func _spawn_fisherman(saved_data: Dictionary = {}, candidate: Dictionary = {}) -> Node:
+	var fisherman := FishermanFactory.build(fishermen.size(), saved_data, candidate)
 	add_child(fisherman)
 	# After add_child so _ready() has run and the node can react to the
 	# assignment; also drops a spot the player has since lost access to.
@@ -189,8 +193,23 @@ func _on_hire_button_pressed() -> void:
 	if fishermen.size() >= _max_fishermen_slots():
 		return
 	var cost := _hire_cost_for_next_slot()
+	if Economy.coins < cost:
+		return
+	var existing_names: Array = fishermen.map(func(f): return f.display_name)
+	var candidates := FishermanFactory.roll_candidates(HIRE_CANDIDATE_COUNT, existing_names)
+	_hide_other_zone_a_panels(hire_panel)
+	hire_panel.open(candidates, cost)
+
+## The picker only shows candidates; the actual charge and spawn happen
+## here, once the player commits to one. Re-checks slot cap and coins
+## rather than trusting the state from when the panel opened — the player
+## could have spent coins or filled the roster elsewhere in the meantime.
+func _on_candidate_chosen(candidate: Dictionary) -> void:
+	if fishermen.size() >= _max_fishermen_slots():
+		return
+	var cost := _hire_cost_for_next_slot()
 	if Economy.spend_coins(cost):
-		_spawn_fisherman()
+		_spawn_fisherman({}, candidate)
 		_update_hire_button()
 
 func _max_fishermen_slots() -> int:
@@ -276,6 +295,20 @@ func _show_profile(fisherman: Node) -> void:
 	equip_panel.visible = false
 	fishermen_panel.visible = false
 	profile_panel.show_fisherman(fisherman)
+
+## Clicking a friend row in the Social tab jumps straight to that
+## fisherman's own profile — the exact same panel/flow as clicking them in
+## the Fishermen list, not a separate read-only card.
+func _on_friend_selected(friend_id: int) -> void:
+	var friend := _fisherman_by_id(friend_id)
+	if friend != null:
+		_show_profile(friend)
+
+func _fisherman_by_id(id: int) -> Node:
+	for f in fishermen:
+		if f.fisherman_id == id:
+			return f
+	return null
 
 func _on_slot_clicked(fisherman: Node, slot_name: String) -> void:
 	profile_panel.visible = false

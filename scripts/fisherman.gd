@@ -11,7 +11,6 @@ signal stats_changed
 @export var move_speed: float = 80.0
 @export var min_catch_time: float = 2.0
 @export var max_catch_time: float = 5.0
-@export var dock_wander_range: float = 14.0
 @export var home_wander_range: float = 14.0
 @export var dock_y_bounds: Vector2 = Vector2(105.0, 295.0)
 
@@ -87,6 +86,14 @@ const MOOD_CATCH_GAIN := 0.02
 ## rate a few hours away is enough to fully settle, so nobody comes back
 ## to a mood they never actually lived through.
 const MOOD_OFFLINE_SETTLE_RATE := 0.0001
+## Small continuous nudge while the current weather matches this
+## fisherman's favorite_weather (see below) — additive on top of whatever
+## _tick_mood()'s drift/drain branch is already doing, not a replacement
+## for it, so a favorite storm can partially offset an otherwise-bad
+## needs-neglected stretch rather than fighting it. Over a full 300s
+## weather window this alone swings mood by roughly 0.3 — noticeable, not
+## an instant jump to elated.
+const MOOD_FAVORITE_WEATHER_RATE := 0.001
 
 ## One pre-baked sheet per look (shirt/hair/beard/hat combo), laid out as
 ## a 3x3 grid of 16x24 frames: columns are stand/walk-A/walk-B, rows are
@@ -213,6 +220,11 @@ var _current_frame_column: int = 0
 var _deferred_target = null
 
 var appearance_variant: int = -1
+
+## Rolled at hire time (see FishermanFactory.roll_candidates()), one of
+## WorldClock.WEATHER_TYPES. Empty on legacy fishermen hired before this
+## existed — MOOD_FAVORITE_WEATHER_RATE simply never applies to them.
+var favorite_weather: String = ""
 
 ## "left"/"right"/"up"/"down", updated every move step from the direction
 ## vector and mapped to a sheet row through DIRECTION_ROWS.
@@ -855,8 +867,13 @@ func set_fishing_spot(id: String) -> void:
 		_walk_to(_random_dock_point(), State.WALK_TO_DOCK)
 	stats_changed.emit()
 
+## Re-rolled every trip back out to the water (after each catch is carried
+## home) across the spot's full lane_bounds span — the same range
+## cast_position() wraps the whole roster into — rather than just wobbling
+## around one fixed anchor, so a fisherman doesn't return to the same spot
+## on the bank every time.
 func _random_dock_point() -> Vector2:
-	var y := clampf(dock_position.y + randf_range(-dock_wander_range, dock_wander_range), dock_y_bounds.x, dock_y_bounds.y)
+	var y := randf_range(dock_y_bounds.x, dock_y_bounds.y)
 	return Vector2(dock_position.x, y)
 
 ## Every fisherman's catch is carried to the same shared point regardless
@@ -930,6 +947,8 @@ func _tick_mood(delta: float) -> void:
 	var target: float = MOOD_NEUTRAL if drain <= 0.0 else 0.0
 	var rate := MOOD_DRIFT_PER_SECOND if drain <= 0.0 else drain
 	mood = move_toward(mood, target, rate * delta)
+	if not favorite_weather.is_empty() and WorldClock.get_weather() == favorite_weather:
+		adjust_mood(MOOD_FAVORITE_WEATHER_RATE * delta)
 
 func get_equipment_bonus(axis: String) -> float:
 	var total := 0.0

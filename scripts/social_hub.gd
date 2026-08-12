@@ -103,11 +103,16 @@ func end_social(fisherman_id: int) -> Array:
 		partners.append(other_id)
 	return partners
 
+## Capped at 100 rather than left to grow unbounded — the Social tab shows
+## this as "x/100" with a progress bar, so the stored value has to actually
+## respect that ceiling, not just get clamped for display.
+const FRIENDSHIP_CAP := 100.0
+
 func record_conversation(a_id: int, b_id: int) -> void:
 	if a_id == b_id:
 		return
 	var key := _pair_key(a_id, b_id)
-	friendships[key] = float(friendships.get(key, 0.0)) + FRIENDSHIP_PER_CHAT
+	friendships[key] = minf(float(friendships.get(key, 0.0)) + FRIENDSHIP_PER_CHAT, FRIENDSHIP_CAP)
 
 func friendship_between(a_id: int, b_id: int) -> float:
 	return float(friendships.get(_pair_key(a_id, b_id), 0.0))

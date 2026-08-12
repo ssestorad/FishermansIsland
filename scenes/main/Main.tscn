@@ -1,4 +1,4 @@
-[gd_scene load_steps=36 format=3]
+[gd_scene load_steps=37 format=3]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
 [ext_resource type="Script" path="res://scripts/quest_panel_controller.gd" id="19_quest_panel"]
@@ -21,6 +21,7 @@
 [ext_resource type="Script" path="res://scripts/equip_panel_controller.gd" id="11_equip_panel"]
 [ext_resource type="Script" path="res://scripts/meta_panel_controller.gd" id="12_meta_panel"]
 [ext_resource type="Script" path="res://scripts/item_detail_panel_controller.gd" id="18_item_detail"]
+[ext_resource type="Script" path="res://scripts/hire_panel_controller.gd" id="22_hire_panel"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_tab_common_normal"]
 bg_color = Color(0.7, 0.7, 0.7, 1)
@@ -673,17 +674,26 @@ max_value = 1.0
 step = 0.01
 show_percentage = false
 
+[node name="FavoriteWeatherLabel" type="Label" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer/StatsScroll/StatsBlock/NeedsTab"]
+layout_mode = 2
+theme_type_variation = &"MutedLabel"
+text = "Favorite weather: —"
+
 [node name="SocialTab" type="VBoxContainer" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer/StatsScroll/StatsBlock"]
 visible = false
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 6
 
-[node name="FriendsLabel" type="Label" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer/StatsScroll/StatsBlock/SocialTab"]
+[node name="FriendsEmptyLabel" type="Label" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer/StatsScroll/StatsBlock/SocialTab"]
 layout_mode = 2
 theme_type_variation = &"MutedLabel"
 autowrap_mode = 3
 text = "No friends yet."
+
+[node name="FriendsList" type="VBoxContainer" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer/StatsScroll/StatsBlock/SocialTab"]
+layout_mode = 2
+theme_override_constants/separation = 2
 
 [node name="ConversationsTitleLabel" type="Label" parent="CanvasLayer/FishermanProfilePanel/MarginContainer/VBoxContainer/StatsScroll/StatsBlock/SocialTab"]
 layout_mode = 2
@@ -983,6 +993,62 @@ text = ""
 layout_mode = 2
 size_flags_vertical = 10
 text = ""
+
+[node name="HirePanel" type="Panel" parent="CanvasLayer"]
+visible = false
+offset_left = 12.0
+offset_top = 76.0
+offset_right = 320.0
+offset_bottom = 340.0
+script = ExtResource("22_hire_panel")
+
+[node name="MarginContainer" type="MarginContainer" parent="CanvasLayer/HirePanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 8.0
+offset_top = 8.0
+offset_right = -8.0
+offset_bottom = -8.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="CanvasLayer/HirePanel/MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="HeaderRow" type="HBoxContainer" parent="CanvasLayer/HirePanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="TitleLabel" type="Label" parent="CanvasLayer/HirePanel/MarginContainer/VBoxContainer/HeaderRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = &"TitleLabel"
+clip_text = true
+text_overrun_behavior = 3
+text = "Choose Who to Hire"
+
+[node name="CloseButton" type="Button" parent="CanvasLayer/HirePanel/MarginContainer/VBoxContainer/HeaderRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(24, 24)
+theme_type_variation = &"GhostButton"
+theme_override_font_sizes/font_size = 10
+text = "✕"
+
+[node name="CostLabel" type="Label" parent="CanvasLayer/HirePanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_type_variation = &"MutedLabel"
+text = "Cost: 0 Coins"
+
+[node name="CandidatesScroll" type="ScrollContainer" parent="CanvasLayer/HirePanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="CandidatesList" type="VBoxContainer" parent="CanvasLayer/HirePanel/MarginContainer/VBoxContainer/CandidatesScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 6
 
 [node name="AlbumPanel" type="Panel" parent="CanvasLayer"]
 visible = false
