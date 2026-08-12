@@ -13,6 +13,8 @@ func _draw() -> void:
 	draw_rect(WorldLayout.PIER_RECT, WorldLayout.PIER_COLOR)
 	_draw_pond()
 	# Only exists once bought, so the purchase visibly builds something.
+	if FishingSpots.is_unlocked(FishingSpots.RIVER_MOUTH):
+		_draw_river_mouth()
 	if FishingSpots.is_unlocked(FishingSpots.OFFSHORE):
 		draw_rect(WorldLayout.JETTY_RECT, WorldLayout.JETTY_COLOR)
 		draw_rect(
@@ -20,6 +22,16 @@ func _draw() -> void:
 				Vector2(WorldLayout.JETTY_RECT.size.x, 4.0)),
 			WorldLayout.JETTY_PLANK_COLOR
 		)
+
+func _draw_river_mouth() -> void:
+	var mouth := WorldLayout.RIVER_MOUTH_RECT
+	draw_rect(mouth, WorldLayout.RIVER_MOUTH_COLOR)
+	# Same shallows-rim treatment as the pond, so it reads as water rather
+	# than a flat-colored hole in the grass.
+	draw_rect(Rect2(mouth.position, Vector2(mouth.size.x, 3.0)), WorldLayout.RIVER_MOUTH_SHALLOW_COLOR)
+	draw_rect(Rect2(mouth.position + Vector2(0.0, mouth.size.y - 3.0), Vector2(mouth.size.x, 3.0)), WorldLayout.RIVER_MOUTH_SHALLOW_COLOR)
+	draw_rect(Rect2(mouth.position, Vector2(3.0, mouth.size.y)), WorldLayout.RIVER_MOUTH_SHALLOW_COLOR)
+	draw_rect(Rect2(mouth.position + Vector2(mouth.size.x - 3.0, 0.0), Vector2(3.0, mouth.size.y)), WorldLayout.RIVER_MOUTH_SHALLOW_COLOR)
 
 func _draw_pond() -> void:
 	var pond := WorldLayout.POND_RECT

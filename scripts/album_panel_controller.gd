@@ -46,7 +46,7 @@ var _overview_mode: String = "rarity"
 func _on_ready() -> void:
 	for tier in FishRarity.Tier.values():
 		_tier_start_index[tier] = _all_species.size()
-		_all_species.append_array(FishCatalog.species_for_tier(tier))
+		_all_species.append_array(_reachable_species(FishCatalog.species_for_tier(tier)))
 	_view = _all_species
 	_tier_tabs = {
 		FishRarity.Tier.COMMON: tab_common,
@@ -126,6 +126,19 @@ func _visible_species_for_habitat(habitat: String) -> Array:
 		result.append(species)
 	return result
 
+## Expedition-only habitats (FishCatalog.EXPEDITION_HABITATS) stay out of
+## every browsing view — tier tabs, tier overview, habitat overview — until
+## the Expeditions feature exists to actually make them catchable. Unlike
+## Secret, there's no catch-based unlock trigger yet, so this is
+## unconditional for now; revisit once Expeditions ships and decides how a
+## player first encounters this content.
+func _reachable_species(species_list: Array) -> Array:
+	var result: Array = []
+	for species in species_list:
+		if not FishCatalog.is_expedition_only(species.habitat):
+			result.append(species)
+	return result
+
 func refresh() -> void:
 	var total_discovered := 0
 	for species in _all_species:
@@ -190,7 +203,7 @@ func _build_rarity_rows() -> void:
 	for tier in FishRarity.Tier.values():
 		if tier == FishRarity.Tier.SECRET and not secret_unlocked:
 			continue
-		var species_list: Array = FishCatalog.species_for_tier(tier)
+		var species_list: Array = _reachable_species(FishCatalog.species_for_tier(tier))
 		var discovered := 0
 		for species in species_list:
 			if Album.is_discovered(species.species_name):
@@ -204,6 +217,8 @@ func _build_rarity_rows() -> void:
 
 func _build_habitat_rows() -> void:
 	for habitat in FishCatalog.HABITATS:
+		if FishCatalog.is_expedition_only(habitat):
+			continue
 		var species_list := _visible_species_for_habitat(habitat)
 		if species_list.is_empty():
 			continue
@@ -213,9 +228,19 @@ func _build_habitat_rows() -> void:
 				discovered += 1
 		var row: ListRow = LIST_ROW_SCENE.instantiate()
 		stat_rows_container.add_child(row)
-		row.setup(habitat, "", "%d/%d" % [discovered, species_list.size()], HABITAT_COLOR)
+		row.setup(habitat, _mastery_subtitle(habitat), "%d/%d" % [discovered, species_list.size()], HABITAT_COLOR)
 		row.set_right_color(HABITAT_COLOR)
 		row.pressed.connect(_on_habitat_pressed.bind(habitat))
+
+## Species mastery grows from every catch of an already-discovered species,
+## not just the first — this is the one place that progress surfaces today.
+func _mastery_subtitle(habitat: String) -> String:
+	var level: int = Album.get_habitat_mastery_level(habitat)
+	if level >= Album.MASTERY_THRESHOLDS.size():
+		return "Mastery Lv.%d (max)" % level
+	var next_threshold: int = Album.MASTERY_THRESHOLDS[level]
+	var current_count: int = Album.get_habitat_catch_count(habitat)
+	return "Mastery Lv.%d (%d/%d)" % [level, current_count, next_threshold]
 
 ## Index of the tier the card is currently showing, or -1 on the overview
 ## page. Only meaningful while browsing the full roster: inside a habitat

@@ -30,6 +30,37 @@ func has_caught_secret() -> bool:
 func get_record_holder(species_name: String) -> String:
 	return record_holders.get(species_name, "")
 
+## Species mastery: rewards *repeat* catches of an already-discovered
+## species, not just the first one (which is all caught_counts otherwise
+## pays off, via the Album checklist). Deliberately derived from
+## caught_counts rather than a second persisted counter — every catch
+## already increments it, so mastery just reads it grouped by habitat
+## instead of tracking anything new.
+const MASTERY_THRESHOLDS := [10, 25, 50]
+## +15%/level pick-weight bias, well under Bait's own habitat_bias values
+## (1.6x-3.4x in gear_families.gd) — mastery is meant to nudge, not replace
+## choosing the right bait for a habitat.
+const MASTERY_BIAS_PER_LEVEL := 0.15
+
+func get_habitat_catch_count(habitat: String) -> int:
+	var total := 0
+	for species in FishCatalog.species_for_habitat(habitat):
+		total += caught_counts.get(species.species_name, 0)
+	return total
+
+func get_habitat_mastery_level(habitat: String) -> int:
+	var count := get_habitat_catch_count(habitat)
+	var level := 0
+	for threshold in MASTERY_THRESHOLDS:
+		if count >= threshold:
+			level += 1
+	return level
+
+## Pick-weight multiplier for FishCatalog.roll_species()'s `bias` param —
+## 1.0 at level 0, so a caller can skip merging it in when unmastered.
+func get_habitat_mastery_bias(habitat: String) -> float:
+	return 1.0 + get_habitat_mastery_level(habitat) * MASTERY_BIAS_PER_LEVEL
+
 func load_state(new_caught_counts: Dictionary, new_best_weights: Dictionary, new_record_holders: Dictionary = {}) -> void:
 	caught_counts = new_caught_counts
 	best_weights = new_best_weights

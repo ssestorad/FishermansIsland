@@ -8,7 +8,7 @@ extends Sprite2D
 const BODY_ATLAS := preload("res://assets/sprites/fish/fish_atlas.png")
 const OUTLINE_ATLAS := preload("res://assets/sprites/fish/fish_atlas_outline.png")
 const COLUMNS := 10
-const ROWS := 5
+const ROWS := 8
 const MODEL_COUNT := COLUMNS * ROWS
 
 ## Undiscovered fish flatten to a dark silhouette. Applied as
@@ -38,6 +38,8 @@ func _ensure_layers() -> void:
 ## than hashed from the name, so each fish gets a silhouette that suits it.
 func set_species(model: int, discovered: bool, tier_color: Color) -> void:
 	_ensure_layers()
+	if model < 0 or model >= MODEL_COUNT:
+		push_error("Fish model index %d is out of range [0, %d) — a SPECIES entry's \"m\" is wrong, or MODEL_COUNT is out of sync with generate_fish_sprites.py" % [model, MODEL_COUNT])
 	var index: int = clampi(model, 0, MODEL_COUNT - 1)
 	frame = index
 	_outline.frame = index

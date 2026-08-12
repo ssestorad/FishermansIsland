@@ -22,6 +22,8 @@ extends RefCounted
 const HABITATS := [
 	"Reedbeds",
 	"River Bend",
+	"Brackish Shallows",
+	"Tidal Flats",
 	"Harbour",
 	"Kelp Forest",
 	"Coral Shallows",
@@ -30,10 +32,28 @@ const HABITATS := [
 	"Ice Shelf",
 	"The Deep",
 	"Sunken Ruins",
+	"Abyssal Trench",
 ]
 
+## Habitats deliberately not attached to any FishingSpots entry — reachable
+## through no normal fishing spot, reserved for the not-yet-built
+## Expeditions feature (see project memory/backlog). Still has to be in
+## HABITATS above (FishCatalog._build() errors on a species referencing a
+## habitat that isn't), but nothing about being in HABITATS makes a habitat
+## reachable — only a spot listing it in its own "habitats" array does, and
+## none does for these on purpose. AlbumPanelController checks this list to
+## keep the content out of every browsing view until Expeditions ships and
+## actually decides how/when a player first sees it — the same "exists in
+## the catalog but stays hidden" treatment the Secret tier already gets,
+## just without a catch-based unlock trigger since there's no way to catch
+## one yet at all.
+const EXPEDITION_HABITATS := ["Abyssal Trench"]
+
+static func is_expedition_only(habitat: String) -> bool:
+	return EXPEDITION_HABITATS.has(habitat)
+
 const SPECIES := [
-	# --- Reedbeds (13) -------------------------------------------------
+	# --- Reedbeds (18) -------------------------------------------------
 	# Still, shallow, weed-choked water right off the island. The gentlest
 	# fishing on the map and where most careers start.
 	{"n": "Silver Minnow", "t": "Common", "h": "Reedbeds", "m": 0, "w": [0.1, 0.5], "v": 1, "d": "Moves in nervous clouds that scatter at a shadow and regroup a moment later."},
@@ -43,14 +63,19 @@ const SPECIES := [
 	{"n": "Pond Bream", "t": "Common", "h": "Reedbeds", "m": 4, "w": [0.8, 2.6], "v": 2, "d": "A flat bronze plate of a fish that feeds head-down, tail waving above the weed."},
 	{"n": "Marsh Gudgeon", "t": "Common", "h": "Reedbeds", "m": 3, "w": [0.2, 0.8], "v": 1, "d": "Whiskered and speckled, walking the silt on stiff little fins."},
 	{"n": "Stickleback", "t": "Common", "h": "Reedbeds", "m": 0, "w": [0.1, 0.3], "v": 1, "d": "Tiny, armoured and absurdly aggressive. The males turn scarlet and pick fights with everything."},
+	{"n": "Roach", "t": "Common", "h": "Reedbeds", "m": 1, "w": [0.2, 0.9], "v": 1, "d": "The pond's default fish. Ask any local where to start and this is the answer."},
+	{"n": "Silver Bream", "t": "Common", "h": "Reedbeds", "m": 4, "w": [0.3, 1.2], "v": 1, "d": "Paler and slimmer than its bronze cousin, and just as content to be overlooked."},
+	{"n": "Ruffe", "t": "Common", "h": "Reedbeds", "m": 8, "w": [0.05, 0.2], "v": 1, "d": "A perch shrunk down to nuisance size, spiny enough that nothing bothers finishing the job."},
 	{"n": "Green Tench", "t": "Uncommon", "h": "Reedbeds", "m": 9, "w": [1.2, 4.0], "v": 4, "d": "Thick-set and slime-coated. Old fishermen swear other fish rub against it to heal."},
 	{"n": "Crucian Carp", "t": "Uncommon", "h": "Reedbeds", "m": 9, "w": [1.0, 3.5], "v": 4, "d": "Survives water nothing else will. Freeze the pond solid and it simply waits."},
 	{"n": "Reed Perch", "t": "Uncommon", "h": "Reedbeds", "m": 8, "w": [0.8, 3.0], "v": 5, "d": "Striped like the stems it hunts from. Ambushes anything smaller than its own head."},
 	{"n": "Marbled Loach", "t": "Uncommon", "h": "Reedbeds", "m": 21, "w": [0.3, 1.0], "v": 4, "d": "Rises to gulp air before a storm, which is how the reed-cutters read the weather.", "pick": 0.7},
+	{"n": "Common Carp", "t": "Uncommon", "h": "Reedbeds", "m": 9, "w": [2.0, 6.0], "v": 5, "d": "The fish every other pond fish in this list is secretly named after."},
+	{"n": "Pumpkinseed", "t": "Uncommon", "h": "Reedbeds", "m": 10, "w": [0.2, 0.7], "v": 4, "d": "Not native to a single pond on the island, and thriving in every one of them anyway."},
 	{"n": "Bronze Bream", "t": "Rare", "h": "Reedbeds", "m": 4, "w": [3.0, 7.5], "v": 10, "d": "A bream that outlived every heron on the marsh and grew broad enough to prove it."},
 	{"n": "Reedwitch Pike", "t": "Rare", "h": "Reedbeds", "m": 14, "w": [4.0, 11.0], "v": 12, "d": "Hangs motionless among the stems like a submerged branch, right up until it isn't.", "pick": 0.6},
 
-	# --- River Bend (17) -----------------------------------------------
+	# --- River Bend (21) -----------------------------------------------
 	# Moving freshwater: gravel runs, undercut banks and deep slow pools.
 	{"n": "River Dace", "t": "Common", "h": "River Bend", "m": 2, "w": [0.2, 0.7], "v": 1, "d": "Holds in the fast water and lets the current bring lunch to it."},
 	{"n": "Stone Loach", "t": "Common", "h": "River Bend", "m": 21, "w": [0.1, 0.4], "v": 1, "d": "Spends the day wedged under a rock and the night walking the gravel on its barbels."},
@@ -58,19 +83,56 @@ const SPECIES := [
 	{"n": "Gravel Bleak", "t": "Common", "h": "River Bend", "m": 2, "w": [0.1, 0.5], "v": 1, "d": "Flickers at the surface all afternoon, catching flies and the eye of every predator upstream."},
 	{"n": "Barbel Fry", "t": "Common", "h": "River Bend", "m": 3, "w": [0.3, 1.1], "v": 2, "d": "Young and already built like a torpedo, nosing the gravel for anything the current uncovered."},
 	{"n": "Spotted Minnow", "t": "Common", "h": "River Bend", "m": 0, "w": [0.1, 0.4], "v": 1, "d": "A thumb-length fish with a stripe that only shows when the light hits it right."},
+	{"n": "Nase", "t": "Common", "h": "River Bend", "m": 6, "w": [0.3, 1.0], "v": 2, "d": "Grazes the algae off submerged stone with a mouth built like a scraper."},
 	{"n": "Brown Trout", "t": "Uncommon", "h": "River Bend", "m": 7, "w": [0.8, 3.2], "v": 5, "d": "Butter-gold and freckled, holding in the seam where fast water meets slow."},
 	{"n": "River Grayling", "t": "Uncommon", "h": "River Bend", "m": 17, "w": [0.7, 2.8], "v": 5, "d": "Sail-finned and silver. Called the lady of the stream by people who have never been bitten by one."},
 	{"n": "Barbel", "t": "Uncommon", "h": "River Bend", "m": 30, "w": [2.0, 6.0], "v": 6, "d": "All shoulders and stubbornness. Hooking one is easy; landing it is a different afternoon."},
 	{"n": "Bankside Eel", "t": "Uncommon", "h": "River Bend", "m": 18, "w": [1.0, 3.5], "v": 5, "d": "Comes out at dusk and ties itself in knots the moment you touch it.", "night": true},
 	{"n": "Freshwater Bass", "t": "Uncommon", "h": "River Bend", "m": 15, "w": [1.2, 4.0], "v": 6, "d": "Sits in the shade of the undercut bank waiting for something careless."},
+	{"n": "Vimba Bream", "t": "Uncommon", "h": "River Bend", "m": 4, "w": [1.0, 3.2], "v": 6, "d": "Runs upriver in numbers every spring, on a schedule nobody has ever needed to write down."},
 	{"n": "Golden Barbel", "t": "Rare", "h": "River Bend", "m": 30, "w": [4.0, 9.5], "v": 12, "d": "The old bend fish. Scarred, unhurried, and heavier every year the island counts."},
 	{"n": "Pool Pike", "t": "Rare", "h": "River Bend", "m": 14, "w": [5.0, 13.0], "v": 14, "d": "Owns the deep pool below the willow and has done for longer than anyone remembers."},
 	{"n": "Silver Salmon", "t": "Rare", "h": "River Bend", "m": 7, "w": [4.0, 10.0], "v": 15, "d": "Comes up from the sea once a year, burning through fat it will never replace.", "season": "Autumn"},
 	{"n": "Moonlit Zander", "t": "Rare", "h": "River Bend", "m": 15, "w": [3.0, 8.5], "v": 14, "d": "Eyes like lamp glass. Hunts the black water on nights the moon does the work for it.", "night": true, "pick": 0.7},
+	{"n": "Asp", "t": "Rare", "h": "River Bend", "m": 6, "w": [3.0, 8.0], "v": 13, "d": "Charges baitfish at the surface hard enough to be heard from the bank."},
+	{"n": "Zander", "t": "Rare", "h": "River Bend", "m": 64, "w": [3.5, 9.0], "v": 15, "d": "A pike's patience with a perch's teeth, and eyes built for water with no light left in it."},
 	{"n": "River Sturgeon", "t": "Epic", "h": "River Bend", "m": 29, "w": [12.0, 30.0], "v": 34, "d": "Armoured in bony plates and older than the harbour. Swims the bend like it owns the deed."},
 	{"n": "Great Wels", "t": "Epic", "h": "River Bend", "m": 30, "w": [15.0, 40.0], "v": 38, "d": "A catfish grown past reason in the deepest pool. Ducks have gone missing. So have oars.", "night": true, "pick": 0.7},
 
-	# --- Harbour (14) --------------------------------------------------
+	# --- Brackish Shallows (11) -----------------------------------------
+	# Where the pond's outflow meets the tide. A real-world-heavy mix —
+	# half the roster here are genuine estuary species, sitting alongside
+	# the island's usual invented ones rather than being sorted apart from
+	# them by rarity.
+	{"n": "Striped Mullet", "t": "Common", "h": "Brackish Shallows", "m": 50, "w": [0.4, 1.8], "v": 2, "d": "Leaps clear of the water for no reason anyone has ever figured out, then does it again."},
+	{"n": "Thinlip Mullet", "t": "Common", "h": "Brackish Shallows", "m": 50, "w": [0.2, 0.9], "v": 1, "d": "The mullet's smaller cousin, distinguished mostly by which fisherman you ask."},
+	{"n": "Bay Anchovy", "t": "Common", "h": "Brackish Shallows", "m": 0, "w": [0.05, 0.2], "v": 1, "d": "Travels in a silver cloud so dense the water itself seems to shiver."},
+	{"n": "Muckwhisker Catfish", "t": "Common", "h": "Brackish Shallows", "m": 51, "w": [0.3, 1.4], "v": 2, "d": "Tastes the mud with its whiskers before deciding whether to bother eating it."},
+	{"n": "White Perch", "t": "Uncommon", "h": "Brackish Shallows", "m": 8, "w": [0.3, 1.2], "v": 4, "d": "Neither fully river nor fully sea fish, and comfortable admitting it."},
+	{"n": "Estuary Catfish", "t": "Uncommon", "h": "Brackish Shallows", "m": 51, "w": [1.5, 4.5], "v": 5, "d": "Grown fat on whatever the tide forgot to take back out."},
+	{"n": "Redfish", "t": "Rare", "h": "Brackish Shallows", "m": 53, "w": [3.0, 9.0], "v": 11, "d": "Copper-scaled, with a single dark spot near the tail that fools more than one predator."},
+	{"n": "Tideclaw Eel", "t": "Rare", "h": "Brackish Shallows", "m": 18, "w": [2.0, 6.0], "v": 10, "d": "Buries itself in the silt by day and hunts the falling tide by night.", "night": true},
+	{"n": "Common Snook", "t": "Epic", "h": "Brackish Shallows", "m": 54, "w": [6.0, 16.0], "v": 32, "d": "A black line runs its whole length, straight as a rule, right to the tip of the tail."},
+	{"n": "Brackish Bull", "t": "Epic", "h": "Brackish Shallows", "m": 26, "w": [8.0, 20.0], "v": 34, "d": "A shark that shouldn't tolerate the low salt at all, and does anyway, out of spite.", "night": true},
+	{"n": "Silver King Tarpon", "t": "Legendary", "h": "Brackish Shallows", "m": 55, "w": [20.0, 60.0], "v": 70, "d": "Rolls at the surface like a coin flipped by something enormous, then is simply gone."},
+
+	# --- Tidal Flats (12) ------------------------------------------------
+	# Exposed mud and sandbar at low water. Flatfish, burrowers and one or
+	# two things that would rather walk than swim.
+	{"n": "Mudskipper", "t": "Common", "h": "Tidal Flats", "m": 56, "w": [0.05, 0.3], "v": 1, "d": "Hauls itself across the exposed mud on its front fins, in no hurry to get wet again."},
+	{"n": "Common Goby", "t": "Common", "h": "Tidal Flats", "m": 3, "w": [0.05, 0.2], "v": 1, "d": "Small enough to hide under a single stranded shell at low tide."},
+	{"n": "Sand Smelt", "t": "Common", "h": "Tidal Flats", "m": 0, "w": [0.1, 0.4], "v": 1, "d": "Flashes silver in the shallows and is gone before the flash finishes registering."},
+	{"n": "Tideflat Shrimpjaw", "t": "Common", "h": "Tidal Flats", "m": 57, "w": [0.1, 0.5], "v": 2, "d": "An odd little mouth built for sifting the mud one grain at a time."},
+	{"n": "European Flounder", "t": "Uncommon", "h": "Tidal Flats", "m": 36, "w": [0.5, 2.0], "v": 4, "d": "Both eyes migrate to one side of its head as it grows, and it never looks back."},
+	{"n": "Sand Sole", "t": "Uncommon", "h": "Tidal Flats", "m": 36, "w": [0.3, 1.5], "v": 4, "d": "Wears the exact grain and colour of the flat it's lying on, until it isn't there anymore."},
+	{"n": "Mireback Toad", "t": "Uncommon", "h": "Tidal Flats", "m": 36, "w": [0.6, 2.2], "v": 5, "d": "Squats motionless in a pool so long that barnacles have tried to settle on it."},
+	{"n": "European Eel", "t": "Rare", "h": "Tidal Flats", "m": 18, "w": [1.5, 5.0], "v": 10, "d": "Has already crossed an ocean once to get here, and isn't finished travelling yet."},
+	{"n": "Tideglass Ray", "t": "Rare", "h": "Tidal Flats", "m": 28, "w": [2.0, 7.0], "v": 11, "d": "Nearly invisible under a skin of wet sand, until the flat itself seems to flinch."},
+	{"n": "Giant Mudskipper", "t": "Epic", "h": "Tidal Flats", "m": 56, "w": [3.0, 9.0], "v": 30, "d": "Grown too large to bother hiding, it simply claims the best pool and dares anything to argue."},
+	{"n": "Tidewalker", "t": "Epic", "h": "Tidal Flats", "m": 58, "w": [7.0, 18.0], "v": 33, "d": "Crosses the exposed flat between pools on fins better suited to walking than swimming."},
+	{"n": "The Flatking", "t": "Legendary", "h": "Tidal Flats", "m": 59, "w": [15.0, 40.0], "v": 68, "d": "So old and so still that the tideline has learned to run around it rather than over."},
+
+	# --- Harbour (20) --------------------------------------------------
 	# The working water around the dock: pilings, ropes, spilled bait and
 	# whatever the boats bring in with them.
 	{"n": "Harbour Sprat", "t": "Common", "h": "Harbour", "m": 2, "w": [0.1, 0.4], "v": 1, "d": "Boils under the lamps at night, feeding on everything the day's cleaning washed off the deck."},
@@ -80,15 +142,21 @@ const SPECIES := [
 	{"n": "Tin Mackerel", "t": "Common", "h": "Harbour", "m": 2, "w": [0.4, 1.4], "v": 2, "d": "Striped like hammered metal and never still for a second."},
 	{"n": "Slipway Flounder", "t": "Common", "h": "Harbour", "m": 36, "w": [0.5, 2.0], "v": 2, "d": "Lies in the silt off the ramp with both eyes on the same side of its head, watching."},
 	{"n": "Bilge Carp", "t": "Common", "h": "Harbour", "m": 9, "w": [1.0, 3.0], "v": 2, "d": "Thrives on galley scraps. Tastes exactly as good as that sounds."},
+	{"n": "Atlantic Herring", "t": "Common", "h": "Harbour", "m": 2, "w": [0.2, 0.7], "v": 2, "d": "The fish half the harbour's economy was quietly built on."},
+	{"n": "Horse Mackerel", "t": "Common", "h": "Harbour", "m": 2, "w": [0.3, 1.1], "v": 2, "d": "A line of bony scutes runs its whole flank, like a zipper nobody remembers installing."},
 	{"n": "Lamp Squid", "t": "Uncommon", "h": "Harbour", "m": 32, "w": [0.4, 1.8], "v": 5, "d": "Draws itself up to the deck lights after dark and turns the colour of the flame.", "night": true},
 	{"n": "Harbour Sea Bass", "t": "Uncommon", "h": "Harbour", "m": 15, "w": [1.5, 5.0], "v": 7, "d": "Patrols the pilings at the turn of the tide, taking whatever the current dislodges."},
 	{"n": "Mooring Conger", "t": "Uncommon", "h": "Harbour", "m": 19, "w": [2.0, 6.5], "v": 6, "d": "Lives under the stone quay. Every dockhand has an opinion on how big it really is."},
 	{"n": "Copper Mullet", "t": "Uncommon", "h": "Harbour", "m": 6, "w": [1.0, 3.6], "v": 6, "d": "Grazes algae off the hulls in slow, unbothered circles."},
+	{"n": "Sheepshead", "t": "Uncommon", "h": "Harbour", "m": 52, "w": [1.0, 3.5], "v": 5, "d": "Grins with a mouthful of teeth built for cracking barnacles off the pier legs."},
+	{"n": "Pollack", "t": "Uncommon", "h": "Harbour", "m": 6, "w": [1.5, 5.0], "v": 6, "d": "Holds in the shadow line under the jetty and rarely bothers moving into the light."},
+	{"n": "Garfish", "t": "Uncommon", "h": "Harbour", "m": 25, "w": [0.3, 1.2], "v": 5, "d": "Green-boned and needle-jawed. Skims the surface leaving barely a ripple."},
 	{"n": "Anchor Ray", "t": "Rare", "h": "Harbour", "m": 28, "w": [4.0, 12.0], "v": 13, "d": "Settles over the old anchor chain until the silt makes it disappear entirely."},
 	{"n": "Ballast Grouper", "t": "Rare", "h": "Harbour", "m": 12, "w": [6.0, 16.0], "v": 16, "d": "Took up residence in a scuttled hull and grew to fit the cabin."},
 	{"n": "Ghost Net Eel", "t": "Rare", "h": "Harbour", "m": 18, "w": [3.0, 9.0], "v": 14, "d": "Threads a lost net every night without ever being caught by it.", "night": true, "pick": 0.6},
+	{"n": "Ballan Wrasse", "t": "Rare", "h": "Harbour", "m": 15, "w": [2.0, 6.5], "v": 14, "d": "Changes colour twice in its life and personality along with it."},
 
-	# --- Kelp Forest (18) ----------------------------------------------
+	# --- Kelp Forest (23) ----------------------------------------------
 	# Cold green water and standing weed, thick enough to lose a boat in.
 	{"n": "Kelp Blenny", "t": "Common", "h": "Kelp Forest", "m": 3, "w": [0.1, 0.5], "v": 2, "d": "Green as the fronds it clings to, right down to its eyes."},
 	{"n": "Weed Pipefish", "t": "Common", "h": "Kelp Forest", "m": 25, "w": [0.1, 0.4], "v": 2, "d": "Hangs vertically among the stems and is missed by nearly everyone."},
@@ -99,47 +167,61 @@ const SPECIES := [
 	{"n": "Otterfish", "t": "Uncommon", "h": "Kelp Forest", "m": 7, "w": [1.2, 4.2], "v": 7, "d": "Named for the way it rolls onto its back to work a shell loose."},
 	{"n": "Kelp Garfish", "t": "Uncommon", "h": "Kelp Forest", "m": 25, "w": [0.8, 3.0], "v": 6, "d": "A needle with green bones. The bones put people off; the taste wins them back."},
 	{"n": "Drifting Jellyfish", "t": "Uncommon", "h": "Kelp Forest", "m": 49, "w": [0.4, 1.8], "v": 6, "d": "Trails a curtain of stinging thread wherever the current decides to take it."},
+	{"n": "Garibaldi", "t": "Uncommon", "h": "Kelp Forest", "m": 65, "w": [0.3, 1.2], "v": 6, "d": "Bright orange and protected by law everywhere the forest grows. Poaching one is a story nobody tells twice."},
+	{"n": "Kelp Bass", "t": "Uncommon", "h": "Kelp Forest", "m": 15, "w": [1.0, 4.0], "v": 7, "d": "Holds tight to a favourite clump of stipes and rarely strays far from it."},
 	{"n": "Copper Kelpfish", "t": "Rare", "h": "Kelp Forest", "m": 6, "w": [2.5, 7.0], "v": 12, "d": "Turns rust-red in autumn when the forest starts to die back.", "season": "Autumn"},
 	{"n": "Kelp Sculpin", "t": "Rare", "h": "Kelp Forest", "m": 11, "w": [2.0, 6.0], "v": 11, "d": "All head and spines. Swallows things nearly its own size and regrets nothing."},
 	{"n": "Kelp Seahorse", "t": "Rare", "h": "Kelp Forest", "m": 48, "w": [0.05, 0.25], "v": 13, "d": "Anchors its curled tail to a stem of kelp and lets the whole forest sway around it."},
 	{"n": "Weedbed Halibut", "t": "Rare", "h": "Kelp Forest", "m": 36, "w": [6.0, 15.0], "v": 16, "d": "A door-sized flatfish that has been mistaken for the seabed by at least one anchor."},
 	{"n": "Forest Ling", "t": "Rare", "h": "Kelp Forest", "m": 19, "w": [4.0, 11.0], "v": 14, "d": "Long and mottled, working the base of the stipes where the light gives up."},
 	{"n": "Emerald Wrasse", "t": "Rare", "h": "Kelp Forest", "m": 10, "w": [2.0, 6.5], "v": 15, "d": "Impossibly green, and worth more to collectors than to cooks.", "pick": 0.6},
+	{"n": "Lingcod", "t": "Rare", "h": "Kelp Forest", "m": 66, "w": [5.0, 14.0], "v": 15, "d": "Not a cod at all, and every bit as territorial as its teeth suggest."},
+	{"n": "Wolf Eel", "t": "Rare", "h": "Kelp Forest", "m": 67, "w": [3.0, 9.0], "v": 13, "d": "Not an eel either, though the current has never once asked it to prove that."},
 	{"n": "Kelp Lord", "t": "Epic", "h": "Kelp Forest", "m": 12, "w": [10.0, 26.0], "v": 32, "d": "The forest's resident bulk. Holds a clearing among the stipes and tolerates no rivals."},
 	{"n": "Bull Kelp Shark", "t": "Epic", "h": "Kelp Forest", "m": 26, "w": [14.0, 34.0], "v": 36, "d": "Small as sharks go, and entirely convinced otherwise."},
 	{"n": "Tanglefin", "t": "Epic", "h": "Kelp Forest", "m": 24, "w": [8.0, 22.0], "v": 34, "d": "Trails fins like torn weed and vanishes the moment the forest closes behind it.", "pick": 0.7},
+	{"n": "California Sheephead", "t": "Epic", "h": "Kelp Forest", "m": 68, "w": [8.0, 20.0], "v": 33, "d": "Starts life female and finishes it male, with a new set of crushing teeth to match."},
 
-	# --- Coral Shallows (19) -------------------------------------------
+	# --- Coral Shallows (24) -------------------------------------------
 	# Warm bright water over reef. Busiest habitat on the island and the
 	# one that most rewards fishing in good weather.
 	{"n": "Clown Wrasse", "t": "Common", "h": "Coral Shallows", "m": 13, "w": [0.1, 0.5], "v": 2, "d": "Painted in colours no fish that small has any business wearing."},
 	{"n": "Reef Damsel", "t": "Common", "h": "Coral Shallows", "m": 13, "w": [0.1, 0.4], "v": 2, "d": "Defends a patch of coral the size of a hat against fish ten times its size."},
 	{"n": "Sand Goby", "t": "Common", "h": "Coral Shallows", "m": 0, "w": [0.1, 0.4], "v": 1, "d": "Hovers over white sand, dropping out of sight whenever a shadow crosses it."},
 	{"n": "Butterflyfish", "t": "Common", "h": "Coral Shallows", "m": 13, "w": [0.2, 0.7], "v": 2, "d": "Swims in pairs and stays that way for life, which the reef finds unremarkable."},
+	{"n": "Clownfish", "t": "Common", "h": "Coral Shallows", "m": 69, "w": [0.05, 0.2], "v": 2, "d": "Lives inside a ring of stinging tentacles that would kill anything else that touched them."},
 	{"n": "Parrot Wrasse", "t": "Uncommon", "h": "Coral Shallows", "m": 10, "w": [1.0, 3.6], "v": 6, "d": "Grinds coral to sand with a beak like a nutcracker. The beaches are its leavings."},
 	{"n": "Coral Snapper", "t": "Uncommon", "h": "Coral Shallows", "m": 15, "w": [1.2, 4.0], "v": 7, "d": "Hangs at the reef edge in loose crowds, all facing the current."},
 	{"n": "Angel Discus", "t": "Uncommon", "h": "Coral Shallows", "m": 13, "w": [0.6, 2.2], "v": 7, "d": "A flat disc of a fish that turns edge-on and disappears completely."},
 	{"n": "Spotted Puffer", "t": "Uncommon", "h": "Coral Shallows", "m": 11, "w": [0.5, 2.0], "v": 6, "d": "Inflates into an indigestible ball at the first sign of trouble, then sulks."},
 	{"n": "Reef Triggerfish", "t": "Uncommon", "h": "Coral Shallows", "m": 10, "w": [0.8, 3.0], "v": 6, "d": "Locks itself into a crevice with a spine and dares anything to pull it out."},
+	{"n": "Parrotfish", "t": "Uncommon", "h": "Coral Shallows", "m": 70, "w": [1.5, 5.0], "v": 7, "d": "Sleeps in a bubble of its own mucus, spun fresh every night as a scent-proof blanket."},
+	{"n": "Picasso Triggerfish", "t": "Uncommon", "h": "Coral Shallows", "m": 71, "w": [0.4, 1.6], "v": 6, "d": "Painted in more colours and angles than any fish that size ought to need."},
 	{"n": "Sunscale Snapper", "t": "Rare", "h": "Coral Shallows", "m": 15, "w": [3.0, 8.0], "v": 13, "d": "Throws back so much light in the shallows that it is easier to catch than to look at.", "weather": "Sunny"},
 	{"n": "Lionfish", "t": "Rare", "h": "Coral Shallows", "m": 24, "w": [1.0, 3.5], "v": 15, "d": "Drifts with its spines fanned, entirely unhurried, because nothing sensible attacks it."},
 	{"n": "Reef Grouper", "t": "Rare", "h": "Coral Shallows", "m": 12, "w": [5.0, 14.0], "v": 15, "d": "Owns one cave and inhales anything that swims past the mouth of it."},
 	{"n": "Napoleon Wrasse", "t": "Rare", "h": "Coral Shallows", "m": 10, "w": [6.0, 16.0], "v": 17, "d": "Grows a bulging forehead with age and follows divers around out of plain curiosity."},
+	{"n": "Moray Eel", "t": "Rare", "h": "Coral Shallows", "m": 19, "w": [2.0, 7.0], "v": 14, "d": "Keeps its mouth working constantly just to breathe, which fools most people into backing away."},
 	{"n": "Coral Barracuda", "t": "Epic", "h": "Coral Shallows", "m": 16, "w": [8.0, 20.0], "v": 30, "d": "Hangs over the drop-off like a hung knife, moving only to become somewhere else."},
 	{"n": "Summer Marlin", "t": "Epic", "h": "Coral Shallows", "m": 23, "w": [16.0, 42.0], "v": 40, "d": "Comes into the warm shallows to hunt and lights up electric blue when it does.", "season": "Summer"},
 	{"n": "Manta of the Shallows", "t": "Epic", "h": "Coral Shallows", "m": 35, "w": [20.0, 50.0], "v": 38, "d": "Flies rather than swims, and turns the sand dark as it passes over."},
 	{"n": "Emperor Angelfish", "t": "Legendary", "h": "Coral Shallows", "m": 13, "w": [4.0, 12.0], "v": 62, "d": "Wears a pattern so exact that the reef seems to have been designed around it."},
 	{"n": "Goldscale Sailfish", "t": "Legendary", "h": "Coral Shallows", "m": 24, "w": [25.0, 60.0], "v": 78, "d": "Raises its sail in the sunlit shallows and outruns anything the island can float.", "weather": "Sunny", "pick": 0.7},
+	{"n": "Giant Grouper", "t": "Legendary", "h": "Coral Shallows", "m": 72, "w": [40.0, 100.0], "v": 84, "d": "Big enough to swallow smaller reef fish whole, and unbothered enough to do it in front of divers."},
 	{"n": "Sunlit Mirage", "t": "Secret", "h": "Coral Shallows", "m": 40, "w": [18.0, 45.0], "v": 320, "d": "Seen only at high summer noon, and only by fishermen nobody believes afterwards.", "weather": "Sunny", "season": "Summer", "night": false},
 
-	# --- Open Water (10) -----------------------------------------------
+	# --- Open Water (14) -----------------------------------------------
 	# Off the shelf entirely: no bottom, no cover, nothing but fast fish.
 	{"n": "Blue Runner", "t": "Rare", "h": "Open Water", "m": 16, "w": [2.0, 6.5], "v": 13, "d": "Never stops moving, not even to sleep. Nothing out here can afford to."},
 	{"n": "Skipjack", "t": "Rare", "h": "Open Water", "m": 2, "w": [3.0, 9.0], "v": 14, "d": "Warm-blooded and always hungry, burning through the open sea in silver waves."},
+	{"n": "Bonito", "t": "Rare", "h": "Open Water", "m": 2, "w": [1.5, 5.0], "v": 12, "d": "Smaller and faster than its tuna cousins, and just as impossible to keep up with."},
+	{"n": "Albacore", "t": "Rare", "h": "Open Water", "m": 15, "w": [4.0, 12.0], "v": 16, "d": "Pale-fleshed and long-finned, running just under the surface in loose schools."},
+	{"n": "Wahoo", "t": "Rare", "h": "Open Water", "m": 74, "w": [5.0, 14.0], "v": 17, "d": "Barred like a tiger and faster than almost anything else that swims."},
 	{"n": "Yellowfin Tuna", "t": "Epic", "h": "Open Water", "m": 15, "w": [18.0, 45.0], "v": 40, "d": "Built entirely for speed, down to fins that fold into slots so as not to spoil the line."},
 	{"n": "Blue Shark", "t": "Epic", "h": "Open Water", "m": 26, "w": [20.0, 55.0], "v": 38, "d": "Follows a boat for days on the chance of something going over the side."},
 	{"n": "Hammerhead", "t": "Epic", "h": "Open Water", "m": 27, "w": [24.0, 60.0], "v": 42, "d": "Sweeps that ridiculous head across the sand and reads the seabed like a page."},
 	{"n": "Broadbill Swordfish", "t": "Epic", "h": "Open Water", "m": 22, "w": [22.0, 58.0], "v": 44, "d": "Hunts by feel in water too dark to see, then slashes through the shoal sideways."},
+	{"n": "Mahi-Mahi", "t": "Epic", "h": "Open Water", "m": 73, "w": [8.0, 25.0], "v": 39, "d": "Lights up gold and green boatside, then fades to grey the moment it stops fighting."},
 	{"n": "Blue Marlin", "t": "Legendary", "h": "Open Water", "m": 23, "w": [40.0, 95.0], "v": 82, "d": "The fight every fisherman on the island claims to have had once."},
 	{"n": "Great White", "t": "Legendary", "h": "Open Water", "m": 46, "w": [60.0, 140.0], "v": 88, "d": "Arrives without warning, leaves without hurry, and ends the day's fishing either way."},
 	{"n": "Thresher", "t": "Legendary", "h": "Open Water", "m": 47, "w": [35.0, 85.0], "v": 76, "d": "Stuns whole shoals with a tail longer than the rest of it.", "pick": 0.7},
@@ -155,28 +237,36 @@ const SPECIES := [
 	{"n": "Stormheart Kraken", "t": "Mythic", "h": "Storm Front", "m": 37, "w": [110.0, 260.0], "v": 200, "d": "Takes the storm as an invitation. The harbour bell is rung when it is sighted.", "weather": "Stormy", "pick": 0.6},
 	{"n": "The Drowned King", "t": "Secret", "h": "Storm Front", "m": 41, "w": [150.0, 400.0], "v": 420, "d": "Rises only in a winter storm at dead of night, crowned in weed, and looks straight at the boat.", "weather": "Stormy", "season": "Winter", "night": true},
 
-	# --- Ice Shelf (9) -------------------------------------------------
+	# --- Ice Shelf (13) -------------------------------------------------
 	# Winter water at the edge of the pack ice.
 	{"n": "Frost Char", "t": "Rare", "h": "Ice Shelf", "m": 7, "w": [2.0, 6.0], "v": 14, "d": "Belly turns furnace-orange against water cold enough to stop a hand.", "season": "Winter"},
 	{"n": "Icecap Cod", "t": "Rare", "h": "Ice Shelf", "m": 6, "w": [4.0, 11.0], "v": 15, "d": "Carries its own antifreeze. Keeps feeding while everything else shuts down.", "season": "Winter"},
+	{"n": "Haddock", "t": "Rare", "h": "Ice Shelf", "m": 6, "w": [1.5, 5.0], "v": 13, "d": "Marked with a dark thumbprint on each flank that never washes off or fades."},
+	{"n": "Capelin", "t": "Rare", "h": "Ice Shelf", "m": 0, "w": [0.05, 0.2], "v": 12, "d": "Common enough offshore, but the shelf ice keeps most of the run out of any hook's reach."},
+	{"n": "Atlantic Wolffish", "t": "Rare", "h": "Ice Shelf", "m": 18, "w": [3.0, 9.0], "v": 15, "d": "A face only a marine biologist could love, and teeth built for crushing shells whole."},
 	{"n": "Glacier Halibut", "t": "Epic", "h": "Ice Shelf", "m": 36, "w": [25.0, 65.0], "v": 42, "d": "Lies under the shelf like a second floor of ice, waiting out the whole season.", "season": "Winter"},
 	{"n": "Blizzard Lancet", "t": "Epic", "h": "Ice Shelf", "m": 25, "w": [8.0, 22.0], "v": 40, "d": "Only rises through the ice holes when the wind is bad enough to keep sensible people ashore.", "weather": "Blizzard"},
 	{"n": "Winter Sturgeon", "t": "Legendary", "h": "Ice Shelf", "m": 29, "w": [50.0, 120.0], "v": 80, "d": "Moves beneath the pack ice at a pace that suggests it has nowhere in particular to be.", "season": "Winter"},
 	{"n": "Hoarfrost Ray", "t": "Legendary", "h": "Ice Shelf", "m": 28, "w": [28.0, 70.0], "v": 76, "d": "Pale enough to read the seabed through, and cold to the touch long after landing.", "season": "Winter", "pick": 0.7},
+	{"n": "Greenland Shark", "t": "Legendary", "h": "Ice Shelf", "m": 75, "w": [90.0, 200.0], "v": 90, "d": "Older than the island itself, moving so slowly that barnacles grow on its own eyes."},
 	{"n": "Frostbound Wyrm", "t": "Mythic", "h": "Ice Shelf", "m": 38, "w": [100.0, 240.0], "v": 185, "d": "Cuts up through the pack from below. The crack is heard well before anything is seen.", "weather": "Blizzard"},
 	{"n": "Whitewater Behemoth", "t": "Mythic", "h": "Ice Shelf", "m": 39, "w": [130.0, 320.0], "v": 205, "d": "Breaks the shelf apart surfacing, and the ice takes a week to close again.", "season": "Winter", "pick": 0.7},
 	{"n": "Glassfin Wraith", "t": "Secret", "h": "Ice Shelf", "m": 42, "w": [40.0, 110.0], "v": 360, "d": "Transparent from nose to tail. Visible only as a bend in the lamplight, and only in fog after dark.", "weather": "Foggy", "night": true},
 
-	# --- The Deep (10) -------------------------------------------------
+	# --- The Deep (14) -------------------------------------------------
 	# Below the light. Almost everything here is a night catch.
+	{"n": "Viperfish", "t": "Rare", "h": "The Deep", "m": 76, "w": [0.5, 2.0], "v": 16, "d": "Teeth too long to fit inside its own closed mouth, curved back so nothing that touches them slips free.", "night": true},
+	{"n": "Fangtooth", "t": "Rare", "h": "The Deep", "m": 77, "w": [0.2, 0.8], "v": 15, "d": "Has the largest teeth relative to body size of anything in the ocean, and nowhere to hide them.", "night": true},
 	{"n": "Lanternfish", "t": "Epic", "h": "The Deep", "m": 12, "w": [3.0, 10.0], "v": 32, "d": "Rises the whole way up the water column each night and sinks again before dawn.", "night": true},
 	{"n": "Gulper Eel", "t": "Epic", "h": "The Deep", "m": 19, "w": [6.0, 18.0], "v": 34, "d": "Mostly mouth. In water this empty, you eat whatever arrives, whatever its size.", "night": true},
+	{"n": "Goblin Shark", "t": "Epic", "h": "The Deep", "m": 79, "w": [10.0, 28.0], "v": 37, "d": "A flattened blade of a snout, and a jaw that snaps forward out of its own face to feed.", "night": true},
 	{"n": "Anglerfish", "t": "Legendary", "h": "The Deep", "m": 33, "w": [10.0, 30.0], "v": 70, "d": "Carries its own lure and its own light, and has never once needed daylight."},
 	{"n": "Abyssal Lamprey", "t": "Legendary", "h": "The Deep", "m": 21, "w": [8.0, 24.0], "v": 68, "d": "A mouth that is also a wound. Comes up the line still attached to something else.", "night": true},
 	{"n": "Hadal Chimaera", "t": "Legendary", "h": "The Deep", "m": 34, "w": [14.0, 38.0], "v": 74, "d": "Built to a design the surface abandoned a very long time ago.", "night": true, "pick": 0.7},
 	{"n": "Void Serpent", "t": "Mythic", "h": "The Deep", "m": 20, "w": [95.0, 230.0], "v": 195, "d": "Comes up out of water that has no bottom worth measuring, and goes back down unhurried.", "night": true},
 	{"n": "Abyssal Behemoth", "t": "Mythic", "h": "The Deep", "m": 39, "w": [140.0, 340.0], "v": 215, "d": "The pressure it lives under would fold the boat flat. It surfaces anyway, occasionally."},
 	{"n": "Blindlight Kraken", "t": "Mythic", "h": "The Deep", "m": 37, "w": [120.0, 280.0], "v": 210, "d": "Lightless, eyeless, and unerring. It finds the boat every time.", "night": true, "pick": 0.6},
+	{"n": "Oarfish", "t": "Mythic", "h": "The Deep", "m": 78, "w": [50.0, 130.0], "v": 175, "d": "A ribbon of silver longer than the boat, sighted so rarely that most reports are still disputed.", "pick": 0.7},
 	{"n": "Nightglass Siren", "t": "Secret", "h": "The Deep", "m": 43, "w": [60.0, 150.0], "v": 380, "d": "Heard first, and always at the exact moment the last lamp goes out.", "night": true, "weather": "Foggy"},
 	{"n": "The Long Dark", "t": "Secret", "h": "The Deep", "m": 44, "w": [200.0, 500.0], "v": 460, "d": "No fisherman has described it twice the same way. All of them stopped fishing nights.", "night": true, "weather": "Stormy"},
 
@@ -187,6 +277,20 @@ const SPECIES := [
 	{"n": "Drowned Colossus", "t": "Mythic", "h": "Sunken Ruins", "m": 39, "w": [150.0, 360.0], "v": 220, "d": "Sleeps in the flooded hall and moves once a season, which is when the ruins shift."},
 	{"n": "Primordial Wyrm", "t": "Mythic", "h": "Sunken Ruins", "m": 38, "w": [130.0, 300.0], "v": 215, "d": "Was in the water before the stonework was above it, and expects to outlast the argument."},
 	{"n": "Keeper of the Ruins", "t": "Secret", "h": "Sunken Ruins", "m": 45, "w": [180.0, 450.0], "v": 500, "d": "Surfaces in fog over the drowned city, waits until it has been properly looked at, and sinks.", "weather": "Foggy", "season": "Autumn"},
+
+	# --- Abyssal Trench (8) ----------------------------------------------
+	# Expedition-only — see FishCatalog.EXPEDITION_HABITATS. No fishing spot
+	# reaches this deep; deliberately weighted toward Rare and up, and
+	# several species carry their own bioluminescent light rather than
+	# relying on any that reaches this far down.
+	{"n": "Trenchlight Smelt", "t": "Rare", "h": "Abyssal Trench", "m": 60, "w": [0.3, 1.2], "v": 16, "d": "Schools by the hundred in water with no light of its own, so it brought its own instead."},
+	{"n": "Pressure Eel", "t": "Rare", "h": "Abyssal Trench", "m": 19, "w": [3.0, 9.0], "v": 15, "d": "Built for a depth that would fold a hull, and entirely unbothered by it."},
+	{"n": "Void Angler", "t": "Epic", "h": "Abyssal Trench", "m": 61, "w": [8.0, 22.0], "v": 42, "d": "Carries a light of its own for the same reason every other trench thing does: to lure something smaller within reach."},
+	{"n": "Crushtide Ray", "t": "Epic", "h": "Abyssal Trench", "m": 28, "w": [15.0, 35.0], "v": 44, "d": "Glides along the trench floor under pressure that would kill anything from the shallows in seconds."},
+	{"n": "The Hadal Maw", "t": "Legendary", "h": "Abyssal Trench", "m": 62, "w": [35.0, 90.0], "v": 88, "d": "Mostly mouth, the rest an afterthought. Nothing that swims this deep can afford to be picky."},
+	{"n": "Deepfang", "t": "Legendary", "h": "Abyssal Trench", "m": 26, "w": [25.0, 60.0], "v": 84, "d": "A shark shape scaled up for a place no ordinary shark has ever gone looking."},
+	{"n": "Abyssal Coelacanth", "t": "Mythic", "h": "Abyssal Trench", "m": 63, "w": [30.0, 70.0], "v": 180, "d": "Thought extinct twice already. Both times, the trench simply hadn't finished with it."},
+	{"n": "The Unmapped", "t": "Mythic", "h": "Abyssal Trench", "m": 39, "w": [60.0, 150.0], "v": 210, "d": "No expedition has ever brought back a full picture of it, only pieces that don't agree with each other."},
 ]
 
 static var _by_tier: Dictionary = {}

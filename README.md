@@ -6,8 +6,8 @@ expanded by the player over time — while the game keeps running, including whe
 
 ## Status
 
-Playable prototype with a full core loop: hire, equip and assign fishermen across three fishing
-spots, watch them work through a day/night and seasonal cycle, fill a 122-species fish album, and
+Playable prototype with a full core loop: hire, equip and assign fishermen across four fishing
+spots, watch them work through a day/night and seasonal cycle, fill a 182-species fish album, and
 spend Scales on permanent upgrades. See [Project structure](#project-structure) below for where
 each system lives, or the [wiki](../../wiki) for the deeper design notes.
 
@@ -54,8 +54,8 @@ screen.
 - **Gear** — 329 items generated from 28 families across 5 slots (Rod/Hat/Outfit/Charm/Bait).
   Conditions are live effects rather than shop filters, so a storm rod really is better in a
   storm, and bait steers *which* species surface. See the [wiki](../../wiki/Gear).
-- **Fish** — 122 hand-authored species across 10 habitats and 7 tiers, including a hidden Secret
-  tier. See the [wiki](../../wiki/Fish).
+- **Fish** — 182 hand-authored species (a mix of invented and real-world fish) across 12 habitats
+  and 7 tiers, including a hidden Secret tier. See the [wiki](../../wiki/Fish).
 - **The world clock** — nested day/night, weather, and season cycles that bias stats and gate both
   species and gear bonuses.
 - **Meta-progression** — 17 permanent upgrades paid for in Scales: the two fishing-spot unlocks,

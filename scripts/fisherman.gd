@@ -638,7 +638,7 @@ func _roll_and_apply_catch(catch_duration: float = -1.0, forced_rarity: int = -1
 		# possible when a hidden species' weather/season/time-of-day combo
 		# is currently in effect, and even then only a small independent
 		# chance actually lands one instead of a normal-tier catch.
-		var secret_species := FishCatalog.roll_species(FishRarity.Tier.SECRET, _spot_habitats(), _bait_bias())
+		var secret_species := FishCatalog.roll_species(FishRarity.Tier.SECRET, _spot_habitats(), _habitat_bias())
 		var secret_chance := SECRET_CATCH_BASE_CHANCE * (1.0 + get_effective_stat(luck_xp, "luck") + MetaProgress.get_secret_chance_bonus())
 		if secret_species != null and randf() < secret_chance:
 			caught_rarity = FishRarity.Tier.SECRET
@@ -719,6 +719,20 @@ func _bait_bias() -> Dictionary:
 		return {}
 	return bait.habitat_bias
 
+## Bait bias plus species-mastery bias (Album.get_habitat_mastery_bias()),
+## multiplied together per habitat — the roll-weighting call sites use this
+## instead of _bait_bias() directly so mastery applies regardless of what's
+## equipped. Mastery entries are only added where they actually differ from
+## 1.0, so an unmastered roster keeps the exact same bias dict bait alone
+## would have produced.
+func _habitat_bias() -> Dictionary:
+	var bias := _bait_bias().duplicate()
+	for habitat in FishCatalog.HABITATS:
+		var mastery_mult: float = Album.get_habitat_mastery_bias(habitat)
+		if mastery_mult != 1.0:
+			bias[habitat] = float(bias.get(habitat, 1.0)) * mastery_mult
+	return bias
+
 ## Finds the closest tier this fisherman's spot can actually produce.
 ##
 ## Steps down first (a rolled Legendary settling for an Epic reads as bad
@@ -727,7 +741,7 @@ func _bait_bias() -> Dictionary:
 ## past tier 0 and leave the caller holding a null species.
 func _nearest_available_tier(rolled: FishRarity.Tier) -> Dictionary:
 	var habitats := _spot_habitats()
-	var bias := _bait_bias()
+	var bias := _habitat_bias()
 	for tier in range(int(rolled), -1, -1):
 		var species := FishCatalog.roll_species(tier, habitats, bias)
 		if species != null:

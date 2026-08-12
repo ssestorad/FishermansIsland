@@ -1,14 +1,15 @@
 """Generates the fish model atlas from parametric shape specs.
 
-All 32 models are baked into one 256x64 atlas laid out as an 8x4 grid of
-32x16 frames, which Sprite2D reads through hframes/vframes/frame.
+Models are baked into one atlas, laid out as a COLUMNS x ROWS grid of
+32x16 frames (see the constants below for the current count), which
+Sprite2D reads through hframes/vframes/frame.
 
 A fish is composed rather than hand-drawn: a body profile (per-column top
 and bottom bounds derived from a head/peak/tail height curve) plus a tail,
 optional dorsal/anal fins, a snout and a surface pattern, finished with a
-palette and a dark outline grown from the silhouette. That keeps 32
-distinct models maintainable, which 32 hand-authored ASCII maps would not
-be, and lets shape, size and colour vary independently.
+palette and a dark outline grown from the silhouette. That keeps dozens of
+distinct models maintainable, which as many hand-authored ASCII maps would
+not be, and lets shape, size and colour vary independently.
 
 Because the models are now full colour, the Album shows them unmodulated —
 rarity is carried by the card's tier label and the row swatches instead of
@@ -29,7 +30,7 @@ import random
 from PIL import Image
 
 FRAME_W, FRAME_H = 32, 16
-COLUMNS, ROWS = 10, 5
+COLUMNS, ROWS = 10, 8
 MODEL_COUNT = COLUMNS * ROWS
 CENTER_Y = 7.5
 OUT_PATH = os.path.join("assets", "sprites", "fish", "fish_atlas.png")
@@ -38,8 +39,9 @@ OUTLINE_PATH = os.path.join("assets", "sprites", "fish", "fish_atlas_outline.png
 # --- Palettes --------------------------------------------------------
 #
 # Each entry is body / back (upper edge) / belly (lower edge) / fin /
-# pattern. Sixteen palettes across 32 models means every colour shows up
-# on two clearly different silhouettes.
+# pattern. Sixteen palettes reused across every model means each colour
+# shows up on several clearly different silhouettes rather than each
+# model needing its own unique palette.
 
 PALETTES = {
     "silver": [(196, 206, 216), (150, 163, 178), (232, 238, 244), (170, 182, 196), (120, 134, 150)],
@@ -71,12 +73,20 @@ def _luminance(color):
     return 0.299 * color[0] + 0.587 * color[1] + 0.114 * color[2]
 
 
+## Bioluminescence reads as the fish's own light, not a body marking, so it
+## deliberately ignores the palette entirely rather than being a 17th
+## per-palette tone — one fixed colour for every glowing model, the same
+## way every palette's eye is auto-derived rather than hand-picked.
+GLOW_COLOR = (190, 255, 210)
+
+
 def resolve_palette(name):
     values = PALETTES[name]
     palette = dict(zip(TONE_ORDER, values))
     # A dark eye vanishes on the dark palettes, so flip it to a light dot
     # rather than hand-picking an eye colour for every entry.
     palette["eye"] = (28, 30, 36) if _luminance(palette["body"]) > 110 else (232, 236, 244)
+    palette["glow"] = GLOW_COLOR
     return palette
 
 
@@ -211,6 +221,13 @@ def _draw_pattern(px, spec, bounds, x0, rng):
                 mid = int(round((top + bottom) / 2.0))
                 _put(px, x, mid, "pattern")
                 _put(px, x, mid - 1, "pattern")
+        elif style == "glow":
+            # A row of photophores along the belly, evenly spaced — the
+            # classic deep-sea trait. Uses the "glow" tone (a fixed bright
+            # colour independent of the palette) rather than "pattern", so
+            # it reads as the fish's own light rather than a body marking.
+            if bottom - top >= 2 and i >= 2 and (i - 2) % 3 == 0:
+                _put(px, x, bottom, "glow")
 
 
 def _outline_positions(filled):
@@ -370,6 +387,61 @@ SPECS = [
     # deliberately not attempted here — see the project notes.
     {"name": "seahorse", "palette": "rose", "body_len": 9, "body_h": 2.6, "head_h": 0.65, "tail_h": 0.1, "peak": 0.3, "back_bias": 1.3, "belly_bias": 0.7, "tail": "point", "tail_len": 8, "tail_flare": 0.1, "snout": 4, "dorsal": (0.15, 0.5, 1.6), "pectoral": False},
     {"name": "jellyfish", "palette": "pearl", "body_len": 9, "body_h": 4.2, "head_h": 0.35, "tail_h": 0.1, "peak": 0.55, "tail": "point", "tail_len": 9, "tail_flare": 0.15, "pectoral": False},
+    # River Mouth spot: a real-world-heavy batch (mullet/catfish/sheepshead/
+    # redfish/snook/tarpon/mudskipper/flounder-family are genuine estuary
+    # and tidal-flat species), mixed with a few invented ones rather than
+    # sorted apart from them by rarity. Shared with several existing models
+    # where a real species is a close enough family match (goby -> gudgeon,
+    # eel -> the existing eel model, flounder/sole/toad -> the existing
+    # flounder model) instead of drawing a near-duplicate silhouette.
+    {"name": "mullet", "palette": "olive", "body_len": 14, "body_h": 3.0, "head_h": 0.5, "tail_h": 0.3, "peak": 0.4, "tail": "fork", "tail_len": 5, "dorsal": (0.35, 0.55, 1.6)},
+    {"name": "brackcat", "palette": "slate", "body_len": 15, "body_h": 3.4, "head_h": 0.85, "tail_h": 0.35, "peak": 0.25, "taper": "linear", "tail": "round", "tail_len": 4, "snout": 3},
+    {"name": "sheepshead", "palette": "silver", "body_len": 13, "body_h": 4.4, "head_h": 0.6, "tail_h": 0.35, "peak": 0.35, "back_bias": 1.1, "tail": "fork", "tail_len": 4, "dorsal": (0.25, 0.7, 2.2), "pattern": "stripes"},
+    # The eyespot near the tail mirrors the real fish's own dark spot.
+    {"name": "redfish", "palette": "copper", "body_len": 15, "body_h": 3.6, "head_h": 0.55, "tail_h": 0.3, "peak": 0.38, "tail": "fan", "tail_len": 4, "tail_flare": 0.7, "dorsal": (0.3, 0.6, 1.8), "pattern": "eyespot"},
+    # Likewise the "line" pattern mirrors the real fish's own lateral line.
+    {"name": "snook", "palette": "steel", "body_len": 17, "body_h": 3.0, "head_h": 0.5, "tail_h": 0.3, "peak": 0.42, "tail": "fork", "tail_len": 5, "dorsal": (0.3, 0.55, 1.6), "pattern": "line"},
+    {"name": "tarpon", "palette": "pearl", "body_len": 20, "body_h": 4.6, "head_h": 0.6, "tail_h": 0.35, "peak": 0.4, "tail": "fork", "tail_len": 6, "dorsal": (0.35, 0.55, 2.6), "snout": 1},
+    # High head_h reads as the mudskipper's bulging top-mounted eyes; shared
+    # by the Common and Epic ("giant") versions, same small/big-variant
+    # -shares-a-model precedent as the existing behemoth/colossus models.
+    {"name": "mudskipper", "palette": "olive", "body_len": 11, "body_h": 2.6, "head_h": 0.95, "tail_h": 0.25, "peak": 0.2, "taper": "linear", "tail": "point", "tail_len": 4, "dorsal": (0.15, 0.9, 1.8), "pattern": "spots"},
+    {"name": "shrimpjaw", "palette": "sand", "body_len": 8, "body_h": 2.0, "head_h": 0.7, "tail_h": 0.2, "peak": 0.3, "tail": "point", "tail_len": 3, "snout": 2},
+    {"name": "tidewalker", "palette": "amber", "body_len": 17, "body_h": 3.2, "head_h": 0.6, "tail_h": 0.4, "peak": 0.35, "back_bias": 1.2, "tail": "long", "tail_len": 8, "dorsal": (0.2, 0.6, 2.0), "pattern": "bars"},
+    # Same tall-flat-round-tailed silhouette family as "flounder" (index
+    # 36, reused by three Tidal Flats species already), just bigger and
+    # darker — a Legendary deserves its own entry rather than only ever
+    # appearing as a recolour, matching how the Secret tier got its own
+    # dedicated models rather than continuing to share with common ones.
+    {"name": "flatking", "palette": "abyss", "body_len": 20, "body_h": 6.0, "head_h": 0.25, "tail_h": 0.2, "peak": 0.5, "tail": "round", "tail_len": 4, "tail_flare": 0.35, "pectoral": False, "pattern": "spots"},
+    # Abyssal Trench: expedition-only habitat, reachable by no fishing spot
+    # (see FishCatalog.EXPEDITION_HABITATS) — deep enough that several of
+    # its species carry their own light rather than relying on any.
+    {"name": "trenchsmelt", "palette": "abyss", "body_len": 10, "body_h": 2.2, "tail": "fork", "tail_len": 4, "pattern": "glow"},
+    {"name": "voidangler", "palette": "ink", "body_len": 14, "body_h": 3.8, "head_h": 0.85, "peak": 0.3, "tail": "point", "tail_len": 3, "snout": 2, "pattern": "glow"},
+    {"name": "hadalmaw", "palette": "abyss", "body_len": 20, "body_h": 4.4, "head_h": 0.9, "peak": 0.25, "tail": "long", "tail_len": 6, "snout": 1, "pattern": "glow"},
+    {"name": "coelacanth", "palette": "slate", "body_len": 17, "body_h": 4.0, "peak": 0.45, "tail": "round", "tail_len": 5, "tail_flare": 0.6, "dorsal": (0.3, 0.65, 2.0), "anal": (0.5, 0.8, 1.6), "pattern": "glow"},
+    # Real-world species added to existing habitats — dedicated models only
+    # for the ones distinctive enough to earn one; plainer real fish reuse
+    # an existing family-appropriate model instead (see fish_catalog.gd's
+    # comments on which species share which of the models below with
+    # earlier entries).
+    {"name": "zander", "palette": "slate", "body_len": 19, "body_h": 3.0, "head_h": 0.7, "peak": 0.45, "tail": "fork", "tail_len": 5, "dorsal": (0.3, 0.6, 2.2), "pattern": "spots"},
+    {"name": "garibaldi", "palette": "amber", "body_len": 13, "body_h": 4.6, "head_h": 0.6, "peak": 0.45, "tail": "fan", "tail_len": 4, "dorsal": (0.3, 0.6, 1.6)},
+    {"name": "lingcod", "palette": "olive", "body_len": 20, "body_h": 3.4, "head_h": 0.75, "peak": 0.35, "tail": "round", "tail_len": 4, "snout": 1, "dorsal": (0.25, 0.85, 1.8), "pattern": "spots"},
+    {"name": "wolfeel", "palette": "slate", "body_len": 21, "body_h": 2.6, "head_h": 0.9, "taper": "linear", "tail": "point", "tail_len": 4, "snout": 1, "pattern": "spots"},
+    {"name": "californiasheephead", "palette": "crimson", "body_len": 15, "body_h": 3.8, "head_h": 0.7, "peak": 0.4, "tail": "round", "tail_len": 4, "snout": 1, "dorsal": (0.3, 0.7, 1.6)},
+    {"name": "clownfish", "palette": "amber", "body_len": 10, "body_h": 3.4, "head_h": 0.65, "peak": 0.4, "tail": "fan", "tail_len": 3, "pattern": "bars"},
+    {"name": "parrotfish", "palette": "teal", "body_len": 16, "body_h": 4.2, "head_h": 0.55, "peak": 0.4, "tail": "round", "tail_len": 4, "snout": 1, "dorsal": (0.3, 0.75, 1.8)},
+    {"name": "picassotriggerfish", "palette": "gold", "body_len": 13, "body_h": 4.0, "head_h": 0.6, "tail_h": 0.5, "peak": 0.4, "tail": "round", "tail_len": 3, "dorsal": (0.15, 0.4, 1.6), "pattern": "bars"},
+    {"name": "biggrouper", "palette": "teal", "body_len": 19, "body_h": 5.0, "head_h": 0.95, "peak": 0.25, "tail": "round", "tail_len": 4, "dorsal": (0.3, 0.85, 2.0)},
+    {"name": "mahimahi", "palette": "gold", "body_len": 18, "body_h": 3.6, "head_h": 0.85, "peak": 0.2, "tail": "fork", "tail_len": 5, "dorsal": (0.05, 0.95, 2.4), "pattern": "spots"},
+    {"name": "wahoo", "palette": "steel", "body_len": 22, "body_h": 2.6, "head_h": 0.6, "peak": 0.4, "tail": "fork", "tail_len": 5, "snout": 1, "pattern": "bars"},
+    {"name": "greenlandshark", "palette": "slate", "body_len": 22, "body_h": 4.6, "head_h": 0.55, "peak": 0.3, "tail": "long", "tail_len": 6, "dorsal": (0.35, 0.5, 2.0)},
+    {"name": "viperfish", "palette": "ink", "body_len": 18, "body_h": 1.8, "taper": "linear", "tail": "point", "tail_len": 5, "snout": 3, "dorsal": (0.1, 0.3, 2.4)},
+    {"name": "fangtooth", "palette": "abyss", "body_len": 9, "body_h": 3.2, "head_h": 0.95, "peak": 0.25, "tail": "point", "tail_len": 3, "snout": 1},
+    {"name": "oarfish", "palette": "silver", "body_len": 24, "body_h": 2.0, "taper": "linear", "tail": "point", "tail_len": 3, "dorsal": (0.0, 1.0, 3.0)},
+    {"name": "goblinshark", "palette": "rose", "body_len": 19, "body_h": 3.2, "head_h": 0.6, "peak": 0.4, "tail": "long", "tail_len": 6, "snout": 4},
 ]
 
 

@@ -1,23 +1,27 @@
 class_name FishingSpots
 extends RefCounted
 
-## The three places a fisherman can cast from, and which slice of the
-## fish catalog each one reaches.
+## The four places a fisherman can cast from, and which slice of the fish
+## catalog each one reaches.
 ##
-## The habitat split is not arbitrary: the 122-species catalog was already
-## authored with this progression baked in. Reedbeds/Harbour top out at
-## Rare, while The Deep and Sunken Ruins contain no Common or Uncommon
-## species at all, so grouping habitats by depth produces a clean rarity
-## curve without retuning a single species.
+## The habitat split is not arbitrary: the catalog is authored with this
+## progression baked in. Reedbeds/Harbour top out at Rare, while The Deep
+## and Sunken Ruins contain no Common or Uncommon species at all, so
+## grouping habitats by depth produces a clean rarity curve without
+## retuning a single species. River Mouth sits between the pond and pier
+## both narratively (brackish, a mix of river and coastal fish) and in
+## world-space (WorldLayout.RIVER_MOUTH_RECT fills the gap between
+## POND_RECT and SAND_RECT).
 ##
-##   pond      30 species, Common..Epic
-##   pier      51 species, Common..Legendary (+1 Secret)
-##   offshore  41 species, Rare..Mythic      (+5 Secret)
+## Species-per-spot counts: see FishCatalog.total_count() / the Album
+## panel for the current live figures rather than a comment here, which
+## has already gone stale twice as the catalog grew.
 ##
 ## Everything casts eastward so the right-facing fishing pose always
 ## applies (see Fisherman._process on entering FISHING).
 
 const POND := "pond"
+const RIVER_MOUTH := "river_mouth"
 const PIER := "pier"
 const OFFSHORE := "offshore"
 
@@ -32,6 +36,16 @@ const SPOTS := {
 		"cast_x": 52.0,
 		"lane_bounds": Vector2(258.0, 326.0),
 		"blurb": "Calm and shallow. Nothing rare, nothing dangerous.",
+	},
+	RIVER_MOUTH: {
+		"name": "River Mouth",
+		"habitats": ["Brackish Shallows", "Tidal Flats"],
+		# Same standing-just-west-of-the-water-rect pattern as the pond:
+		# RIVER_MOUTH_RECT starts at x=180, so 176 lands the cast line
+		# just past its edge.
+		"cast_x": 176.0,
+		"lane_bounds": Vector2(266.0, 314.0),
+		"blurb": "Where the pond's outflow meets the tide. A mix of river and coastal fish.",
 	},
 	PIER: {
 		"name": "Pier",
@@ -55,7 +69,7 @@ const SPOTS := {
 
 ## Order matters: it drives the profile panel's cycle button and the
 ## meta-shop rows, and it reads as the intended progression.
-const ORDER := [POND, PIER, OFFSHORE]
+const ORDER := [POND, RIVER_MOUTH, PIER, OFFSHORE]
 
 static func get_spot(id: String) -> Dictionary:
 	return SPOTS.get(id, SPOTS[POND])

@@ -31,6 +31,15 @@ const JETTY_RECT := Rect2(327.0, 180.0, 130.0, 20.0)
 const JETTY_COLOR := Color(0.46, 0.32, 0.18)
 const JETTY_PLANK_COLOR := Color(0.38, 0.26, 0.14)
 
+## Brackish estuary — the River Mouth spot. Sits in the gap between the
+## pond (ends x=172) and the sand/pier strip (starts x=280), which was
+## plain undrawn land until now — a literal as well as thematic bridge
+## between the freshwater pond and the coastal pier. Only drawn once
+## bought, same as the jetty.
+const RIVER_MOUTH_RECT := Rect2(180.0, 260.0, 90.0, 60.0)
+const RIVER_MOUTH_COLOR := Color(0.32, 0.52, 0.58)
+const RIVER_MOUTH_SHALLOW_COLOR := Color(0.4, 0.6, 0.62)
+
 ## The HUD is a CanvasLayer painted over the world, and its nav row runs
 ## to y=70 — anything placed above this is invisible in play no matter
 ## how correct it looks in the editor. The needs stations shipped at y=40
@@ -62,6 +71,8 @@ static func is_placeable(footprint: Rect2) -> bool:
 	if not placement_bounds().encloses(footprint):
 		return false
 	if footprint.intersects(POND_RECT):
+		return false
+	if footprint.intersects(RIVER_MOUTH_RECT):
 		return false
 	return not footprint.intersects(WATER_RECT)
 

@@ -98,6 +98,22 @@ const FAMILIES := [
 		"blurb": "Smoothed by current until it fits the hand.",
 		"set": {2: [["power", 0.05]], 3: [["power", 0.11]]},
 	},
+	{
+		"family": "Brackwater", "stems": ["Brackwater", "Brackwater", "Estuary-Forged", "Estuary-Forged"],
+		"slots": ["Rod", "Outfit", "Bait"], "rarities": ["Common", "Uncommon", "Rare", "Epic"],
+		"axes": ["luck", "power"],
+		"habitat_bias": {"Brackish Shallows": 2.2},
+		"blurb": "Half river, half sea — rusts if you don't rinse it.",
+		"set": {2: [["luck", 0.05]], 3: [["luck", 0.11]]},
+	},
+	{
+		"family": "Tideworn", "stems": ["Tideworn", "Tideworn", "Lowtide", "Lowtide"],
+		"slots": ["Outfit", "Charm", "Bait"], "rarities": ["Common", "Uncommon", "Rare", "Epic"],
+		"axes": ["speed"],
+		"habitat_bias": {"Tidal Flats": 2.2},
+		"blurb": "Cracked and pale from drying out twice a day.",
+		"set": {2: [["speed", 0.05]], 3: [["speed", 0.11]]},
+	},
 
 	# --- Coastal lines: habitat-steering, mid band -----------------------
 	{

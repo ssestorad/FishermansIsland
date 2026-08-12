@@ -72,7 +72,7 @@ const PERK_SLOT_COST := 250
 ## Fishing spots are one-time unlocks too. The pond is always available,
 ## so only these two are ever bought. Offshore is priced steeply because
 ## every catch there is Rare or better, which routes straight to the dock.
-const SPOT_COSTS := {"pier": 60, "offshore": 400}
+const SPOT_COSTS := {"river_mouth": 30, "pier": 60, "offshore": 400}
 
 var extra_slots: int = 0
 var luck_level: int = 0
