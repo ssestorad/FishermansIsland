@@ -117,16 +117,18 @@ const SPECIES := [
 	{"n": "Largetooth Sawfish", "t": "Epic", "h": "Brackish Shallows", "m": 91, "w": [20.0, 45.0], "v": 34, "d": "Sweeps its toothed blade sideways through a baitball and lets the current do the sorting."},
 	{"n": "Silver King Tarpon", "t": "Legendary", "h": "Brackish Shallows", "m": 55, "w": [20.0, 60.0], "v": 70, "d": "Rolls at the surface like a coin flipped by something enormous, then is simply gone."},
 
-	# --- Tidal Flats (12) ------------------------------------------------
+	# --- Tidal Flats (14) ------------------------------------------------
 	# Exposed mud and sandbar at low water. Flatfish, burrowers and one or
 	# two things that would rather walk than swim.
 	{"n": "Mudskipper", "t": "Common", "h": "Tidal Flats", "m": 56, "w": [0.05, 0.3], "v": 1, "d": "Hauls itself across the exposed mud on its front fins, in no hurry to get wet again."},
 	{"n": "Common Goby", "t": "Common", "h": "Tidal Flats", "m": 3, "w": [0.05, 0.2], "v": 1, "d": "Small enough to hide under a single stranded shell at low tide."},
 	{"n": "Sand Smelt", "t": "Common", "h": "Tidal Flats", "m": 0, "w": [0.1, 0.4], "v": 1, "d": "Flashes silver in the shallows and is gone before the flash finishes registering."},
 	{"n": "Tideflat Shrimpjaw", "t": "Common", "h": "Tidal Flats", "m": 57, "w": [0.1, 0.5], "v": 2, "d": "An odd little mouth built for sifting the mud one grain at a time."},
+	{"n": "Shore Crab", "t": "Common", "h": "Tidal Flats", "m": 97, "w": [0.05, 0.3], "v": 1, "d": "Sidesteps under every lifted rock on the flat, one claw raised in warning."},
 	{"n": "European Flounder", "t": "Uncommon", "h": "Tidal Flats", "m": 36, "w": [0.5, 2.0], "v": 4, "d": "Both eyes migrate to one side of its head as it grows, and it never looks back."},
 	{"n": "Sand Sole", "t": "Uncommon", "h": "Tidal Flats", "m": 36, "w": [0.3, 1.5], "v": 4, "d": "Wears the exact grain and colour of the flat it's lying on, until it isn't there anymore."},
 	{"n": "Mireback Toad", "t": "Uncommon", "h": "Tidal Flats", "m": 36, "w": [0.6, 2.2], "v": 5, "d": "Squats motionless in a pool so long that barnacles have tried to settle on it."},
+	{"n": "Common Starfish", "t": "Uncommon", "h": "Tidal Flats", "m": 96, "w": [0.1, 0.4], "v": 5, "d": "Regrows a lost arm slowly enough that most fishermen never see the difference."},
 	{"n": "European Eel", "t": "Rare", "h": "Tidal Flats", "m": 18, "w": [1.5, 5.0], "v": 10, "d": "Has already crossed an ocean once to get here, and isn't finished travelling yet."},
 	{"n": "Tideglass Ray", "t": "Rare", "h": "Tidal Flats", "m": 28, "w": [2.0, 7.0], "v": 11, "d": "Nearly invisible under a skin of wet sand, until the flat itself seems to flinch."},
 	{"n": "Giant Mudskipper", "t": "Epic", "h": "Tidal Flats", "m": 56, "w": [3.0, 9.0], "v": 30, "d": "Grown too large to bother hiding, it simply claims the best pool and dares anything to argue."},
@@ -298,10 +300,11 @@ const SPECIES := [
 	{"n": "Nightglass Siren", "t": "Secret", "h": "The Deep", "m": 43, "w": [60.0, 150.0], "v": 380, "d": "Heard first, and always at the exact moment the last lamp goes out.", "night": true, "weather": "Foggy"},
 	{"n": "The Long Dark", "t": "Secret", "h": "The Deep", "m": 44, "w": [200.0, 500.0], "v": 460, "d": "No fisherman has described it twice the same way. All of them stopped fishing nights.", "night": true, "weather": "Stormy"},
 
-	# --- Sunken Ruins (5) ----------------------------------------------
+	# --- Sunken Ruins (6) ----------------------------------------------
 	# Drowned stonework out past the shelf. Nothing here is ordinary.
 	{"n": "Temple Grouper", "t": "Legendary", "h": "Sunken Ruins", "m": 12, "w": [30.0, 80.0], "v": 72, "d": "Has lived inside the same drowned doorway long enough to have shaped itself to the arch."},
 	{"n": "Runic Nautilus", "t": "Legendary", "h": "Sunken Ruins", "m": 11, "w": [12.0, 34.0], "v": 78, "d": "Its shell is scored in marks that are not growth lines and are not decoration.", "pick": 0.7},
+	{"n": "Wreck-Dweller Octopus", "t": "Legendary", "h": "Sunken Ruins", "m": 98, "w": [8.0, 22.0], "v": 74, "d": "Has claimed the captain's cabin as a den, and rearranges whatever the current leaves behind."},
 	{"n": "Drowned Colossus", "t": "Mythic", "h": "Sunken Ruins", "m": 39, "w": [150.0, 360.0], "v": 220, "d": "Sleeps in the flooded hall and moves once a season, which is when the ruins shift."},
 	{"n": "Primordial Wyrm", "t": "Mythic", "h": "Sunken Ruins", "m": 38, "w": [130.0, 300.0], "v": 215, "d": "Was in the water before the stonework was above it, and expects to outlast the argument."},
 	{"n": "Keeper of the Ruins", "t": "Secret", "h": "Sunken Ruins", "m": 45, "w": [180.0, 450.0], "v": 500, "d": "Surfaces in fog over the drowned city, waits until it has been properly looked at, and sinks.", "weather": "Foggy", "season": "Autumn"},
