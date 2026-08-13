@@ -26,6 +26,7 @@ Add --preview to also write a scaled-up contact sheet for eyeballing.
 """
 
 import argparse
+import colorsys
 import math
 import os
 import random
@@ -33,7 +34,7 @@ import random
 from PIL import Image
 
 FRAME_W, FRAME_H = 64, 32
-COLUMNS, ROWS = 12, 10
+COLUMNS, ROWS = 12, 12
 MODEL_COUNT = COLUMNS * ROWS
 CENTER_Y = 15.5
 OUT_PATH = os.path.join("assets", "sprites", "fish", "fish_atlas.png")
@@ -63,6 +64,28 @@ PALETTES = {
     "rose": [(214, 132, 150), (178, 94, 114), (244, 186, 196), (196, 112, 132), (140, 68, 86)],
     "amber": [(226, 146, 58), (188, 110, 34), (248, 196, 122), (206, 126, 44), (150, 84, 24)],
     "ink": [(74, 78, 92), (48, 52, 64), (118, 124, 142), (62, 66, 80), (32, 34, 42)],
+
+    # Second rank, added once 16 palettes were being stretched across 134
+    # models — several hues were carrying a dozen species each, so whole
+    # habitats read as one colour. Same 5-tone shape as above; picked to
+    # fill the gaps the first rank left (no true mid-green, no strong
+    # blue, no warm off-white, no deep red-purple).
+    "jade": [(60, 160, 130), (36, 118, 96), (120, 206, 180), (48, 140, 114), (24, 84, 68)],
+    "coral": [(232, 124, 96), (196, 86, 62), (250, 180, 158), (214, 104, 78), (150, 58, 40)],
+    "rust": [(170, 84, 44), (132, 60, 30), (212, 134, 92), (150, 72, 36), (94, 40, 20)],
+    "plum": [(152, 72, 116), (116, 48, 88), (204, 130, 172), (134, 60, 102), (82, 30, 62)],
+    "cobalt": [(64, 104, 196), (40, 72, 156), (120, 160, 232), (52, 88, 174), (26, 48, 110)],
+    "moss": [(104, 124, 60), (76, 94, 42), (152, 170, 104), (90, 110, 50), (52, 66, 28)],
+    "bronze": [(176, 132, 72), (138, 100, 50), (220, 184, 124), (158, 116, 60), (100, 70, 32)],
+    "ivory": [(238, 230, 206), (200, 190, 164), (252, 248, 236), (218, 208, 182), (166, 156, 130)],
+    "charcoal": [(86, 82, 78), (58, 55, 52), (130, 126, 120), (72, 68, 64), (38, 36, 34)],
+    "mint": [(150, 214, 182), (108, 178, 146), (204, 242, 222), (128, 196, 164), (76, 140, 112)],
+    "salmon": [(232, 146, 124), (196, 108, 88), (250, 192, 174), (214, 126, 104), (152, 74, 56)],
+    "indigo": [(92, 80, 168), (64, 54, 130), (146, 136, 214), (78, 66, 148), (44, 36, 92)],
+    "ochre": [(198, 158, 72), (160, 122, 46), (234, 204, 136), (178, 138, 58), (116, 86, 30)],
+    "wine": [(140, 48, 66), (104, 30, 46), (192, 96, 116), (122, 38, 54), (72, 18, 32)],
+    "seafoam": [(128, 196, 196), (90, 158, 160), (184, 230, 228), (108, 176, 178), (60, 116, 118)],
+    "obsidian": [(52, 54, 70), (32, 34, 48), (88, 92, 116), (42, 44, 58), (20, 20, 30)],
 }
 
 TONE_ORDER = ["body", "back", "belly", "fin", "pattern"]
@@ -82,6 +105,15 @@ def _luminance(color):
 ## way every palette's eye is auto-derived rather than hand-picked.
 GLOW_COLOR = (190, 255, 210)
 
+## Same reasoning as GLOW_COLOR: teeth/gums/the mouth crease read as
+## anatomy, not a body marking, so all three stay fixed colours for every
+## model rather than reusing "eye" (which flips dark/light per palette for
+## its own contrast reasons and made the first version of teeth vanish
+## entirely on some sharks).
+TEETH_COLOR = (248, 246, 236)
+GUM_COLOR = (196, 48, 48)
+MOUTH_LINE_COLOR = (22, 22, 26)
+
 
 def resolve_palette(name):
     values = PALETTES[name]
@@ -90,6 +122,9 @@ def resolve_palette(name):
     # rather than hand-picking an eye colour for every entry.
     palette["eye"] = (28, 30, 36) if _luminance(palette["body"]) > 110 else (232, 236, 244)
     palette["glow"] = GLOW_COLOR
+    palette["teeth"] = TEETH_COLOR
+    palette["gum"] = GUM_COLOR
+    palette["mouthline"] = MOUTH_LINE_COLOR
     return palette
 
 
@@ -97,11 +132,53 @@ def resolve_palette(name):
 ## _add_gradient_tones/_gradient_tone_for). Purely a rendering-quality
 ## knob — doesn't touch a palette's actual colour data, just how many
 ## computed in-between steps get sampled from it.
-GRADIENT_STEPS = 8
+GRADIENT_STEPS = 12
+
+
+## Hue shifting — the single biggest quality lever in pixel-art shading,
+## and what the first version of this gradient was missing. Interpolating a
+## ramp straight through RGB only changes brightness, which is why the
+## midtones came out grey and lifeless: real shading moves *hue* as well,
+## with shadows picking up the ambient (underwater, that's blue) and
+## highlights picking up the light source (warm). The shift is strongest at
+## the two ends and fades to nothing in the middle, so a palette's own
+## "body" colour still reads exactly as authored.
+## Shadows steer toward *purple*, not blue. Hue travel takes the short way
+## round, and from a warm gold (~0.11) the short way to blue (0.60) runs
+## through green — which turned the gold and sand palettes olive and made
+## the copper turtle look sunburnt. Purple (0.75) is reached from warm hues
+## by going down through red instead, and from greens and blues by going up
+## through cyan, so every family gets a plausible shadow. The amounts are
+## also far smaller than they look like they should be: on a ramp only a
+## dozen steps wide, a shift over ~0.06 reads as a colour change rather
+## than as shading.
+SHADOW_HUE, LIGHT_HUE = 0.75, 0.14
+SHADOW_SHIFT, LIGHT_SHIFT = 0.06, 0.05
+SHADOW_SAT, LIGHT_SAT = 1.12, 0.88
+## A flat grey carries no hue to steer, yet greys are exactly where a cool
+## shadow and a warm highlight read best, so seed just enough saturation
+## for the shift to land. Without this the six near-neutral palettes
+## (silver, slate, pearl, ink, charcoal, obsidian) would get no benefit.
+GREY_SEED_SAT = 0.10
 
 
 def _lerp_rgb(c1, c2, t):
     return tuple(int(round(c1[i] + (c2[i] - c1[i]) * t)) for i in range(3))
+
+
+def _hue_shift(color, target_hue, amount, sat_gain):
+    """Steers a colour's hue toward `target_hue` by `amount` (0..1) and
+    scales its saturation, leaving brightness alone."""
+    h, s, v = colorsys.rgb_to_hsv(*(c / 255.0 for c in color))
+    if s < 0.06:
+        h = target_hue
+        s = GREY_SEED_SAT * (amount / max(SHADOW_SHIFT, LIGHT_SHIFT))
+    else:
+        delta = ((target_hue - h + 0.5) % 1.0) - 0.5
+        h = (h + delta * amount) % 1.0
+        s = min(1.0, s * sat_gain)
+    r, g, b = colorsys.hsv_to_rgb(h, min(1.0, max(0.0, s)), v)
+    return (int(round(r * 255)), int(round(g * 255)), int(round(b * 255)))
 
 
 ## Every palette still only ever defines 5 hand-picked tones (see
@@ -117,11 +194,21 @@ def _add_gradient_tones(palette):
     half = GRADIENT_STEPS // 2
     for i in range(GRADIENT_STEPS):
         if i < half:
-            t = i / float(half)
-            color = _lerp_rgb(palette["back"], palette["body"], t)
+            color = _lerp_rgb(palette["back"], palette["body"], i / float(half))
         else:
-            t = (i - half) / float(GRADIENT_STEPS - half - 1)
-            color = _lerp_rgb(palette["body"], palette["belly"], t)
+            color = _lerp_rgb(palette["body"], palette["belly"],
+                              (i - half) / float(GRADIENT_STEPS - half - 1))
+        # Steer the two ends apart in hue, hardest at the edges and not at
+        # all in the middle (see the SHADOW_/LIGHT_ constants above).
+        pos = i / float(GRADIENT_STEPS - 1)
+        if pos < 0.5:
+            k = (0.5 - pos) * 2.0
+            color = _hue_shift(color, SHADOW_HUE, SHADOW_SHIFT * k,
+                               1.0 + (SHADOW_SAT - 1.0) * k)
+        else:
+            k = (pos - 0.5) * 2.0
+            color = _hue_shift(color, LIGHT_HUE, LIGHT_SHIFT * k,
+                               1.0 - (1.0 - LIGHT_SAT) * k)
         palette["grad%d" % i] = color
     return palette
 
@@ -206,14 +293,37 @@ def _draw_tail(px, spec, x0, base_h, body_h):
         elif style == "long":
             # A thin stalk that only flares into a lobe at the very end.
             half = base_h if t < 0.55 else base_h + (tip_h - base_h) * ((t - 0.55) / 0.45)
+        elif style == "crescent":
+            # Flares outward much faster than a fan (sqrt rather than
+            # linear), so by the time the notch below opens up there is
+            # already a tall span for it to cut into.
+            half = base_h + (tip_h - base_h) * math.sqrt(t)
         else:  # fan and fork share the same expanding outline
             half = base_h + (tip_h - base_h) * t
         top = int(round(CENTER_Y - half * bias_top))
         bottom = int(round(CENTER_Y + half * bias_bottom))
+        # How far out from the centreline the tail is hollowed out in this
+        # column. Zero for the solid styles, and computed exactly as before
+        # for "fork" so those 30 models render unchanged.
+        if style == "fork":
+            notch = (half - 1.2) * t
+        elif style == "crescent":
+            # A lunate tail: the notch cuts almost to the tips, leaving two
+            # thin swept blades instead of the chunky wedge "fork" leaves.
+            # This is the tail every fast pelagic fish actually has.
+            # The notch has to stay shut over the first third of the tail,
+            # or it severs the lobes from the peduncle and the whole tail
+            # reads as a separate "V" floating behind the fish.
+            # Lobe thickness tapers along the tail so the tips come to a
+            # point; a constant lobe leaves two blunt rectangles and the
+            # whole tail reads as a bracket rather than a crescent.
+            lobe = max(1.2, tip_h * (0.58 - 0.22 * t))
+            notch = max(0.0, min(half - lobe,
+                                 (tip_h + lobe) * max(0.0, (t - 0.35) / 0.65)))
+        else:
+            notch = 0.0
         for y in range(top, bottom + 1):
-            # A fork is a fan with the centre eaten away toward the tip,
-            # stopping short so both lobes keep some thickness.
-            if style == "fork" and abs(y - CENTER_Y) < (half - 1.2) * t:
+            if abs(y - CENTER_Y) < notch:
                 continue
             # "limb" instead of "fin": a tail is skin/body, not a fin, so
             # on a two-hue model (accent_palette set) it should match the
@@ -250,11 +360,34 @@ def _draw_tentacles(px, x0, base_h, length, count):
                 _put(px, x, int(round(y + o)), "fin")
 
 
-def _draw_edge_fin(px, x0, bounds, body_len, span_spec, side):
+def _fin_profile(t, style):
+    """Height multiplier in 0..1 across an edge fin's span.
+
+    "sine" is the original symmetric bump every pre-existing model uses and
+    stays the default, so adding this dispatch changed nothing for them.
+    """
+    if style == "swept":
+        # The shark silhouette: a near-straight leading edge up to an early
+        # apex, then a long concave trailing edge sweeping back down. A
+        # symmetric sine simply cannot express this, which is most of why
+        # the sharks read as generic torpedoes with a bump on top.
+        apex = 0.34
+        if t <= apex:
+            return t / apex
+        u = (t - apex) / (1.0 - apex)
+        return max(0.0, (1.0 - u) ** 1.8)
+    if style == "sail":
+        # Rises fast and holds a plateau instead of peaking — a clipped
+        # sine, for the tall squared-off fins (sailfish, lionfish).
+        return min(1.0, math.sin(t * math.pi) * 1.6)
+    return math.sin(t * math.pi)
+
+
+def _draw_edge_fin(px, x0, bounds, body_len, span_spec, side, style="sine"):
     """Dorsal (side=-1) or anal (side=1) fin riding along the body edge.
 
-    The height is shaped by a sine across the whole span so the fin peaks
-    in the middle and tapers back into the body at both ends.
+    The height is shaped by _fin_profile across the whole span so the fin
+    tapers back into the body at both ends.
     """
     start_frac, end_frac, height = span_spec
     a = int(body_len * start_frac)
@@ -264,10 +397,120 @@ def _draw_edge_fin(px, x0, bounds, body_len, span_spec, side):
         if not (0 <= i < body_len):
             continue
         t = (i - a) / float(span)
-        h = int(round(height * math.sin(t * math.pi)))
+        h = int(round(height * _fin_profile(t, style)))
         edge_y = bounds[i][0] if side < 0 else bounds[i][1]
         for k in range(1, h + 1):
             _put(px, x0 + i, edge_y + k * side, "fin")
+
+
+def _draw_lure(px, spec, bounds, x0, body_len):
+    """An anglerfish's illicium: a thin stalk arcing up and forward off the
+    head with a glowing bulb on the end.
+
+    The lure is the entire reason an anglerfish is recognisable and the
+    models had no representation of it at all — they were just round fish
+    with a "glow" belly row. The bulb uses the same fixed GLOW_COLOR the
+    bioluminescence pattern does, so it reads as light rather than skin.
+    """
+    if not spec.get("lure"):
+        return
+    length = spec.get("lure_len", 7)
+    anchor = max(0, min(body_len - 1, int(round(body_len * spec.get("lure_at", 0.10)))))
+    sx = x0 + anchor
+    sy = bounds[anchor][0]
+    tip_x, tip_y = sx, sy
+    for k in range(length):
+        t = (k + 1) / float(length)
+        # Rises fast, then leans forward over the mouth as it goes.
+        tip_x = sx - int(round(t * t * length * 0.85))
+        tip_y = sy - (k + 1)
+        _put(px, tip_x, tip_y, "fin")
+    for dx in (0, 1):
+        for dy in (0, -1):
+            _put(px, tip_x + dx - 1, tip_y + dy, "glow")
+
+
+def _draw_finlets(px, spec, bounds, x0, body_len):
+    """The sawtooth row of small finlets between the second dorsal and the
+    tail on tuna, mackerel and wahoo — a family trait no other fish here
+    has, and cheap to draw: one pixel proud of each edge, every other
+    column, so they read as a serrated ridge rather than a solid fin.
+    """
+    count = int(spec.get("finlets", 0))
+    if count <= 0:
+        return
+    start = int(round(body_len * spec.get("finlet_start", 0.62)))
+    for f in range(count):
+        i = start + f * 2
+        if i >= body_len:
+            break
+        top, bottom = bounds[i]
+        _put(px, x0 + i, top - 1, "fin")
+        if spec.get("finlets_ventral", True):
+            _put(px, x0 + i, bottom + 1, "fin")
+
+
+def _draw_barbels(px, spec, bounds, x0, snout):
+    """Catfish/sturgeon whiskers: strands trailing forward off the snout
+    tip, drooping harder the further out the pair sits.
+    """
+    count = int(spec.get("barbels", 0))
+    if count <= 0:
+        return
+    length = spec.get("barbel_len", 5)
+    front_top, front_bottom = bounds[0]
+    cy = (front_top + front_bottom) / 2.0
+    ox = x0 - snout
+    for b in range(count):
+        sign = 1 if b % 2 == 0 else -1
+        pair = b // 2
+        droop = 0.5 + 0.4 * pair
+        for k in range(length):
+            t = (k + 1) / float(length)
+            # Every strand leaves from the snout tip itself and only then
+            # fans apart. Starting them already offset vertically (the
+            # first attempt) left a diagonal gap between head and whiskers,
+            # so they read as a detached starburst floating off the face.
+            offset = t * (1 + pair) + t * t * length * droop
+            _put(px, ox - 1 - k, int(round(cy + sign * offset)), "fin")
+
+
+def _hammer_span(spec, bounds):
+    """Centre and half-height of a hammerhead's cephalofoil bar.
+
+    Shared by the drawing pass and the eye placement so the eyes can't
+    drift off the ends of the bar if one side is retuned.
+    """
+    front_top, front_bottom = bounds[0]
+    cy = (front_top + front_bottom) / 2.0
+    half = (front_bottom - front_top) / 2.0 * spec.get("hammer_spread", 1.5)
+    return cy, half
+
+
+def _draw_gills(px, spec, bounds, x0, body_len):
+    """The row of short vertical slits behind a shark's head.
+
+    Drawn in the "back" tone (the body's own darker shade) rather than
+    "pattern" (the darkest in the palette), and kept short — a slit is a
+    crease in the skin just behind the head, and at full "pattern" darkness
+    running most of the body height they read as prison bars instead.
+    Spaced two columns apart so they stay separate slits, not a block.
+    """
+    count = int(spec.get("gills", 0))
+    if count <= 0:
+        return
+    start_i = max(2, int(round(body_len * spec.get("gill_start", 0.11))))
+    for g in range(count):
+        i = start_i + g * 2
+        if i >= body_len:
+            break
+        top, bottom = bounds[i]
+        h = bottom - top
+        if h < 4:
+            continue
+        for y in range(top + max(1, int(round(h * 0.34))),
+                       top + max(2, int(round(h * 0.60))) + 1):
+            _put(px, x0 + i, y, "back")
 
 
 def _draw_pattern(px, spec, bounds, x0, rng):
@@ -424,6 +667,35 @@ def draw_fish(spec, seed):
             y = int(round(attach_y + (head_y - attach_y) * t))
             for w in range(neck_width):
                 _put(px, x0 - 1 - k, y + w, "limb")
+    elif spec.get("snout_style") == "cone":
+        # A solid tapering wedge carrying the body's own gradient instead
+        # of the default 1px whisker — a predator's conical snout rather
+        # than a billfish's needle. The whisker is right for a swordfish
+        # or a garfish and wrong for everything with an actual head, which
+        # is why the sharks looked blunt-nosed with a spike glued on.
+        front_top, front_bottom = bounds[0]
+        cy = (front_top + front_bottom) / 2.0
+        half0 = (front_bottom - front_top) / 2.0
+        for k in range(neck_cols):
+            t = (k + 1) / float(neck_cols)
+            half = half0 * (1.0 - t) * spec.get("snout_taper", 0.9)
+            top_y = int(round(cy - half))
+            bot_y = int(round(cy + half))
+            height = max(1, bot_y - top_y)
+            for y in range(top_y, bot_y + 1):
+                _put(px, x0 - 1 - k, y, _gradient_tone_for((y - top_y) / float(height)))
+    elif spec.get("snout_style") == "hammer":
+        # The cephalofoil: a vertical bar standing proud of the body on
+        # both sides. The one feature that makes a hammerhead read as a
+        # hammerhead rather than just another grey shark, and previously
+        # not represented at all — the model only had a high head_h.
+        cy, half = _hammer_span(spec, bounds)
+        top_y = int(round(cy - half))
+        bot_y = int(round(cy + half))
+        height = max(1, bot_y - top_y)
+        for k in range(neck_cols):
+            for y in range(top_y, bot_y + 1):
+                _put(px, x0 - 1 - k, y, _gradient_tone_for((y - top_y) / float(height)))
     else:
         for k in range(neck_cols):
             _put(px, x0 - 1 - k, head_y, "limb")
@@ -435,10 +707,21 @@ def draw_fish(spec, seed):
                 if dx * dx + dy * dy <= r * r:
                     _put(px, head_cx + dx, head_y + dy, "limb")
 
+    fin_style = spec.get("fin_style", "sine")
     if spec.get("dorsal"):
-        _draw_edge_fin(px, x0, bounds, body_len, spec["dorsal"], -1)
+        _draw_edge_fin(px, x0, bounds, body_len, spec["dorsal"], -1, fin_style)
+    # A small second dorsal sitting well back toward the tail. Optional and
+    # separate from "dorsal" rather than a list, so the 100+ single-finned
+    # models keep the exact spec shape they already had.
+    if spec.get("dorsal2"):
+        _draw_edge_fin(px, x0, bounds, body_len, spec["dorsal2"], -1, fin_style)
     if spec.get("anal"):
-        _draw_edge_fin(px, x0, bounds, body_len, spec["anal"], 1)
+        _draw_edge_fin(px, x0, bounds, body_len, spec["anal"], 1, fin_style)
+
+    _draw_gills(px, spec, bounds, x0, body_len)
+    _draw_finlets(px, spec, bounds, x0, body_len)
+    _draw_barbels(px, spec, bounds, x0, snout)
+    _draw_lure(px, spec, bounds, x0, body_len)
 
     pectoral = spec.get("pectoral", True)
     if pectoral:
@@ -447,7 +730,22 @@ def draw_fish(spec, seed):
         for frac in fracs:
             i = max(1, min(body_len - 1, int(body_len * frac)))
             edge_y = bounds[i][1]
-            if style == "flipper":
+            if style == "blade":
+                # A long swept-back pectoral: a solid wedge whose upper
+                # edge stays welded to the belly for the first half and
+                # then peels away to meet the lower edge in a point. Drawn
+                # as a filled span per column rather than a fixed-thickness
+                # strip, which is what made the first attempt read as a
+                # detached wire trailing behind the fish instead of a fin.
+                blade_len = spec.get("pectoral_len", 7)
+                depth = max(2, int(round(blade_len * 0.8)))
+                for k in range(blade_len):
+                    t = k / float(max(1, blade_len - 1))
+                    bot = 1 + int(round(depth * t))
+                    top = 1 + int(round(depth * max(0.0, (t - 0.5) / 0.5) * 0.85))
+                    for d in range(top, bot + 1):
+                        _put(px, x0 + i + k, edge_y + d, "fin")
+            elif style == "flipper":
                 _put(px, x0 + i, edge_y + 1, "limb")
                 _put(px, x0 + i + 1, edge_y + 1, "limb")
                 _put(px, x0 + i + 1, edge_y + 2, "limb")
@@ -463,11 +761,34 @@ def draw_fish(spec, seed):
         # head_block/head_offset can put the head well clear of the
         # body's own front edge (see the turtle).
         _put(px, x0 - snout, head_y - 1, "eye")
+    elif spec.get("snout_style") == "hammer":
+        # A hammerhead's eyes are out on the tips of the bar, which is the
+        # whole point of the shape — placing them on the body column like
+        # every other fish would waste it.
+        cy, half = _hammer_span(spec, bounds)
+        _put(px, x0 - snout, int(round(cy - half)) + 1, "eye")
+        _put(px, x0 - snout, int(round(cy + half)) - 1, "eye")
     else:
         eye_i = max(1, int(body_len * 0.14))
         top, bottom = bounds[eye_i]
         eye_y = int(round(CENTER_Y - (CENTER_Y - top) * 0.5))
         _put(px, x0 + eye_i, max(top, min(bottom, eye_y)), "eye")
+
+    if spec.get("teeth"):
+        # A real open jaw, not just marks floating on the belly: extends
+        # the silhouette down a couple of pixels for a short run of
+        # columns near the head (the lower jaw), with a dark mouthline
+        # crease at the original belly edge and a red/white gum-and-tooth
+        # checkerboard riding just inside it — modelled directly on a
+        # reference image the user supplied of a hand-drawn pixel shark.
+        jaw_len = max(4, int(round(body_len * 0.14)))
+        start_i = max(1, int(round(body_len * 0.02)))
+        for k in range(jaw_len):
+            i = min(body_len - 1, start_i + k)
+            mouth_y = bounds[i][1]
+            _put(px, x0 + i, mouth_y, "mouthline")
+            _put(px, x0 + i, mouth_y + 1, "teeth" if k % 2 == 0 else "gum")
+            _put(px, x0 + i, mouth_y + 2, "belly")
 
     peduncle = bounds[body_len - 1]
     _draw_tail(px, spec, x0 + body_len, max(0.5, (peduncle[1] - peduncle[0]) / 2.0), spec["body_h"])
@@ -587,7 +908,7 @@ SPECS = [
     {"name": "bream", "palette": "pearl", "body_len": 30, "body_h": 8.4, "peak": 0.42, "tail": "fork", "tail_len": 10, "dorsal": (0.3, 0.6, 4)},
     {"name": "rudd", "palette": "gold", "body_len": 30, "body_h": 7.6, "tail": "fork", "tail_len": 10, "anal": (0.55, 0.85, 4)},
     {"name": "chub", "palette": "slate", "body_len": 36, "body_h": 6.8, "tail": "fan", "tail_len": 8, "pattern": "line"},
-    {"name": "trout", "palette": "rose", "body_len": 38, "body_h": 6.8, "tail": "fan", "tail_len": 8, "dorsal": (0.35, 0.6, 3.6), "pattern": "spots"},
+    {"name": "trout", "palette": "salmon", "body_len": 38, "body_h": 6.8, "tail": "fan", "tail_len": 8, "dorsal": (0.35, 0.6, 3.6), "pattern": "spots"},
     # Deep-bodied and rounded.
     {"name": "perch", "palette": "emerald", "body_len": 32, "body_h": 8.8, "back_bias": 1.15, "belly_bias": 0.85, "tail": "fan", "tail_len": 8, "dorsal": (0.25, 0.55, 4), "pattern": "stripes"},
     {"name": "carp", "palette": "amber", "body_len": 36, "body_h": 9.2, "peak": 0.45, "tail": "fork", "tail_len": 10, "dorsal": (0.3, 0.7, 3.2), "pattern": "stripes"},
@@ -596,26 +917,32 @@ SPECS = [
     {"name": "bigeye", "palette": "crimson", "body_len": 30, "body_h": 9.2, "head_h": 0.8, "peak": 0.35, "tail": "fork", "tail_len": 8, "tail_flare": 0.6},
     {"name": "discus", "palette": "teal", "body_len": 28, "body_h": 10.8, "head_h": 0.75, "tail_h": 0.6, "peak": 0.5, "tail": "round", "tail_len": 6, "tail_flare": 0.55, "pattern": "stripes"},
     # Long predators.
-    {"name": "pike", "palette": "olive", "body_len": 44, "body_h": 6, "head_h": 0.8, "peak": 0.55, "tail": "fork", "tail_len": 10, "dorsal": (0.65, 0.85, 3.6), "pattern": "spots"},
+    {"name": "pike", "palette": "olive", "body_len": 44, "body_h": 6, "head_h": 0.8, "peak": 0.55, "tail": "fork", "tail_len": 10, "dorsal": (0.65, 0.85, 3.6), "pattern": "spots", "teeth": True},
     {"name": "bass", "palette": "emerald", "body_len": 38, "body_h": 7.6, "tail": "fan", "tail_len": 10, "dorsal": (0.3, 0.6, 4), "pattern": "line"},
-    {"name": "barracuda", "palette": "steel", "body_len": 44, "body_h": 5.2, "head_h": 0.75, "peak": 0.5, "tail": "fork", "tail_len": 10, "snout": 2},
+    {"name": "barracuda", "palette": "steel", "body_len": 44, "body_h": 5.2, "head_h": 0.75, "peak": 0.5, "tail": "fork", "tail_len": 10, "snout": 2, "teeth": True},
     {"name": "grayling", "palette": "violet", "body_len": 36, "body_h": 6, "tail": "fork", "tail_len": 10, "dorsal": (0.25, 0.6, 6)},
     # Eels and serpents.
     {"name": "eel", "palette": "ink", "body_len": 48, "body_h": 5.2, "head_h": 1.0, "tail_h": 0.38, "peak": 0.0, "tail": "point", "tail_len": 8, "pectoral": False, "taper": "linear"},
-    {"name": "moray", "palette": "olive", "body_len": 48, "body_h": 5.6, "head_h": 1.0, "tail_h": 0.4, "peak": 0.0, "tail": "point", "tail_len": 8, "dorsal": (0.25, 0.9, 2.4), "pectoral": False, "taper": "linear"},
+    {"name": "moray", "palette": "olive", "body_len": 48, "body_h": 5.6, "head_h": 1.0, "tail_h": 0.4, "peak": 0.0, "tail": "point", "tail_len": 8, "dorsal": (0.25, 0.9, 2.4), "pectoral": False, "taper": "linear", "teeth": True},
     {"name": "serpent", "palette": "abyss", "body_len": 46, "body_h": 6.8, "head_h": 0.95, "tail_h": 0.3, "peak": 0.05, "tail": "point", "tail_len": 10, "pattern": "spots", "pectoral": False, "taper": "linear"},
-    {"name": "lamprey", "palette": "copper", "body_len": 50, "body_h": 4.8, "head_h": 1.0, "tail_h": 0.45, "peak": 0.0, "tail": "point", "tail_len": 8, "pectoral": False, "pattern": "line", "taper": "linear"},
+    {"name": "lamprey", "palette": "obsidian", "body_len": 50, "body_h": 4.8, "head_h": 1.0, "tail_h": 0.45, "peak": 0.0, "tail": "point", "tail_len": 8, "pectoral": False, "pattern": "line", "taper": "linear"},
     # Billed showpieces.
-    {"name": "swordfish", "palette": "steel", "body_len": 36, "body_h": 6, "tail": "fork", "tail_len": 10, "tail_flare": 1.1, "snout": 10, "dorsal": (0.2, 0.5, 5.2)},
-    {"name": "marlin", "palette": "abyss", "body_len": 34, "body_h": 6.8, "tail": "fork", "tail_len": 10, "tail_flare": 1.1, "snout": 10, "dorsal": (0.2, 0.6, 5.6)},
-    {"name": "sailfish", "palette": "violet", "body_len": 34, "body_h": 6, "tail": "fork", "tail_len": 10, "snout": 8, "dorsal": (0.15, 0.75, 6.8)},
+    {"name": "swordfish", "palette": "steel", "body_len": 36, "body_h": 6, "tail": "crescent", "tail_len": 10, "tail_flare": 1.1, "snout": 10, "dorsal": (0.2, 0.5, 5.2)},
+    {"name": "marlin", "palette": "abyss", "body_len": 34, "body_h": 6.8, "tail": "crescent", "tail_len": 10, "tail_flare": 1.1, "snout": 10, "dorsal": (0.2, 0.6, 5.6)},
+    {"name": "sailfish", "palette": "violet", "body_len": 34, "body_h": 6, "tail": "crescent", "tail_len": 10, "snout": 8, "dorsal": (0.15, 0.75, 6.8), "fin_style": "sail"},
     {"name": "needlefish", "palette": "pearl", "body_len": 42, "body_h": 3.6, "head_h": 0.9, "tail": "fork", "tail_len": 8, "snout": 8},
     # Sharks, rays and heavies.
-    {"name": "shark", "palette": "slate", "body_len": 40, "body_h": 7.6, "head_h": 0.7, "peak": 0.35, "back_bias": 1.1, "belly_bias": 0.9, "tail": "long", "tail_len": 12, "dorsal": (0.35, 0.6, 5.2)},
-    {"name": "hammerhead", "palette": "silver", "body_len": 40, "body_h": 6.8, "head_h": 0.95, "peak": 0.4, "tail": "long", "tail_len": 12, "dorsal": (0.4, 0.6, 4.8)},
+    # The shark family all share the same anatomy kit (see the primitives
+    # near the top): a swept first dorsal, a small second dorsal, an anal
+    # fin, long blade pectorals, five gill slits and a conical snout.
+    # What separates them is proportion and one signature trait each.
+    {"name": "shark", "palette": "slate", "body_len": 40, "body_h": 7.6, "head_h": 0.7, "peak": 0.35, "back_bias": 1.1, "belly_bias": 0.9, "tail": "long", "tail_len": 12, "snout": 5, "snout_style": "cone", "fin_style": "swept", "dorsal": (0.33, 0.70, 5.6), "dorsal2": (0.76, 0.92, 2.0), "anal": (0.72, 0.88, 1.8), "pectoral": [0.24], "pectoral_style": "blade", "pectoral_len": 8, "gills": 5, "teeth": True},
+    # Signature: the cephalofoil, plus the unusually tall narrow first
+    # dorsal real hammerheads carry.
+    {"name": "hammerhead", "palette": "silver", "body_len": 40, "body_h": 6.4, "head_h": 0.8, "peak": 0.4, "tail": "long", "tail_len": 12, "snout": 3, "snout_style": "hammer", "hammer_spread": 1.5, "fin_style": "swept", "dorsal": (0.30, 0.62, 7.0), "dorsal2": (0.76, 0.92, 1.8), "anal": (0.72, 0.88, 1.6), "pectoral": [0.26], "pectoral_style": "blade", "pectoral_len": 7, "gills": 5, "teeth": True},
     {"name": "ray", "palette": "sand", "body_len": 24, "body_h": 12, "head_h": 0.12, "tail_h": 0.06, "peak": 0.55, "tail": "point", "tail_len": 18, "tail_flare": 0.2, "pectoral": False},
-    {"name": "sturgeon", "palette": "ink", "body_len": 44, "body_h": 6, "head_h": 0.8, "peak": 0.5, "tail": "long", "tail_len": 10, "snout": 4, "pattern": "stripes"},
-    {"name": "catfish", "palette": "copper", "body_len": 40, "body_h": 7.6, "head_h": 1.0, "peak": 0.3, "tail": "round", "tail_len": 10, "snout": 6, "pattern": "spots"},
+    {"name": "sturgeon", "palette": "ink", "body_len": 44, "body_h": 6, "head_h": 0.8, "peak": 0.5, "tail": "long", "tail_len": 10, "snout": 4, "pattern": "stripes", "snout_style": "cone", "snout_taper": 0.6, "barbels": 2, "barbel_len": 3},
+    {"name": "catfish", "palette": "copper", "body_len": 40, "body_h": 7.6, "head_h": 1.0, "peak": 0.3, "tail": "round", "tail_len": 10, "snout": 6, "pattern": "spots", "snout_style": "cone", "barbels": 4, "barbel_len": 4},
     {"name": "leviathan", "palette": "crimson", "body_len": 42, "body_h": 9.2, "head_h": 0.85, "peak": 0.45, "back_bias": 1.1, "belly_bias": 0.9, "tail": "fan", "tail_len": 10, "tail_flare": 1.0, "dorsal": (0.35, 0.75, 3.6), "pattern": "stripes"},
     # Exotics — one-off silhouettes for named species that used to share a
     # model with six-plus other fish (Lamp Squid/Anglerfish/Hadal Chimaera/
@@ -627,7 +954,7 @@ SPECS = [
     # instead of tapering to one solid point — the mantle stays a normal
     # linear body, only the tail treatment changes.
     {"name": "squid", "palette": "violet", "body_len": 22, "body_h": 7.2, "head_h": 0.85, "tail_h": 0.4, "peak": 0.35, "tail": "tentacles", "tail_len": 18, "tail_strand_count": 7, "pectoral": False, "pattern": "spots"},
-    {"name": "angler", "palette": "ink", "body_len": 24, "body_h": 10, "head_h": 0.95, "tail_h": 0.3, "peak": 0.15, "tail": "round", "tail_len": 6, "tail_flare": 0.4, "snout": 4, "dorsal": (0.05, 0.2, 2.4)},
+    {"name": "angler", "palette": "ink", "body_len": 24, "body_h": 10, "head_h": 0.95, "tail_h": 0.3, "peak": 0.15, "tail": "round", "tail_len": 6, "tail_flare": 0.4, "snout": 4, "dorsal": (0.05, 0.2, 2.4), "lure": True, "lure_len": 5, "lure_at": 0.14, "teeth": True},
     {"name": "chimaera", "palette": "slate", "body_len": 28, "body_h": 6.4, "head_h": 0.75, "tail_h": 0.15, "peak": 0.3, "tail": "point", "tail_len": 16, "tail_flare": 0.25, "dorsal": (0.08, 0.3, 4.4)},
     {"name": "manta", "palette": "steel", "body_len": 26, "body_h": 13, "head_h": 0.15, "tail_h": 0.05, "peak": 0.5, "tail": "point", "tail_len": 16, "tail_flare": 0.15, "snout": 4, "pectoral": False},
     {"name": "flounder", "palette": "sand", "body_len": 26, "body_h": 11, "head_h": 0.25, "tail_h": 0.2, "peak": 0.5, "tail": "round", "tail_len": 6, "tail_flare": 0.35, "pectoral": False, "pattern": "eyespot"},
@@ -648,13 +975,46 @@ SPECS = [
     # The "shark" model alone covered four species spanning Epic to
     # Legendary; Great White and Thresher are both distinctive enough by
     # name/lore (thresher tails run as long as the body) to earn their own.
-    {"name": "greatwhite", "palette": "steel", "body_len": 42, "body_h": 8.8, "head_h": 0.65, "tail_h": 0.3, "peak": 0.32, "tail": "long", "tail_len": 12, "dorsal": (0.32, 0.55, 6), "snout": 2},
-    {"name": "thresher", "palette": "slate", "body_len": 32, "body_h": 6.8, "head_h": 0.6, "tail_h": 0.35, "peak": 0.35, "tail": "long", "tail_len": 24, "tail_flare": 0.35, "dorsal": (0.3, 0.5, 3.6)},
+    # Signature: the heaviest build of the ordinary sharks, with the
+    # tallest dorsal and the biggest pectorals to match.
+    {"name": "greatwhite", "palette": "steel", "body_len": 42, "body_h": 8.4, "head_h": 0.6, "tail_h": 0.3, "peak": 0.32, "back_bias": 1.05, "belly_bias": 0.95, "tail": "long", "tail_len": 12, "snout": 5, "snout_style": "cone", "fin_style": "swept", "dorsal": (0.30, 0.68, 6.4), "dorsal2": (0.76, 0.92, 2.2), "anal": (0.72, 0.88, 2.0), "pectoral": [0.24], "pectoral_style": "blade", "pectoral_len": 9, "gills": 5, "teeth": True},
+    # Signature: the tail, which on a real thresher is as long as the rest
+    # of the animal — so everything else stays deliberately modest.
+    # tail_flare 0.35 made this a plain rectangular bar, not a scythe:
+    # _draw_tail clamps tip_h up to base_h, so any flare that works out
+    # smaller than the peduncle's own half-height silently produces a
+    # uniform-width tail. It has to exceed base_h/body_h to flare at all.
+    {"name": "thresher", "palette": "cobalt", "body_len": 32, "body_h": 6.8, "head_h": 0.6, "tail_h": 0.35, "peak": 0.35, "tail": "long", "tail_len": 22, "tail_flare": 1.25, "snout": 4, "snout_style": "cone", "fin_style": "swept", "dorsal": (0.28, 0.62, 4.6), "dorsal2": (0.74, 0.90, 1.6), "anal": (0.70, 0.86, 1.4), "pectoral": [0.24], "pectoral_style": "blade", "pectoral_len": 7, "gills": 5, "teeth": True},
     # Non-fish sea life. Both still fit the head-to-tail silhouette system;
     # starfish and octopus don't (radial/many-armed body plans) and are
     # deliberately not attempted here — see the project notes.
-    {"name": "seahorse", "palette": "rose", "body_len": 18, "body_h": 5.2, "head_h": 0.65, "tail_h": 0.1, "peak": 0.3, "back_bias": 1.3, "belly_bias": 0.7, "tail": "point", "tail_len": 16, "tail_flare": 0.1, "snout": 8, "dorsal": (0.15, 0.5, 3.2), "pectoral": False},
-    {"name": "jellyfish", "palette": "pearl", "body_len": 18, "body_h": 8.4, "head_h": 0.35, "tail_h": 0.1, "peak": 0.55, "tail": "point", "tail_len": 18, "tail_flare": 0.15, "pectoral": False},
+    {"name": "seahorse", "palette": "plum", "body_len": 18, "body_h": 5.2, "head_h": 0.65, "tail_h": 0.1, "peak": 0.3, "back_bias": 1.3, "belly_bias": 0.7, "tail": "point", "tail_len": 16, "tail_flare": 0.1, "snout": 8, "dorsal": (0.15, 0.5, 3.2), "pectoral": False},
+    # Was a lateral-profile model: a cone with a single straight bar for a
+    # tail, which is about as far from a jellyfish as the silhouette system
+    # can get. A jellyfish has no head-to-tail axis at all, so it belongs
+    # on the radial engine like the starfish and octopus — a wide shallow
+    # bell (core_w well over core_h reads as a dome, not a ball) with two
+    # ranks of trailing parts: short thick oral arms just under the rim,
+    # and long thin stinging tentacles streaming past them.
+    {
+        "name": "jellyfish", "shape": "radial", "palette": "seafoam",
+        # NOTE on limb "width": _draw_radial_limb stamps -span..+span around
+        # the centreline, where span = round(half_w) — so width 2.0 renders
+        # *five* pixels across, not two. Anything above ~1.0 makes adjacent
+        # limbs merge into one slab, which is exactly what the first version
+        # of this bell did (a mushroom on a fat solid stem).
+        "cy": 10, "core_w": 9.0, "core_h": 4.6,
+        "limbs": [
+            {"angle": 55, "length": 7, "width": 1.0, "tone": "back", "curl": 24},
+            {"angle": 73, "length": 9, "width": 1.0, "tone": "back", "curl": 10},
+            {"angle": 107, "length": 9, "width": 1.0, "tone": "back", "curl": -10},
+            {"angle": 125, "length": 7, "width": 1.0, "tone": "back", "curl": -24},
+            {"angle": 66, "length": 14, "width": 0.45, "tone": "belly", "curl": 16},
+            {"angle": 82, "length": 17, "width": 0.45, "tone": "pattern", "curl": -12},
+            {"angle": 98, "length": 17, "width": 0.45, "tone": "pattern", "curl": 12},
+            {"angle": 114, "length": 14, "width": 0.45, "tone": "belly", "curl": -16},
+        ],
+    },
     # River Mouth spot: a real-world-heavy batch (mullet/catfish/sheepshead/
     # redfish/snook/tarpon/mudskipper/flounder-family are genuine estuary
     # and tidal-flat species), mixed with a few invented ones rather than
@@ -663,10 +1023,10 @@ SPECS = [
     # eel -> the existing eel model, flounder/sole/toad -> the existing
     # flounder model) instead of drawing a near-duplicate silhouette.
     {"name": "mullet", "palette": "olive", "body_len": 28, "body_h": 6, "head_h": 0.5, "tail_h": 0.3, "peak": 0.4, "tail": "fork", "tail_len": 10, "dorsal": (0.35, 0.55, 3.2)},
-    {"name": "brackcat", "palette": "slate", "body_len": 30, "body_h": 6.8, "head_h": 0.85, "tail_h": 0.35, "peak": 0.25, "taper": "linear", "tail": "round", "tail_len": 8, "snout": 6},
+    {"name": "brackcat", "palette": "slate", "body_len": 30, "body_h": 6.8, "head_h": 0.85, "tail_h": 0.35, "peak": 0.25, "taper": "linear", "tail": "round", "tail_len": 8, "snout": 6, "snout_style": "cone", "barbels": 4, "barbel_len": 5},
     {"name": "sheepshead", "palette": "silver", "body_len": 26, "body_h": 8.8, "head_h": 0.6, "tail_h": 0.35, "peak": 0.35, "back_bias": 1.1, "tail": "fork", "tail_len": 8, "dorsal": (0.25, 0.7, 4.4), "pattern": "stripes"},
     # The eyespot near the tail mirrors the real fish's own dark spot.
-    {"name": "redfish", "palette": "copper", "body_len": 30, "body_h": 7.2, "head_h": 0.55, "tail_h": 0.3, "peak": 0.38, "tail": "fan", "tail_len": 8, "tail_flare": 0.7, "dorsal": (0.3, 0.6, 3.6), "pattern": "eyespot"},
+    {"name": "redfish", "palette": "rust", "body_len": 30, "body_h": 7.2, "head_h": 0.55, "tail_h": 0.3, "peak": 0.38, "tail": "fan", "tail_len": 8, "tail_flare": 0.7, "dorsal": (0.3, 0.6, 3.6), "pattern": "eyespot"},
     # Likewise the "line" pattern mirrors the real fish's own lateral line.
     {"name": "snook", "palette": "steel", "body_len": 34, "body_h": 6, "head_h": 0.5, "tail_h": 0.3, "peak": 0.42, "tail": "fork", "tail_len": 10, "dorsal": (0.3, 0.55, 3.2), "pattern": "line"},
     {"name": "tarpon", "palette": "pearl", "body_len": 40, "body_h": 9.2, "head_h": 0.6, "tail_h": 0.35, "peak": 0.4, "tail": "fork", "tail_len": 12, "dorsal": (0.35, 0.55, 5.2), "snout": 2},
@@ -686,8 +1046,8 @@ SPECS = [
     # (see FishCatalog.EXPEDITION_HABITATS) — deep enough that several of
     # its species carry their own light rather than relying on any.
     {"name": "trenchsmelt", "palette": "abyss", "body_len": 20, "body_h": 4.4, "tail": "fork", "tail_len": 8, "pattern": "glow"},
-    {"name": "voidangler", "palette": "ink", "body_len": 28, "body_h": 7.6, "head_h": 0.85, "peak": 0.3, "tail": "point", "tail_len": 6, "snout": 4, "pattern": "glow"},
-    {"name": "hadalmaw", "palette": "abyss", "body_len": 40, "body_h": 8.8, "head_h": 0.9, "peak": 0.25, "tail": "long", "tail_len": 12, "snout": 2, "pattern": "glow"},
+    {"name": "voidangler", "palette": "ink", "body_len": 28, "body_h": 7.6, "head_h": 0.85, "peak": 0.3, "tail": "point", "tail_len": 6, "snout": 4, "pattern": "glow", "lure": True, "lure_len": 7, "lure_at": 0.12, "teeth": True},
+    {"name": "hadalmaw", "palette": "abyss", "body_len": 40, "body_h": 8.8, "head_h": 0.9, "peak": 0.25, "tail": "long", "tail_len": 12, "snout": 2, "pattern": "glow", "teeth": True},
     {"name": "coelacanth", "palette": "slate", "body_len": 34, "body_h": 8, "peak": 0.45, "tail": "round", "tail_len": 10, "tail_flare": 0.6, "dorsal": (0.3, 0.65, 4), "anal": (0.5, 0.8, 3.2), "pattern": "glow"},
     # Real-world species added to existing habitats — dedicated models only
     # for the ones distinctive enough to earn one; plainer real fish reuse
@@ -696,20 +1056,25 @@ SPECS = [
     # earlier entries).
     {"name": "zander", "palette": "slate", "body_len": 38, "body_h": 6, "head_h": 0.7, "peak": 0.45, "tail": "fork", "tail_len": 10, "dorsal": (0.3, 0.6, 4.4), "pattern": "spots"},
     {"name": "garibaldi", "palette": "amber", "body_len": 26, "body_h": 9.2, "head_h": 0.6, "peak": 0.45, "tail": "fan", "tail_len": 8, "dorsal": (0.3, 0.6, 3.2)},
-    {"name": "lingcod", "palette": "olive", "body_len": 40, "body_h": 6.8, "head_h": 0.75, "peak": 0.35, "tail": "round", "tail_len": 8, "snout": 2, "dorsal": (0.25, 0.85, 3.6), "pattern": "spots"},
-    {"name": "wolfeel", "palette": "slate", "body_len": 42, "body_h": 5.2, "head_h": 0.9, "taper": "linear", "tail": "point", "tail_len": 8, "snout": 2, "pattern": "spots"},
+    {"name": "lingcod", "palette": "olive", "body_len": 40, "body_h": 6.8, "head_h": 0.75, "peak": 0.35, "tail": "round", "tail_len": 8, "snout": 2, "dorsal": (0.25, 0.85, 3.6), "pattern": "spots", "teeth": True},
+    {"name": "wolfeel", "palette": "charcoal", "body_len": 42, "body_h": 5.2, "head_h": 0.9, "taper": "linear", "tail": "point", "tail_len": 8, "snout": 2, "pattern": "spots", "teeth": True},
     {"name": "californiasheephead", "palette": "crimson", "body_len": 30, "body_h": 7.6, "head_h": 0.7, "peak": 0.4, "tail": "round", "tail_len": 8, "snout": 2, "dorsal": (0.3, 0.7, 3.2)},
-    {"name": "clownfish", "palette": "amber", "body_len": 20, "body_h": 6.8, "head_h": 0.65, "peak": 0.4, "tail": "fan", "tail_len": 6, "pattern": "bars"},
-    {"name": "parrotfish", "palette": "teal", "body_len": 32, "body_h": 8.4, "head_h": 0.55, "peak": 0.4, "tail": "round", "tail_len": 8, "snout": 2, "dorsal": (0.3, 0.75, 3.6)},
+    {"name": "clownfish", "palette": "coral", "body_len": 20, "body_h": 6.8, "head_h": 0.65, "peak": 0.4, "tail": "fan", "tail_len": 6, "pattern": "bars"},
+    {"name": "parrotfish", "palette": "jade", "body_len": 32, "body_h": 8.4, "head_h": 0.55, "peak": 0.4, "tail": "round", "tail_len": 8, "snout": 2, "dorsal": (0.3, 0.75, 3.6)},
     {"name": "picassotriggerfish", "palette": "gold", "body_len": 26, "body_h": 8, "head_h": 0.6, "tail_h": 0.5, "peak": 0.4, "tail": "round", "tail_len": 6, "dorsal": (0.15, 0.4, 3.2), "pattern": "bars"},
     {"name": "biggrouper", "palette": "teal", "body_len": 38, "body_h": 10, "head_h": 0.95, "peak": 0.25, "tail": "round", "tail_len": 8, "dorsal": (0.3, 0.85, 4)},
-    {"name": "mahimahi", "palette": "gold", "body_len": 36, "body_h": 7.2, "head_h": 0.85, "peak": 0.2, "tail": "fork", "tail_len": 10, "dorsal": (0.05, 0.95, 4.8), "pattern": "spots"},
-    {"name": "wahoo", "palette": "steel", "body_len": 44, "body_h": 5.2, "head_h": 0.6, "peak": 0.4, "tail": "fork", "tail_len": 10, "snout": 2, "pattern": "bars"},
-    {"name": "greenlandshark", "palette": "slate", "body_len": 44, "body_h": 9.2, "head_h": 0.55, "peak": 0.3, "tail": "long", "tail_len": 12, "dorsal": (0.35, 0.5, 4)},
-    {"name": "viperfish", "palette": "ink", "body_len": 36, "body_h": 3.6, "taper": "linear", "tail": "point", "tail_len": 10, "snout": 6, "dorsal": (0.1, 0.3, 4.8)},
-    {"name": "fangtooth", "palette": "abyss", "body_len": 18, "body_h": 6.4, "head_h": 0.95, "peak": 0.25, "tail": "point", "tail_len": 6, "snout": 2},
+    {"name": "mahimahi", "palette": "gold", "body_len": 36, "body_h": 7.2, "head_h": 0.85, "peak": 0.2, "tail": "crescent", "tail_len": 10, "dorsal": (0.05, 0.95, 4.8), "pattern": "spots"},
+    {"name": "wahoo", "palette": "indigo", "body_len": 44, "body_h": 5.2, "head_h": 0.6, "peak": 0.4, "tail": "crescent", "tail_len": 10, "snout": 2, "pattern": "bars", "finlets": 6, "finlet_start": 0.58},
+    # Signature: almost no dorsal at all. A real Greenland shark's fins are
+    # famously stubby for its bulk, so the tiny fins are the trait here.
+    {"name": "greenlandshark", "palette": "charcoal", "body_len": 44, "body_h": 9.0, "head_h": 0.6, "peak": 0.32, "tail": "long", "tail_len": 12, "snout": 4, "snout_style": "cone", "fin_style": "swept", "dorsal": (0.40, 0.66, 3.2), "dorsal2": (0.76, 0.90, 1.4), "anal": (0.72, 0.86, 1.2), "pectoral": [0.24], "pectoral_style": "blade", "pectoral_len": 5, "gills": 5, "teeth": True},
+    {"name": "viperfish", "palette": "ink", "body_len": 36, "body_h": 3.6, "taper": "linear", "tail": "point", "tail_len": 10, "snout": 6, "dorsal": (0.1, 0.3, 4.8), "teeth": True},
+    {"name": "fangtooth", "palette": "abyss", "body_len": 18, "body_h": 6.4, "head_h": 0.95, "peak": 0.25, "tail": "point", "tail_len": 6, "snout": 2, "teeth": True},
     {"name": "oarfish", "palette": "silver", "body_len": 48, "body_h": 4, "taper": "linear", "tail": "point", "tail_len": 6, "dorsal": (0.0, 1.0, 6)},
-    {"name": "goblinshark", "palette": "rose", "body_len": 38, "body_h": 6.4, "head_h": 0.6, "peak": 0.4, "tail": "long", "tail_len": 12, "snout": 8},
+    # Signature: the long flattened blade of a snout. Kept at 8 columns and
+    # given a low taper so it stays a long wedge rather than closing to a
+    # point straight away.
+    {"name": "goblinshark", "palette": "rose", "body_len": 36, "body_h": 6.4, "head_h": 0.6, "peak": 0.42, "tail": "long", "tail_len": 12, "snout": 9, "snout_style": "cone", "snout_taper": 0.55, "fin_style": "swept", "dorsal": (0.34, 0.68, 3.6), "dorsal2": (0.76, 0.92, 1.6), "anal": (0.72, 0.88, 1.4), "pectoral": [0.26], "pectoral_style": "blade", "pectoral_len": 6, "gills": 5, "teeth": True},
     # Marine reptiles and mammals: all still fit the head-to-tail silhouette
     # system (torpedo/oval body plans), unlike octopus and crab (radial,
     # limbs to the sides) which stay declined for the same reason starfish
@@ -742,14 +1107,14 @@ SPECS = [
     # draw_fish) so it no longer needs as much extra downward push to
     # read as separate from the shell.
     {"name": "turtle", "palette": "copper", "accent_palette": "emerald", "body_len": 22, "body_h": 6.2, "head_h": 0.2, "tail_h": 0.15, "peak": 0.5, "back_bias": 1.12, "belly_bias": 0.68, "taper": "linear", "tail": "round", "tail_len": 3, "tail_flare": 0.4, "snout": 6, "head_block": True, "head_offset": 2, "head_radius": 3.2, "pectoral": [0.18, 0.82], "pectoral_style": "flipper", "dorsal": False, "pattern": "scutes"},
-    {"name": "dolphin", "palette": "steel", "body_len": 30, "body_h": 6.8, "head_h": 0.55, "tail_h": 0.3, "peak": 0.38, "tail": "fan", "tail_len": 12, "tail_flare": 0.55, "snout": 4, "dorsal": (0.42, 0.62, 3.6)},
+    {"name": "dolphin", "palette": "steel", "body_len": 30, "body_h": 6.8, "head_h": 0.55, "tail_h": 0.3, "peak": 0.38, "tail": "fan", "tail_len": 12, "tail_flare": 0.55, "snout": 4, "dorsal": (0.42, 0.62, 3.6), "pectoral": [0.34], "pectoral_style": "flipper"},
     # The tall dorsal fin is the one silhouette trait everyone recognizes;
     # kept the palette dark and plain rather than fighting the fixed
     # per-palette pattern colour for a true black/white patch look.
     # "ink" (near-black) body with "pearl" (near-white) accent patches —
     # a real orca's colouring is the single most recognisable thing about
     # it, more than the silhouette alone.
-    {"name": "orca", "palette": "ink", "accent_palette": "pearl", "body_len": 34, "body_h": 8.4, "head_h": 0.6, "tail_h": 0.35, "peak": 0.4, "tail": "fan", "tail_len": 12, "tail_flare": 0.7, "dorsal": (0.4, 0.62, 6.8), "pattern": "patches"},
+    {"name": "orca", "palette": "ink", "accent_palette": "pearl", "body_len": 34, "body_h": 8.4, "head_h": 0.6, "tail_h": 0.35, "peak": 0.4, "tail": "fan", "tail_len": 12, "tail_flare": 0.7, "dorsal": (0.4, 0.62, 6.8), "pattern": "patches", "pectoral": [0.34], "pectoral_style": "flipper"},
     # Broad, flat "round"-style tail (a real fluke, not a fish's fan/fork)
     # plus paddle-shaped "flipper" pectorals (real humpback flippers are
     # enormous) rather than the generic small fin nub every fish uses —
@@ -757,18 +1122,18 @@ SPECS = [
     {"name": "whale", "palette": "steel", "body_len": 38, "body_h": 10, "head_h": 0.55, "tail_h": 0.3, "peak": 0.35, "back_bias": 1.05, "belly_bias": 1.1, "tail": "round", "tail_len": 14, "tail_flare": 1.3, "dorsal": (0.55, 0.68, 1.8), "pectoral": [0.3], "pectoral_style": "flipper", "pattern": "spots"},
     {"name": "shrimp", "palette": "rose", "body_len": 12, "body_h": 3.6, "head_h": 0.6, "tail_h": 0.25, "peak": 0.35, "tail": "fan", "tail_len": 6, "tail_flare": 0.6, "snout": 4, "dorsal": False, "pectoral": False, "pattern": "bars"},
     {"name": "flyingfish", "palette": "silver", "body_len": 20, "body_h": 4.4, "head_h": 0.5, "tail_h": 0.35, "peak": 0.3, "tail": "long", "tail_len": 10, "tail_flare": 0.3, "snout": 2, "dorsal": (0.3, 0.55, 2.4)},
-    {"name": "beluga", "palette": "pearl", "body_len": 26, "body_h": 7.2, "head_h": 0.7, "tail_h": 0.25, "peak": 0.45, "back_bias": 1.05, "tail": "fan", "tail_len": 10, "tail_flare": 0.5, "dorsal": False},
-    {"name": "narwhal", "palette": "silver", "body_len": 26, "body_h": 6.4, "head_h": 0.55, "tail_h": 0.25, "peak": 0.4, "tail": "fan", "tail_len": 10, "tail_flare": 0.45, "snout": 8, "dorsal": False, "pattern": "spots"},
+    {"name": "beluga", "palette": "ivory", "body_len": 26, "body_h": 7.2, "head_h": 0.7, "tail_h": 0.25, "peak": 0.45, "back_bias": 1.05, "tail": "fan", "tail_len": 10, "tail_flare": 0.5, "dorsal": False, "pectoral": [0.36], "pectoral_style": "flipper"},
+    {"name": "narwhal", "palette": "silver", "body_len": 26, "body_h": 6.4, "head_h": 0.55, "tail_h": 0.25, "peak": 0.4, "tail": "fan", "tail_len": 10, "tail_flare": 0.45, "snout": 8, "dorsal": False, "pattern": "spots", "pectoral": [0.36], "pectoral_style": "flipper"},
     {"name": "manatee", "palette": "slate", "body_len": 24, "body_h": 8.8, "head_h": 0.55, "tail_h": 0.3, "peak": 0.55, "back_bias": 0.95, "belly_bias": 1.15, "taper": "linear", "tail": "round", "tail_len": 8, "tail_flare": 0.4, "snout": 2, "dorsal": False},
     {"name": "leopardseal", "palette": "slate", "body_len": 26, "body_h": 5.6, "head_h": 0.55, "tail_h": 0.2, "peak": 0.35, "tail": "point", "tail_len": 6, "snout": 4, "dorsal": False, "pattern": "spots"},
-    {"name": "seadragon", "palette": "emerald", "body_len": 20, "body_h": 5.6, "head_h": 0.6, "tail_h": 0.15, "peak": 0.35, "back_bias": 1.2, "tail": "point", "tail_len": 14, "tail_flare": 0.2, "snout": 6, "dorsal": (0.2, 0.55, 4), "anal": (0.5, 0.8, 3.2), "pectoral": False, "pattern": "line"},
+    {"name": "seadragon", "palette": "moss", "body_len": 20, "body_h": 5.6, "head_h": 0.6, "tail_h": 0.15, "peak": 0.35, "back_bias": 1.2, "tail": "point", "tail_len": 14, "tail_flare": 0.2, "snout": 6, "dorsal": (0.2, 0.55, 4), "anal": (0.5, 0.8, 3.2), "pectoral": False, "pattern": "line"},
     {"name": "sawfish", "palette": "sand", "body_len": 32, "body_h": 6, "head_h": 0.45, "tail_h": 0.3, "peak": 0.3, "tail": "long", "tail_len": 12, "snout": 8, "dorsal": (0.55, 0.75, 3.2)},
     {"name": "walrus", "palette": "copper", "body_len": 26, "body_h": 8.8, "head_h": 0.6, "tail_h": 0.3, "peak": 0.5, "back_bias": 1.0, "belly_bias": 1.1, "taper": "linear", "tail": "round", "tail_len": 6, "snout": 8, "dorsal": False},
     {"name": "whaleshark", "palette": "abyss", "body_len": 40, "body_h": 10, "head_h": 0.7, "tail_h": 0.4, "peak": 0.42, "back_bias": 1.1, "tail": "long", "tail_len": 16, "tail_flare": 0.5, "snout": 2, "dorsal": (0.45, 0.65, 4.4), "pattern": "spots"},
     {"name": "elephantseal", "palette": "sand", "body_len": 30, "body_h": 9.2, "head_h": 0.55, "tail_h": 0.25, "peak": 0.5, "back_bias": 1.0, "belly_bias": 1.15, "taper": "linear", "tail": "round", "tail_len": 6, "snout": 6, "dorsal": False},
     # The near-absent tail is the point: a real ocean sunfish looks "cut
     # off" right behind its huge mirrored dorsal/anal fins.
-    {"name": "molamola", "palette": "pearl", "body_len": 18, "body_h": 11.2, "head_h": 0.5, "tail_h": 0.2, "peak": 0.55, "tail": "round", "tail_len": 2, "tail_flare": 0.2, "dorsal": (0.35, 0.55, 6.8), "anal": (0.35, 0.55, 6), "pattern": "spots"},
+    {"name": "molamola", "palette": "ivory", "body_len": 18, "body_h": 10.4, "head_h": 0.5, "tail_h": 0.2, "peak": 0.55, "tail": "round", "tail_len": 2, "tail_flare": 0.2, "dorsal": (0.35, 0.55, 5.8), "anal": (0.35, 0.55, 5.2), "pattern": "spots"},
     # Radial body plan (see _draw_radial_fish above) — animals with no
     # head-to-tail axis, drawn top-down instead of in lateral profile.
     # Angles: 0=right, 90=down, 180=left, 270=up.
@@ -783,7 +1148,7 @@ SPECS = [
     },
     {
         "name": "crab", "shape": "radial", "palette": "crimson",
-        "cy": 12, "core_w": 6.4, "core_h": 5.2,
+        "cy": 13, "core_w": 6.4, "core_h": 5.2,
         # Fully jointed rebuild: every limb bends once partway out (see
         # "bend" in _draw_radial_fish) instead of running dead straight
         # from the body — a real crab's claws and legs both have a visible
@@ -795,34 +1160,42 @@ SPECS = [
         # outward for the lower leg, the same two-segment shape real crab
         # legs make.
         "limbs": [
-            {"angle": 255, "length": 8, "width": 2.6,
-             "bend": {"angle": 200, "length": 8, "width": 3.8, "tone": "belly", "flare": True}},
-            {"angle": 285, "length": 8, "width": 2.6,
-             "bend": {"angle": 340, "length": 8, "width": 3.8, "tone": "belly", "flare": True}},
-            {"angle": 25, "length": 6, "width": 2.4, "bend": {"angle": 45, "length": 8, "width": 1.8}},
-            {"angle": 50, "length": 6, "width": 2.4, "bend": {"angle": 70, "length": 8, "width": 1.8}},
-            {"angle": 75, "length": 6, "width": 2.4, "bend": {"angle": 95, "length": 8, "width": 1.8}},
-            {"angle": 105, "length": 6, "width": 2.4, "bend": {"angle": 85, "length": 8, "width": 1.8}},
-            {"angle": 130, "length": 6, "width": 2.4, "bend": {"angle": 110, "length": 8, "width": 1.8}},
-            {"angle": 155, "length": 6, "width": 2.4, "bend": {"angle": 135, "length": 8, "width": 1.8}},
+            {"angle": 249, "length": 5, "width": 2.4,
+             "bend": {"angle": 200, "length": 5, "width": 2.2, "tone": "belly", "flare": True}},
+            {"angle": 291, "length": 5, "width": 2.4,
+             "bend": {"angle": 340, "length": 5, "width": 2.2, "tone": "belly", "flare": True}},
+            {"angle": 25, "length": 6, "width": 2.4, "bend": {"angle": 45, "length": 6, "width": 1.8}},
+            {"angle": 50, "length": 6, "width": 2.4, "bend": {"angle": 70, "length": 6, "width": 1.8}},
+            {"angle": 75, "length": 6, "width": 2.4, "bend": {"angle": 95, "length": 6, "width": 1.8}},
+            {"angle": 105, "length": 6, "width": 2.4, "bend": {"angle": 85, "length": 6, "width": 1.8}},
+            {"angle": 130, "length": 6, "width": 2.4, "bend": {"angle": 110, "length": 6, "width": 1.8}},
+            {"angle": 155, "length": 6, "width": 2.4, "bend": {"angle": 135, "length": 6, "width": 1.8}},
         ],
         "eyes": [(-2, -4), (2, -4)],
     },
     {
         "name": "octopus", "shape": "radial", "palette": "violet",
-        "cy": 12, "core_w": 5.2, "core_h": 6.8,
-        # Alternating body/back tone bands the tentacles apart from each
-        # other, not just from the mantle; curl hooks the outer half of
-        # each one so the tips read as tentacles rather than spikes.
+        # Rebuilt: the arms used to radiate a full circle (95 deg round to
+        # 270), so half of them climbed back over the mantle and punched
+        # holes in it — the silhouette read as a torn purple blob rather
+        # than an animal. Now every arm hangs in a downward fan from the
+        # mantle's lower half, splayed wider and curling harder the further
+        # out it sits, which is both what an octopus at rest looks like and
+        # the only arrangement that keeps the mantle a clean solid shape.
+        # Arm width stays at 1.0 (3px stamped, see the note on the
+        # jellyfish): eight arms fanned across ~130 degrees are only about
+        # four pixels apart at arm's length, so anything wider fuses them
+        # into a solid slab with no readable arms at all.
+        "cy": 9, "core_w": 5.6, "core_h": 6.0,
         "limbs": [
-            {"angle": 95, "length": 12, "width": 2.8, "tone": "body", "curl": 55},
-            {"angle": 120, "length": 10, "width": 2.6, "tone": "back", "curl": -50},
-            {"angle": 145, "length": 12, "width": 2.6, "tone": "body", "curl": 55},
-            {"angle": 170, "length": 10, "width": 2.4, "tone": "back", "curl": -45},
-            {"angle": 195, "length": 10, "width": 2.4, "tone": "body", "curl": 45},
-            {"angle": 220, "length": 12, "width": 2.6, "tone": "back", "curl": -55},
-            {"angle": 245, "length": 10, "width": 2.6, "tone": "body", "curl": 50},
-            {"angle": 270, "length": 12, "width": 2.8, "tone": "back", "curl": -55},
+            {"angle": 26, "length": 12, "width": 1.0, "tone": "back", "curl": 52},
+            {"angle": 44, "length": 14, "width": 1.0, "tone": "body", "curl": 36},
+            {"angle": 62, "length": 15, "width": 1.0, "tone": "back", "curl": 20},
+            {"angle": 80, "length": 16, "width": 1.0, "tone": "body", "curl": 8},
+            {"angle": 100, "length": 16, "width": 1.0, "tone": "back", "curl": -8},
+            {"angle": 118, "length": 15, "width": 1.0, "tone": "body", "curl": -20},
+            {"angle": 136, "length": 14, "width": 1.0, "tone": "back", "curl": -36},
+            {"angle": 154, "length": 12, "width": 1.0, "tone": "body", "curl": -52},
         ],
         "eyes": [(-2, -2), (2, -2)],
     },
@@ -839,21 +1212,21 @@ SPECS = [
      "limbs": [
          {"angle": 200, "length": 12, "width": 5.5},
          {"angle": 340, "length": 12, "width": 5.5},
-         {"angle": 90, "length": 15, "width": 1.4},
+         {"angle": 90, "length": 13, "width": 1.4},
      ],
      "eyes": [(-1, -3), (1, -3)]},
-    {"name": "stingray", "shape": "radial", "palette": "sand",
+    {"name": "stingray", "shape": "radial", "palette": "ochre",
      "core_w": 7.0, "core_h": 6.0,
      # Toned "belly" (not the default "body") so the whip reads as its own
      # part instead of blending into the disc at the same colour, with a
      # slight curl so it trails rather than running dead straight.
-     "limbs": [{"angle": 100, "length": 14, "width": 1.3, "tone": "belly", "curl": 20}],
+     "limbs": [{"angle": 100, "length": 11, "width": 1.3, "tone": "belly", "curl": 20}],
      "pattern": "spots", "eyes": [(-1, -4), (1, -4)]},
-    {"name": "sole", "palette": "sand", "body_len": 22, "body_h": 8.5, "head_h": 0.3, "tail_h": 0.25, "peak": 0.5, "tail": "round", "tail_len": 5, "tail_flare": 0.3, "pectoral": False, "pattern": "spots"},
+    {"name": "sole", "palette": "ochre", "body_len": 22, "body_h": 8.5, "head_h": 0.3, "tail_h": 0.25, "peak": 0.5, "tail": "round", "tail_len": 5, "tail_flare": 0.3, "pectoral": False, "pattern": "spots"},
     {"name": "toadfish", "palette": "olive", "body_len": 24, "body_h": 8.0, "head_h": 0.9, "tail_h": 0.3, "peak": 0.2, "back_bias": 1.0, "belly_bias": 1.1, "tail": "round", "tail_len": 5, "tail_flare": 0.4, "snout": 2, "pattern": "bars"},
-    {"name": "driftfish", "palette": "emerald", "body_len": 34, "body_h": 2.6, "head_h": 0.6, "tail_h": 0.3, "peak": 0.5, "taper": "linear", "tail": "point", "tail_len": 6, "pectoral": False, "pattern": "line"},
+    {"name": "driftfish", "palette": "mint", "body_len": 34, "body_h": 2.6, "head_h": 0.6, "tail_h": 0.3, "peak": 0.5, "taper": "linear", "tail": "point", "tail_len": 6, "pectoral": False, "pattern": "line"},
     {"name": "pinfish", "palette": "silver", "body_len": 22, "body_h": 6.6, "head_h": 0.5, "peak": 0.4, "tail": "fork", "tail_len": 6, "dorsal": (0.2, 0.55, 3.0), "pattern": "bars"},
-    {"name": "sandgoby", "palette": "sand", "body_len": 20, "body_h": 4.8, "head_h": 0.9, "tail_h": 0.25, "peak": 0.15, "taper": "linear", "tail": "round", "tail_len": 5, "pattern": "spots"},
+    {"name": "sandgoby", "palette": "bronze", "body_len": 20, "body_h": 4.8, "head_h": 0.9, "tail_h": 0.25, "peak": 0.15, "taper": "linear", "tail": "round", "tail_len": 5, "pattern": "spots"},
     {"name": "stormfish", "palette": "abyss", "body_len": 30, "body_h": 5.6, "head_h": 0.55, "peak": 0.4, "tail": "fork", "tail_len": 9, "tail_flare": 0.9, "dorsal": (0.2, 0.7, 4.6), "pattern": "line"},
     {"name": "titan", "palette": "abyss", "body_len": 46, "body_h": 8.4, "head_h": 0.8, "tail_h": 0.3, "peak": 0.3, "back_bias": 1.1, "taper": "linear", "tail": "long", "tail_len": 12, "dorsal": (0.15, 0.85, 5.6), "pattern": "bars"},
     {"name": "ballastcrab", "shape": "radial", "palette": "copper",
@@ -865,12 +1238,12 @@ SPECS = [
      # 2x the right one -- a fiddler crab's single oversized display claw
      # -- so it's still a distinct silhouette from the Shore Crab's
      # matched pair at a glance.
-     "cy": 12, "core_w": 6.0, "core_h": 4.8,
+     "cy": 15, "core_w": 6.0, "core_h": 4.8,
      "limbs": [
-         {"angle": 255, "length": 11, "width": 3.2,
-          "bend": {"angle": 195, "length": 12, "width": 5.6, "tone": "belly", "flare": True}},
-         {"angle": 285, "length": 6, "width": 2.0,
-          "bend": {"angle": 340, "length": 6, "width": 2.6, "tone": "belly", "flare": True}},
+         {"angle": 250, "length": 7, "width": 2.8,
+          "bend": {"angle": 195, "length": 7, "width": 2.4, "tone": "belly", "flare": True}},
+         {"angle": 285, "length": 4, "width": 1.8,
+          "bend": {"angle": 340, "length": 4, "width": 2.2, "tone": "belly", "flare": True}},
          {"angle": 25, "length": 6, "width": 2.2, "bend": {"angle": 45, "length": 7, "width": 1.6}},
          {"angle": 50, "length": 6, "width": 2.2, "bend": {"angle": 70, "length": 7, "width": 1.6}},
          {"angle": 75, "length": 6, "width": 2.2, "bend": {"angle": 95, "length": 7, "width": 1.6}},
@@ -898,11 +1271,11 @@ SPECS = [
      # with a head/limb body plan.
      "core_w": 3.4, "core_h": 3.4,
      "limbs": [{"angle": 0, "length": 14, "width": 3.4, "curl": 340, "flare": True}]},
-    {"name": "bluefish", "palette": "steel", "body_len": 32, "body_h": 5.4, "head_h": 0.6, "peak": 0.4, "tail": "fork", "tail_len": 9, "dorsal": (0.3, 0.6, 3.0), "pattern": "line"},
-    {"name": "waterspout", "palette": "abyss", "body_len": 40, "body_h": 5.0, "head_h": 0.9, "tail_h": 0.35, "peak": 0.1, "taper": "linear", "tail": "point", "tail_len": 7, "dorsal": (0.1, 0.9, 2.6), "pectoral": False, "pattern": "bars"},
+    {"name": "bluefish", "palette": "cobalt", "body_len": 32, "body_h": 5.4, "head_h": 0.6, "peak": 0.4, "tail": "fork", "tail_len": 9, "dorsal": (0.3, 0.6, 3.0), "pattern": "line"},
+    {"name": "waterspout", "palette": "indigo", "body_len": 40, "body_h": 5.0, "head_h": 0.9, "tail_h": 0.35, "peak": 0.1, "taper": "linear", "tail": "point", "tail_len": 7, "dorsal": (0.1, 0.9, 2.6), "pectoral": False, "pattern": "bars"},
     {"name": "dragonfish", "palette": "ink", "body_len": 26, "body_h": 3.6, "head_h": 0.8, "tail_h": 0.3, "peak": 0.25, "taper": "linear", "snout": 3, "tail": "point", "tail_len": 6, "pectoral": False, "pattern": "glow"},
-    {"name": "vampiresquid", "shape": "radial", "palette": "crimson",
-     "cy": 12, "core_w": 4.6, "core_h": 5.6,
+    {"name": "vampiresquid", "shape": "radial", "palette": "wine",
+     "cy": 13, "core_w": 4.6, "core_h": 5.2,
      "limbs": [
          {"angle": 100, "length": 9, "width": 2.6, "tone": "body", "curl": -40},
          {"angle": 130, "length": 9, "width": 2.6, "tone": "back", "curl": 40},
@@ -924,12 +1297,90 @@ SPECS = [
      "cy": 12, "core_w": 6.0, "core_h": 4.6,
      "limbs": [{"angle": a, "length": 3, "width": 1.3, "tone": "back"} for a in (100, 125, 150, 175, 185, 210, 235, 260)],
      "pattern": "spots"},
+
+    # --- Batch 2: de-recycling Harbour's especially heavy reuse (sardine,
+    # moray, bigeye all had 4+ users sharing that one spot alone), plus a
+    # few visually distinctive real species elsewhere that were sitting on
+    # a generic stand-in (2026-08-13, same session as batch 1).
+    {"name": "mackerel", "palette": "cobalt", "body_len": 28, "body_h": 4.4, "head_h": 0.5, "peak": 0.4, "tail": "crescent", "tail_len": 9, "dorsal": (0.25, 0.6, 2.4), "pattern": "bars", "finlets": 4, "finlet_start": 0.62},
+    {"name": "napoleonwrasse", "palette": "jade", "body_len": 30, "body_h": 7.2, "head_h": 0.6, "peak": 0.35, "snout": 4,
+     # head_block (previously turtle-only) doubles here as the wrasse's
+     # real bulging forehead hump -- negative head_offset lifts it above
+     # the body's own centreline instead of the turtle's downward droop.
+     "head_block": True, "head_radius": 3.6, "head_offset": -1,
+     "tail": "round", "tail_len": 6, "tail_flare": 0.3, "pattern": "spots"},
+    {"name": "capelin", "palette": "silver", "body_len": 16, "body_h": 3.0, "tail": "fork", "tail_len": 6},
+    {"name": "haddock", "palette": "slate", "body_len": 26, "body_h": 5.2, "head_h": 0.5, "peak": 0.35, "tail": "fork", "tail_len": 7, "dorsal": (0.25, 0.55, 2.2), "pattern": "eyespot"},
+    {"name": "conger", "palette": "obsidian", "body_len": 40, "body_h": 6.4, "head_h": 0.9, "tail_h": 0.35, "peak": 0.05, "taper": "linear", "tail": "point", "tail_len": 7, "dorsal": (0.35, 0.95, 2.2), "pectoral": False, "teeth": True},
+    {"name": "grouper", "palette": "olive", "body_len": 28, "body_h": 8.6, "head_h": 0.75, "peak": 0.3, "tail": "round", "tail_len": 6, "tail_flare": 0.3, "dorsal": (0.2, 0.7, 2.4), "pattern": "bars"},
+    {"name": "tuna", "palette": "cobalt", "body_len": 34, "body_h": 6.8, "head_h": 0.55, "peak": 0.4, "tail": "crescent", "tail_len": 11, "tail_flare": 1.0, "dorsal": (0.2, 0.5, 2.6), "pattern": "line", "finlets": 5, "finlet_start": 0.60},
+    {"name": "croaker", "palette": "ivory", "body_len": 22, "body_h": 5.4, "head_h": 0.6, "peak": 0.35, "tail": "round", "tail_len": 5, "tail_flare": 0.25, "pattern": "spots"},
+    {"name": "seatrout", "palette": "silver", "body_len": 26, "body_h": 5.0, "head_h": 0.55, "peak": 0.35, "tail": "fan", "tail_len": 7, "dorsal": (0.3, 0.6, 2.2), "pattern": "spots"},
+    {"name": "blackdrum", "palette": "ink", "body_len": 24, "body_h": 8.0, "head_h": 0.7, "peak": 0.3, "tail": "round", "tail_len": 6, "tail_flare": 0.3, "dorsal": (0.25, 0.6, 2.6), "pattern": "bars"},
+    {"name": "giantsquid", "shape": "radial", "palette": "crimson",
+     # Bigger and more dramatic than the octopus/vampiresquid pair: a
+     # tall mantle up top, with all 8 arms bunched into a narrow
+     # downward cone (not spread a full half-circle like octopus/
+     # vampiresquid, whose arms radiate all the way around a squat
+     # core) so they read as one trailing cluster, plus 2 much longer
+     # "belly"-toned feeding tentacles reaching further past them.
+     "cy": 11, "core_w": 4.2, "core_h": 7.5,
+     "limbs": [
+         {"angle": 155, "length": 8, "width": 1.8, "tone": "body", "curl": -15},
+         {"angle": 165, "length": 8, "width": 1.8, "tone": "back", "curl": 10},
+         {"angle": 172, "length": 8, "width": 1.8, "tone": "body", "curl": -10},
+         {"angle": 179, "length": 8, "width": 1.8, "tone": "back", "curl": 5},
+         {"angle": 186, "length": 8, "width": 1.8, "tone": "body", "curl": -5},
+         {"angle": 193, "length": 8, "width": 1.8, "tone": "back", "curl": 10},
+         {"angle": 200, "length": 8, "width": 1.8, "tone": "body", "curl": -10},
+         {"angle": 208, "length": 8, "width": 1.8, "tone": "back", "curl": 15},
+         {"angle": 178, "length": 18, "width": 1.1, "tone": "belly", "curl": 6},
+         {"angle": 184, "length": 18, "width": 1.1, "tone": "belly", "curl": -6},
+     ],
+     "eyes": [(-2, -6), (2, -6)]},
+    {"name": "cownose", "shape": "radial", "palette": "sand",
+     # Smaller wings than eagleray plus two short flared "nose lobe" nubs
+     # between them -- the real cownose ray's distinctive notched
+     # forehead, not just another pair of pointed wings.
+     "core_w": 5.5, "core_h": 3.4,
+     "limbs": [
+         {"angle": 200, "length": 10, "width": 4.5},
+         {"angle": 340, "length": 10, "width": 4.5},
+         {"angle": 255, "length": 2.5, "width": 1.8, "tone": "belly", "flare": True},
+         {"angle": 285, "length": 2.5, "width": 1.8, "tone": "belly", "flare": True},
+         {"angle": 90, "length": 12, "width": 1.3},
+     ],
+     "eyes": [(-1, -2), (1, -2)]},
+
+    # --- Batch 3: the shark lineup, requested by name (2026-08-13).
+    # Hammerhead/Broadbill Swordfish/Great White already had dedicated
+    # models (27/22/46) and needed no changes -- only Tiger Shark (wants
+    # visible stripes, which no existing shark-shaped model has) and
+    # Megalodon (a Secret-tier apex predator deserving its own scale, not
+    # a hand-me-down from an unrelated giant like colossus/leviathan)
+    # were actually missing.
+    # Signature: the stripes (see "stripes" in _draw_pattern), plus the
+    # blunter, broader head a real tiger shark carries.
+    {"name": "tigershark", "palette": "sand", "body_len": 38, "body_h": 7.2, "head_h": 0.75, "peak": 0.35, "back_bias": 1.05, "belly_bias": 0.95, "tail": "long", "tail_len": 11, "snout": 4, "snout_style": "cone", "fin_style": "swept", "dorsal": (0.32, 0.68, 5.0), "dorsal2": (0.76, 0.92, 1.8), "anal": (0.72, 0.88, 1.6), "pectoral": [0.24], "pectoral_style": "blade", "pectoral_len": 7, "gills": 5, "pattern": "stripes", "teeth": True},
+    # Signature: sheer scale. Longest body in the file, biggest fins, and
+    # deliberately sized so body_h*back_bias + the dorsal still clears the
+    # top of the frame — the previous 12.5/7.5 pair clipped straight off
+    # the canvas, which is most of why it rendered as a shapeless slab.
+    {"name": "megalodon", "palette": "ink", "body_len": 43, "body_h": 9.4, "head_h": 0.62, "peak": 0.36, "back_bias": 1.05, "belly_bias": 0.95, "tail": "long", "tail_len": 13, "snout": 5, "snout_style": "cone", "fin_style": "swept", "dorsal": (0.30, 0.68, 5.4), "dorsal2": (0.76, 0.92, 2.4), "anal": (0.72, 0.88, 2.2), "pectoral": [0.23], "pectoral_style": "blade", "pectoral_len": 8, "gills": 5, "teeth": True},
 ]
 
 
 def build_atlases():
-    if len(SPECS) != MODEL_COUNT:
-        raise ValueError("expected %d specs, got %d" % (MODEL_COUNT, len(SPECS)))
+    # <=, not != : COLUMNS/ROWS only need to be big enough to hold every
+    # spec, not an exact fit -- trailing unused cells stay fully
+    # transparent and are never selected by a valid model index, so a few
+    # spare slots cost nothing. Lets grid dimensions be picked for a
+    # sane, eyeball-able shape (e.g. a round 12x12) instead of chasing
+    # whatever COLUMNS*ROWS happens to factor len(SPECS) exactly each
+    # batch -- a real recurring friction point once len(SPECS) stopped
+    # landing on convenient numbers like 99 or 120.
+    if len(SPECS) > MODEL_COUNT:
+        raise ValueError("expected at most %d specs for a %dx%d grid, got %d" % (MODEL_COUNT, COLUMNS, ROWS, len(SPECS)))
     size = (FRAME_W * COLUMNS, FRAME_H * ROWS)
     body_atlas = Image.new("RGBA", size, (0, 0, 0, 0))
     outline_atlas = Image.new("RGBA", size, (0, 0, 0, 0))
@@ -945,13 +1396,11 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--preview", action="store_true", help="also write a scaled contact sheet")
     args = parser.parse_args()
-
     os.makedirs(os.path.dirname(OUT_PATH), exist_ok=True)
     body_atlas, outline_atlas = build_atlases()
     body_atlas.save(OUT_PATH)
     outline_atlas.save(OUTLINE_PATH)
-    print("wrote %s and %s (%d models)" % (OUT_PATH, OUTLINE_PATH, MODEL_COUNT))
-
+    print("wrote %s and %s (%d models, %d grid slots)" % (OUT_PATH, OUTLINE_PATH, len(SPECS), MODEL_COUNT))
     if args.preview:
         # Stand in a few rarity colours for the outline so the preview
         # shows roughly what the Album renders.
@@ -977,3 +1426,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

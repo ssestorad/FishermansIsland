@@ -8,7 +8,7 @@ extends Sprite2D
 const BODY_ATLAS := preload("res://assets/sprites/fish/fish_atlas.png")
 const OUTLINE_ATLAS := preload("res://assets/sprites/fish/fish_atlas_outline.png")
 const COLUMNS := 12
-const ROWS := 10
+const ROWS := 12
 const MODEL_COUNT := COLUMNS * ROWS
 
 ## Undiscovered fish flatten to a dark silhouette. Applied as

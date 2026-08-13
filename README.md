@@ -7,7 +7,7 @@ expanded by the player over time — while the game keeps running, including whe
 ## Status
 
 Playable prototype with a full core loop: hire, equip and assign fishermen across four fishing
-spots, watch them work through a day/night and seasonal cycle, fill a 220-species fish album, and
+spots, watch them work through a day/night and seasonal cycle, fill a 228-species fish album, and
 spend Scales on permanent upgrades. See [Project structure](#project-structure) below for where
 each system lives, or the [wiki](../../wiki) for the deeper design notes.
 
@@ -54,7 +54,7 @@ screen.
 - **Gear** — 365 items generated from 31 families across 5 slots (Rod/Hat/Outfit/Charm/Bait).
   Conditions are live effects rather than shop filters, so a storm rod really is better in a
   storm, and bait steers *which* species surface. See the [wiki](../../wiki/Gear).
-- **Fish** — 220 hand-authored species (a mix of invented and real-world fish, plus a few animals
+- **Fish** — 228 hand-authored species (a mix of invented and real-world fish, plus a few animals
   that aren't fish at all: several marine mammals, a sea turtle, a starfish, a crab and an
   octopus) across 13 habitats and 7 tiers, including a hidden Secret tier. See the
   [wiki](../../wiki/Fish).
