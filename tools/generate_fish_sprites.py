@@ -31,7 +31,7 @@ import math
 import os
 import random
 
-from PIL import Image
+from PIL import Image, ImageDraw
 
 FRAME_W, FRAME_H = 64, 32
 COLUMNS, ROWS = 12, 12
@@ -259,9 +259,22 @@ def _body_bounds(spec):
     return bounds
 
 
+## _put() drops out-of-range writes silently — convenient while drawing,
+## but it means a limb or fin that runs off the canvas simply disappears
+## with no complaint. That cost real quality twice: both crabs had their
+## claws chopped flat against the top edge for many review rounds without
+## anyone noticing, and 10 of 134 models turned out to be losing pixels.
+## So every dropped write is now recorded and build_atlases() refuses to
+## write an atlas that has any, unless --allow-clipping says otherwise.
+_clipped = []
+_current_model = "?"
+
+
 def _put(px, x, y, tone):
     if 0 <= x < FRAME_W and 0 <= y < FRAME_H:
         px[(x, y)] = tone
+    else:
+        _clipped.append((_current_model, x, y))
 
 
 def _draw_tail(px, spec, x0, base_h, body_h):
@@ -617,6 +630,9 @@ def _render(px, spec):
 
 
 def draw_fish(spec, seed):
+    # Tag whatever _put() drops with the model that lost it (see _clipped).
+    global _current_model
+    _current_model = spec.get("name", "?")
     if spec.get("shape") == "radial":
         return _draw_radial_fish(spec, seed)
 
@@ -1370,7 +1386,138 @@ SPECS = [
 ]
 
 
-def build_atlases():
+# --- Spec validation ---------------------------------------------------
+#
+# Every mistake in this file used to be silent. A probe of six realistic
+# typos -- "tail": "forked", "pattern": "stipes", "gils": 5 and friends --
+# found that all six rendered without a word of complaint: an unknown tail
+# style just falls through to the "fan" branch, an unknown key is never
+# read by anyone. With 45 spec keys and eight separate style vocabularies
+# that is a lot of rope. Nothing below changes a single pixel; it only
+# refuses to build when a spec says something the engine cannot honour.
+
+_COMMON_KEYS = {"name", "palette", "accent_palette", "pattern"}
+_LINEAR_KEYS = {
+    "body_len", "body_h", "head_h", "tail_h", "peak", "taper", "back_bias", "belly_bias",
+    "tail", "tail_len", "tail_flare", "tail_strand_count",
+    "snout", "snout_style", "snout_taper", "head_block", "head_offset", "head_radius",
+    "neck_width", "hammer_spread",
+    "dorsal", "dorsal2", "anal", "fin_style",
+    "pectoral", "pectoral_style", "pectoral_len",
+    "gills", "gill_start", "teeth",
+    "finlets", "finlet_start", "finlets_ventral",
+    "barbels", "barbel_len", "lure", "lure_len", "lure_at",
+}
+_RADIAL_KEYS = {"shape", "cx", "cy", "core_w", "core_h", "limbs", "eyes"}
+_LIMB_KEYS = {"angle", "length", "width", "tone", "curl", "flare", "bend"}
+
+_TAIL_STYLES = {"point", "round", "long", "fan", "fork", "crescent", "tentacles"}
+_TAPERS = {"sin", "linear"}
+_FIN_STYLES = {"sine", "swept", "sail"}
+_PECTORAL_STYLES = {"nub", "flipper", "blade"}
+_SNOUT_STYLES = {"cone", "hammer"}
+_LINEAR_PATTERNS = {"stripes", "line", "spots", "bars", "eyespot", "glow", "scutes", "patches"}
+## The radial path only ever checks for "spots" -- every other pattern name
+## on a radial model is a no-op, which is exactly how the isopod and conch
+## shipped with a "bars" pattern that drew nothing at all.
+_RADIAL_PATTERNS = {"spots"}
+_LIMB_TONES = set(TONE_ORDER)
+
+
+def validate_specs(specs=None):
+    """Returns a list of human-readable problems; empty means the file is
+    internally consistent. Never raises, so callers can print everything
+    that is wrong in one go rather than one error per run."""
+    specs = SPECS if specs is None else specs
+    problems = []
+    seen = {}
+
+    def bad(spec, msg):
+        problems.append("%s: %s" % (spec.get("name", "<unnamed>"), msg))
+
+    for spec in specs:
+        name = spec.get("name")
+        if not name:
+            problems.append("<unnamed>: every spec needs a \"name\"")
+            continue
+        if name in seen:
+            bad(spec, "duplicate model name (already used at index %d)" % seen[name])
+        seen[name] = len(seen)
+
+        radial = spec.get("shape") == "radial"
+        allowed = _COMMON_KEYS | (_RADIAL_KEYS if radial else _LINEAR_KEYS)
+        for key in spec:
+            if key not in allowed:
+                hint = " (radial spec)" if radial else " (linear spec)"
+                bad(spec, "unknown key %r%s" % (key, hint))
+
+        for key in ("palette", "accent_palette"):
+            value = spec.get(key)
+            if value is not None and value not in PALETTES:
+                bad(spec, "%s %r is not defined in PALETTES" % (key, value))
+
+        pattern = spec.get("pattern")
+        if pattern is not None:
+            valid = _RADIAL_PATTERNS if radial else _LINEAR_PATTERNS
+            if pattern not in valid:
+                bad(spec, "pattern %r does nothing on a %s model (valid: %s)"
+                    % (pattern, "radial" if radial else "linear", ", ".join(sorted(valid))))
+
+        if radial:
+            for key in ("core_w", "core_h", "limbs"):
+                if key not in spec:
+                    bad(spec, "radial spec is missing required %r" % key)
+            for i, limb in enumerate(spec.get("limbs", [])):
+                _validate_limb(limb, "limbs[%d]" % i, bad, spec)
+            for i, eye in enumerate(spec.get("eyes", [])):
+                if not (isinstance(eye, (tuple, list)) and len(eye) == 2):
+                    bad(spec, "eyes[%d] must be an (dx, dy) pair" % i)
+        else:
+            for key in ("body_len", "body_h"):
+                if key not in spec:
+                    bad(spec, "linear spec is missing required %r" % key)
+            _check_choice(spec, "tail", _TAIL_STYLES, bad)
+            _check_choice(spec, "taper", _TAPERS, bad)
+            _check_choice(spec, "fin_style", _FIN_STYLES, bad)
+            _check_choice(spec, "pectoral_style", _PECTORAL_STYLES, bad)
+            _check_choice(spec, "snout_style", _SNOUT_STYLES, bad)
+            for key in ("dorsal", "dorsal2", "anal"):
+                span = spec.get(key)
+                if span and not (isinstance(span, (tuple, list)) and len(span) == 3):
+                    bad(spec, "%s must be a (start_frac, end_frac, height) triple" % key)
+            if spec.get("snout_style") and not spec.get("snout"):
+                bad(spec, "snout_style is set but snout is 0, so nothing is drawn")
+            if spec.get("pectoral_style") and spec.get("pectoral") is False:
+                bad(spec, "pectoral_style is set but pectoral is disabled")
+
+    return problems
+
+
+def _check_choice(spec, key, valid, bad):
+    value = spec.get(key)
+    if value is not None and value not in valid:
+        bad(spec, "%s %r is not a known style (valid: %s)" % (key, value, ", ".join(sorted(valid))))
+
+
+def _validate_limb(limb, where, bad, spec):
+    if not isinstance(limb, dict):
+        bad(spec, "%s must be a dict" % where)
+        return
+    for key in limb:
+        if key not in _LIMB_KEYS:
+            bad(spec, "%s has unknown key %r" % (where, key))
+    for key in ("angle", "length", "width"):
+        if key not in limb:
+            bad(spec, "%s is missing required %r" % (where, key))
+    tone = limb.get("tone")
+    if tone is not None and tone not in _LIMB_TONES:
+        bad(spec, "%s tone %r is not a palette tone (valid: %s)"
+            % (where, tone, ", ".join(sorted(_LIMB_TONES))))
+    if "bend" in limb:
+        _validate_limb(limb["bend"], where + ".bend", bad, spec)
+
+
+def build_atlases(allow_clipping=False):
     # <=, not != : COLUMNS/ROWS only need to be big enough to hold every
     # spec, not an exact fit -- trailing unused cells stay fully
     # transparent and are never selected by a valid model index, so a few
@@ -1381,6 +1528,12 @@ def build_atlases():
     # landing on convenient numbers like 99 or 120.
     if len(SPECS) > MODEL_COUNT:
         raise ValueError("expected at most %d specs for a %dx%d grid, got %d" % (MODEL_COUNT, COLUMNS, ROWS, len(SPECS)))
+
+    problems = validate_specs()
+    if problems:
+        raise ValueError("%d spec problem(s):\n  %s" % (len(problems), "\n  ".join(problems)))
+
+    del _clipped[:]
     size = (FRAME_W * COLUMNS, FRAME_H * ROWS)
     body_atlas = Image.new("RGBA", size, (0, 0, 0, 0))
     outline_atlas = Image.new("RGBA", size, (0, 0, 0, 0))
@@ -1389,18 +1542,138 @@ def build_atlases():
         at = ((index % COLUMNS) * FRAME_W, (index // COLUMNS) * FRAME_H)
         body_atlas.paste(body, at)
         outline_atlas.paste(outline, at)
+
+    if _clipped and not allow_clipping:
+        per_model = {}
+        for name, x, y in _clipped:
+            lost = per_model.setdefault(name, [0, set()])
+            lost[0] += 1
+            if x < 0:
+                lost[1].add("left")
+            if x >= FRAME_W:
+                lost[1].add("right")
+            if y < 0:
+                lost[1].add("top")
+            if y >= FRAME_H:
+                lost[1].add("bottom")
+        lines = ["%s: %d px off the %s" % (n, c, "/".join(sorted(s)))
+                 for n, (c, s) in sorted(per_model.items(), key=lambda kv: -kv[1][0])]
+        raise ValueError(
+            "%d model(s) draw outside the %dx%d frame and would lose those pixels "
+            "silently:\n  %s\n(pass --allow-clipping to build anyway)"
+            % (len(per_model), FRAME_W, FRAME_H, "\n  ".join(lines)))
+
     return body_atlas, outline_atlas
+
+
+def _compose_cell(body_atlas, outline_atlas, index, background=(40, 42, 48, 255)):
+    """One model lifted out of the atlases with its outline drawn in black,
+    which is how the sprites actually read in the Album."""
+    col, row = index % COLUMNS, index // COLUMNS
+    box = (col * FRAME_W, row * FRAME_H, col * FRAME_W + FRAME_W, row * FRAME_H + FRAME_H)
+    cell = Image.new("RGBA", (FRAME_W, FRAME_H), background)
+    cell.alpha_composite(body_atlas.crop(box))
+    ring = outline_atlas.crop(box)
+    dark = Image.new("RGBA", ring.size, (0, 0, 0, 0))
+    dark.paste((0, 0, 0, 255), (0, 0), ring)
+    cell.alpha_composite(dark)
+    return cell
+
+
+def write_sheet(body_atlas, outline_atlas, names, path, zoom=6, columns=3):
+    """A labelled, zoomed sheet of just the models you name.
+
+    This exists because reviewing a change always means looking closely at
+    a handful of specific models, and the full contact sheet is useless for
+    that — every review round in this file's history has otherwise meant
+    hand-writing the same throwaway crop-and-label script again.
+    """
+    index_of = {spec["name"]: i for i, spec in enumerate(SPECS)}
+    unknown = [n for n in names if n not in index_of]
+    if unknown:
+        raise ValueError("unknown model name(s): %s" % ", ".join(unknown))
+
+    pad, label_h = 6, 14
+    cell_w, cell_h = FRAME_W * zoom + pad, FRAME_H * zoom + pad + label_h
+    rows = (len(names) + columns - 1) // columns
+    sheet = Image.new("RGBA", (cell_w * min(columns, len(names)), cell_h * rows), (28, 30, 34, 255))
+    draw = ImageDraw.Draw(sheet)
+    for i, name in enumerate(names):
+        cell = _compose_cell(body_atlas, outline_atlas, index_of[name])
+        x, y = (i % columns) * cell_w, (i // columns) * cell_h
+        sheet.paste(cell.resize((FRAME_W * zoom, FRAME_H * zoom), Image.NEAREST), (x + pad // 2, y + label_h))
+        draw.text((x + pad // 2, y + 2), "%s  #%d" % (name, index_of[name]), fill=(235, 235, 240, 255))
+    sheet.save(path)
+    return path
+
+
+def changed_models(old_atlas, new_atlas):
+    """Names of the models whose pixels differ between two atlases.
+
+    Reports by *name* rather than frame index, since an index means nothing
+    when you are trying to work out whether a change did what you intended.
+    """
+    if old_atlas.size != new_atlas.size:
+        return None
+    old_atlas, new_atlas = old_atlas.convert("RGBA"), new_atlas.convert("RGBA")
+    changed = []
+    for index, spec in enumerate(SPECS):
+        col, row = index % COLUMNS, index // COLUMNS
+        box = (col * FRAME_W, row * FRAME_H, col * FRAME_W + FRAME_W, row * FRAME_H + FRAME_H)
+        if list(old_atlas.crop(box).getdata()) != list(new_atlas.crop(box).getdata()):
+            changed.append(spec["name"])
+    return changed
 
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--preview", action="store_true", help="also write a scaled contact sheet")
+    parser.add_argument("--show", metavar="NAMES",
+                        help="comma-separated model names to write as a labelled zoomed sheet")
+    parser.add_argument("--show-out", default="fish_show.png", help="where --show writes to")
+    parser.add_argument("--zoom", type=int, default=6, help="zoom factor for --show (default 6)")
+    parser.add_argument("--diff", action="store_true",
+                        help="report which models changed against the atlas already on disk")
+    parser.add_argument("--check", action="store_true",
+                        help="validate the specs and exit without writing anything")
+    parser.add_argument("--allow-clipping", action="store_true",
+                        help="build even if some model draws outside its frame")
     args = parser.parse_args()
+
+    if args.check:
+        problems = validate_specs()
+        for problem in problems:
+            print("  %s" % problem)
+        print("%d spec problem(s) across %d models" % (len(problems), len(SPECS)))
+        raise SystemExit(1 if problems else 0)
+
+    previous = None
+    if args.diff and os.path.exists(OUT_PATH):
+        previous = Image.open(OUT_PATH).copy()
+
     os.makedirs(os.path.dirname(OUT_PATH), exist_ok=True)
-    body_atlas, outline_atlas = build_atlases()
+    body_atlas, outline_atlas = build_atlases(allow_clipping=args.allow_clipping)
     body_atlas.save(OUT_PATH)
     outline_atlas.save(OUTLINE_PATH)
     print("wrote %s and %s (%d models, %d grid slots)" % (OUT_PATH, OUTLINE_PATH, len(SPECS), MODEL_COUNT))
+
+    if args.diff:
+        if previous is None:
+            print("--diff: no previous atlas on disk to compare against")
+        else:
+            changed = changed_models(previous, body_atlas)
+            if changed is None:
+                print("--diff: atlas dimensions changed, per-model comparison not meaningful")
+            elif changed:
+                print("--diff: %d model(s) changed: %s" % (len(changed), ", ".join(changed)))
+            else:
+                print("--diff: no model changed")
+
+    if args.show:
+        names = [n.strip() for n in args.show.split(",") if n.strip()]
+        path = write_sheet(body_atlas, outline_atlas, names, args.show_out, zoom=args.zoom)
+        print("wrote %s (%d models)" % (path, len(names)))
+
     if args.preview:
         # Stand in a few rarity colours for the outline so the preview
         # shows roughly what the Album renders.
@@ -1426,4 +1699,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
