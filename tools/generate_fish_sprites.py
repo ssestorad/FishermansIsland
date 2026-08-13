@@ -297,6 +297,14 @@ def _draw_tail(px, spec, x0, base_h, body_h):
     # Cap how fast the tail may open up. Without this the deep-bodied fish
     # grow trumpet-shaped tails, since their tip height scales with a much
     # larger body_h than the peduncle they actually attach to.
+    #
+    # TRAP: the max() below clamps tip_h *up* to base_h, so a `tail_flare`
+    # small enough that body_h * tail_flare lands under the peduncle's own
+    # half-height silently produces a perfectly uniform-width tail instead
+    # of a flared one — no error, just a rectangular bar. The thresher shipped
+    # like that for a long time with tail_flare 0.35 against body_h 6.8,
+    # its signature scythe rendering as a plank. Any new flared tail needs
+    # body_h * tail_flare > the peduncle half-height, or it will not flare.
     tip_h = min(body_h * spec.get("tail_flare", 0.8), base_h + length * 0.85)
     tip_h = max(tip_h, base_h)
     # A shark-style tail is asymmetric: the upper lobe overhangs the lower.
@@ -634,44 +642,33 @@ def _render(px, spec):
     return body, outline
 
 
-def draw_fish(spec, seed):
-    # Tag whatever _put() drops with the model that lost it (see _clipped).
-    global _current_model
-    _current_model = spec.get("name", "?")
-    if spec.get("shape") == "radial":
-        return _draw_radial_fish(spec, seed)
+def _draw_body(px, bounds, body_len, x0):
+    """The body itself: one vertical back->belly gradient per column.
 
-    rng = random.Random(seed)
-    px = {}
-    bounds = _body_bounds(spec)
-    body_len = spec["body_len"]
-    snout = spec.get("snout", 0)
-    tail_len = spec.get("tail_len", 5)
-
-    total = snout + body_len + tail_len
-    x0 = max(1, (FRAME_W - total) // 2) + snout
-
+    Replaced the original flat fill that only picked out the top and bottom
+    rows, so every row in between shades too (see _add_gradient_tones).
+    """
     for i in range(body_len):
         top, bottom = bounds[i]
-        x = x0 + i
         height = bottom - top
         for y in range(top, bottom + 1):
-            # A smooth back->body->belly gradient (see _add_gradient_tones)
-            # instead of the old flat fill with just the top/bottom row
-            # picked out — every row in between now shades too, not just
-            # the two edges.
             frac = (y - top) / float(height) if height > 0 else 0.5
-            _put(px, x, y, _gradient_tone_for(frac))
+            _put(px, x0 + i, y, _gradient_tone_for(frac))
 
-    _draw_pattern(px, spec, bounds, x0, rng)
 
-    # Snout/bill, drawn along the centreline out in front of the head. A
+def _draw_head(px, spec, bounds, x0, snout):
+    """Whatever sits in front of the body — a whisker bill, a solid cone, a
+    hammerhead's cephalofoil, or a neck plus a round head — and returns the
+    row the head ended up on, which _draw_eye needs.
+
+    Snout/bill, drawn along the centreline out in front of the head. A
     # "head_block" spec instead draws an actual rounded head — a small
     # filled circle (same ellipse test _draw_radial_core uses) centred at
     # the tip of the snout — with a thin neck line connecting it back to
     # the body, instead of a whisker line the whole way out or (the
-    # previous attempt) a hard-edged rectangle that read as a block
-    # bolted on rather than a head. `head_radius` controls its size.
+    previous attempt) a hard-edged rectangle that read as a block
+    bolted on rather than a head. `head_radius` controls its size.
+    """
     head_y = int(round(CENTER_Y)) + spec.get("head_offset", 0)
     head_radius = spec.get("head_radius", 2.2)
     neck_cols = snout if not spec.get("head_block") else max(0, snout - int(round(head_radius * 0.8)))
@@ -727,23 +724,29 @@ def draw_fish(spec, seed):
             for dx in range(-int(r) - 1, int(r) + 2):
                 if dx * dx + dy * dy <= r * r:
                     _put(px, head_cx + dx, head_y + dy, "limb")
+    return head_y
 
+
+def _draw_edge_fins(px, spec, bounds, x0, body_len):
+    """Dorsal, optional second dorsal, and anal fin, all sharing the
+    model's one `fin_style`.
+
+    The second dorsal is its own key rather than turning `dorsal` into a
+    list, so the 100+ single-finned models keep the exact spec shape they
+    already had.
+    """
     fin_style = spec.get("fin_style", "sine")
     if spec.get("dorsal"):
         _draw_edge_fin(px, x0, bounds, body_len, spec["dorsal"], -1, fin_style)
-    # A small second dorsal sitting well back toward the tail. Optional and
-    # separate from "dorsal" rather than a list, so the 100+ single-finned
-    # models keep the exact spec shape they already had.
     if spec.get("dorsal2"):
         _draw_edge_fin(px, x0, bounds, body_len, spec["dorsal2"], -1, fin_style)
     if spec.get("anal"):
         _draw_edge_fin(px, x0, bounds, body_len, spec["anal"], 1, fin_style)
 
-    _draw_gills(px, spec, bounds, x0, body_len)
-    _draw_finlets(px, spec, bounds, x0, body_len)
-    _draw_barbels(px, spec, bounds, x0, snout)
-    _draw_lure(px, spec, bounds, x0, body_len)
 
+def _draw_pectorals(px, spec, bounds, x0, body_len):
+    """Whatever hangs off the belly at the shoulder: a 2px nub, a paddle
+    flipper, or a long swept shark blade."""
     pectoral = spec.get("pectoral", True)
     if pectoral:
         fracs = pectoral if isinstance(pectoral, list) else [0.32]
@@ -776,11 +779,14 @@ def draw_fish(spec, seed):
                 _put(px, x0 + i, edge_y + 1, "limb")
                 _put(px, x0 + i + 1, edge_y + 1, "limb")
 
+
+def _draw_eye(px, spec, bounds, x0, body_len, snout, head_y):
+    """Places the eye wherever this model's head actually ended up."""
     if spec.get("head_block"):
-        # The eye belongs on the head — now the outermost snout columns
-        # (see above) — not on the body column formula below, since
-        # head_block/head_offset can put the head well clear of the
-        # body's own front edge (see the turtle).
+        # The eye belongs on the head — the outermost snout columns — not
+        # on the body column formula below, since head_block/head_offset
+        # can put the head well clear of the body's own front edge (see
+        # the turtle).
         _put(px, x0 - snout, head_y - 1, "eye")
     elif spec.get("snout_style") == "hammer":
         # A hammerhead's eyes are out on the tips of the bar, which is the
@@ -795,21 +801,60 @@ def draw_fish(spec, seed):
         eye_y = int(round(CENTER_Y - (CENTER_Y - top) * 0.5))
         _put(px, x0 + eye_i, max(top, min(bottom, eye_y)), "eye")
 
-    if spec.get("teeth"):
-        # A real open jaw, not just marks floating on the belly: extends
-        # the silhouette down a couple of pixels for a short run of
-        # columns near the head (the lower jaw), with a dark mouthline
-        # crease at the original belly edge and a red/white gum-and-tooth
-        # checkerboard riding just inside it — modelled directly on a
-        # reference image the user supplied of a hand-drawn pixel shark.
-        jaw_len = max(4, int(round(body_len * 0.14)))
-        start_i = max(1, int(round(body_len * 0.02)))
-        for k in range(jaw_len):
-            i = min(body_len - 1, start_i + k)
-            mouth_y = bounds[i][1]
-            _put(px, x0 + i, mouth_y, "mouthline")
-            _put(px, x0 + i, mouth_y + 1, "teeth" if k % 2 == 0 else "gum")
-            _put(px, x0 + i, mouth_y + 2, "belly")
+
+def _draw_jaw(px, spec, bounds, x0, body_len):
+    """An open toothy jaw, for the models that set `teeth`.
+
+    A real jaw rather than marks floating on the belly: the silhouette is
+    extended a couple of pixels down for a short run of columns near the
+    head (the lower jaw), with a dark mouthline crease at the original
+    belly edge and a red/white gum-and-tooth checkerboard riding just
+    inside it — modelled on a reference image of a hand-drawn pixel shark.
+    """
+    if not spec.get("teeth"):
+        return
+    jaw_len = max(4, int(round(body_len * 0.14)))
+    start_i = max(1, int(round(body_len * 0.02)))
+    for k in range(jaw_len):
+        i = min(body_len - 1, start_i + k)
+        mouth_y = bounds[i][1]
+        _put(px, x0 + i, mouth_y, "mouthline")
+        _put(px, x0 + i, mouth_y + 1, "teeth" if k % 2 == 0 else "gum")
+        _put(px, x0 + i, mouth_y + 2, "belly")
+
+
+def draw_fish(spec, seed):
+    """Draws one model and returns its (body, outline) image pair.
+
+    The order below is load-bearing: later _put() calls overwrite earlier
+    ones at the same pixel, so e.g. the jaw has to run after the body it
+    cuts into and the eye after the head it sits on.
+    """
+    # Tag whatever _put() drops with the model that lost it (see _clipped).
+    global _current_model
+    _current_model = spec.get("name", "?")
+    if spec.get("shape") == "radial":
+        return _draw_radial_fish(spec, seed)
+
+    rng = random.Random(seed)
+    px = {}
+    bounds = _body_bounds(spec)
+    body_len = spec["body_len"]
+    snout = spec.get("snout", 0)
+    tail_len = spec.get("tail_len", 5)
+    x0 = max(1, (FRAME_W - (snout + body_len + tail_len)) // 2) + snout
+
+    _draw_body(px, bounds, body_len, x0)
+    _draw_pattern(px, spec, bounds, x0, rng)
+    head_y = _draw_head(px, spec, bounds, x0, snout)
+    _draw_edge_fins(px, spec, bounds, x0, body_len)
+    _draw_gills(px, spec, bounds, x0, body_len)
+    _draw_finlets(px, spec, bounds, x0, body_len)
+    _draw_barbels(px, spec, bounds, x0, snout)
+    _draw_lure(px, spec, bounds, x0, body_len)
+    _draw_pectorals(px, spec, bounds, x0, body_len)
+    _draw_eye(px, spec, bounds, x0, body_len, snout, head_y)
+    _draw_jaw(px, spec, bounds, x0, body_len)
 
     peduncle = bounds[body_len - 1]
     _draw_tail(px, spec, x0 + body_len, max(0.5, (peduncle[1] - peduncle[0]) / 2.0), spec["body_h"])
@@ -848,6 +893,16 @@ def _draw_radial_limb(px, bx, by, angle_deg, length, width, tone="body",
     `flare` widens toward the tip instead of the default taper-to-a-point
     — a crab claw is wider at the pincer than at the base, the opposite
     of every other limb shape here.
+
+    TRAP: `width` is a *half*-width, and the stamp below runs -span..+span
+    around the centreline, so the drawn limb is `2 * round(half_w) + 1`
+    pixels across. A `"width": 2.0` therefore paints **five** pixels, not
+    two. Limbs fanned across a narrow arc sit only a few pixels apart at
+    arm's length, so anything much over 1.0 fuses them into a solid slab —
+    the first versions of both the octopus and the jellyfish came out as
+    featureless blocks for exactly this reason. Note also that
+    `round(0.5)` is 0 in Python, so a width of 0.45 is what gives a true
+    1px strand.
     """
     steps = max(1, int(round(length)))
     end_x, end_y = bx, by
@@ -916,8 +971,22 @@ def _draw_radial_fish(spec, seed):
 # --- The roster ------------------------------------------------------
 #
 # Grouped by silhouette family, with size deliberately spread across the
-# set (tiny 11px minnows up to 24px leviathans) so the models differ in
-# bulk as well as in outline and colour.
+# set (small 22px minnows up to 50px leviathans) so the models differ in
+# bulk as well as in outline and colour. Later sections are the batches
+# added over time and are grouped by what prompted them rather than by
+# shape; each carries a comment saying so.
+#
+# Finding your way around, rather than scrolling 470 lines:
+#   * every model's frame number lives in the generated scripts/fish_models.gd
+#   * `--show name1,name2` renders any set of them side by side to look at
+#   * `--check` validates the whole list without writing anything
+#
+# ORDER IS LOAD-BEARING. A model's atlas frame is its position in this
+# list, and the generated name->frame map is rebuilt from it, so
+# *appending* is safe but inserting or reordering rewrites frame numbers
+# for everything after the change. That is fine now that the catalog
+# refers to models by name, but the atlas has to be regenerated for the
+# two to agree again.
 
 SPECS = [
     # Small everyday fish.
