@@ -27,6 +27,7 @@ Add --preview to also write a scaled-up contact sheet for eyeballing.
 
 import argparse
 import colorsys
+import io
 import math
 import os
 import random
@@ -39,6 +40,10 @@ MODEL_COUNT = COLUMNS * ROWS
 CENTER_Y = 15.5
 OUT_PATH = os.path.join("assets", "sprites", "fish", "fish_atlas.png")
 OUTLINE_PATH = os.path.join("assets", "sprites", "fish", "fish_atlas_outline.png")
+## A generated GDScript map from model name to atlas frame, so the catalog
+## can ask for a sprite by name instead of hardcoding a frame number (see
+## write_model_index).
+INDEX_PATH = os.path.join("scripts", "fish_models.gd")
 
 # --- Palettes --------------------------------------------------------
 #
@@ -1607,6 +1612,42 @@ def write_sheet(body_atlas, outline_atlas, names, path, zoom=6, columns=3):
     return path
 
 
+def write_model_index(path=INDEX_PATH):
+    """Emits the name -> atlas frame map that fish_catalog.gd looks models
+    up in, plus the grid constants fish_icon.gd needs.
+
+    Model indices are *positional* in SPECS. Before this existed the
+    catalog hardcoded them as raw integers in 238 places with nothing
+    recording which model each one meant, so inserting a single spec
+    mid-list would silently repoint every one of them at the wrong fish —
+    and the grid size was hand-copied into fish_icon.gd with no check that
+    the two agreed.
+    """
+    lines = [
+        "class_name FishModels",
+        "extends RefCounted",
+        "",
+        "## GENERATED FILE — do not edit by hand.",
+        "## Written by tools/generate_fish_sprites.py; rerun it after changing SPECS.",
+        "##",
+        "## Lets the catalog name the sprite it wants (\"m\": \"tigershark\") instead of",
+        "## hardcoding a frame number, and gives fish_icon.gd one source of truth for",
+        "## the atlas grid rather than a hand-copied duplicate.",
+        "",
+        "const COLUMNS := %d" % COLUMNS,
+        "const ROWS := %d" % ROWS,
+        "const MODEL_COUNT := COLUMNS * ROWS",
+        "",
+        "const MODEL := {",
+    ]
+    for index, spec in enumerate(SPECS):
+        lines.append("\t\"%s\": %d," % (spec["name"], index))
+    lines += ["}", ""]
+    with io.open(path, "w", encoding="utf-8", newline="\n") as handle:
+        handle.write("\n".join(lines))
+    return path
+
+
 def changed_models(old_atlas, new_atlas):
     """Names of the models whose pixels differ between two atlases.
 
@@ -1656,6 +1697,9 @@ def main():
     body_atlas.save(OUT_PATH)
     outline_atlas.save(OUTLINE_PATH)
     print("wrote %s and %s (%d models, %d grid slots)" % (OUT_PATH, OUTLINE_PATH, len(SPECS), MODEL_COUNT))
+    # Always rewritten alongside the atlas so the two cannot drift apart.
+    write_model_index()
+    print("wrote %s" % INDEX_PATH)
 
     if args.diff:
         if previous is None:

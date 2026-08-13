@@ -13,6 +13,12 @@ var description: String
 ## Frame index into the fish atlas (see tools/generate_fish_sprites.py).
 ## Assigned deliberately per species rather than hashed from the name, so
 ## a pike gets the pike silhouette.
+##
+## The catalog names the model it wants ("m": "pike") and this resolves it
+## through the generated FishModels.MODEL map. It used to be a raw frame
+## number in all 238 entries, which meant inserting one spec into the
+## middle of the generator's SPECS list silently repointed every species at
+## the wrong sprite, with nothing recording what any of them had meant.
 var model: int = 0
 
 var weight_range: Vector2 = Vector2(0.3, 2.0)
@@ -38,7 +44,7 @@ func _init(data: Dictionary) -> void:
 	species_name = data["n"]
 	tier = FishRarity.tier_from_name(data["t"])
 	habitat = data["h"]
-	model = data["m"]
+	model = _resolve_model(data["m"], data["n"])
 	var w: Array = data["w"]
 	weight_range = Vector2(w[0], w[1])
 	value = data["v"]
@@ -47,6 +53,17 @@ func _init(data: Dictionary) -> void:
 	required_weather = data.get("weather", "")
 	required_season = data.get("season", "")
 	required_night = data.get("night")
+
+## Looks a model name up in the generated map. A name that isn't there is
+## a real authoring error — a typo, or a model removed from the generator
+## without updating the species that used it — so it is reported loudly
+## rather than quietly rendering frame 0, which is how a wrong sprite would
+## otherwise slip through unnoticed.
+static func _resolve_model(model_name: String, species_name_for_error: String) -> int:
+	if not FishModels.MODEL.has(model_name):
+		push_error("Species \"%s\" wants sprite model \"%s\", which is not in FishModels.MODEL — check the spelling, or re-run tools/generate_fish_sprites.py if the model was just added" % [species_name_for_error, model_name])
+		return 0
+	return FishModels.MODEL[model_name]
 
 func conditions_met(current_weather: String, current_season: String, is_night: bool) -> bool:
 	if required_weather != "" and required_weather != current_weather:

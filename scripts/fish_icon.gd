@@ -7,9 +7,13 @@ extends Sprite2D
 ## Regenerate both with tools/generate_fish_sprites.py.
 const BODY_ATLAS := preload("res://assets/sprites/fish/fish_atlas.png")
 const OUTLINE_ATLAS := preload("res://assets/sprites/fish/fish_atlas_outline.png")
-const COLUMNS := 12
-const ROWS := 12
-const MODEL_COUNT := COLUMNS * ROWS
+## Read from the generated FishModels rather than hand-copied. These used
+## to be duplicated here and had to be kept in sync with the generator by
+## memory alone, with no error if you forgot — a resize would just slice
+## every sprite wrong.
+const COLUMNS := FishModels.COLUMNS
+const ROWS := FishModels.ROWS
+const MODEL_COUNT := FishModels.MODEL_COUNT
 
 ## Undiscovered fish flatten to a dark silhouette. Applied as
 ## self_modulate, not modulate, so it doesn't propagate to the outline

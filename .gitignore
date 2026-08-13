@@ -16,6 +16,7 @@ Thumbs.db
 # Python tooling
 __pycache__/
 
-# Contact sheets the art generators write with --preview
+# Sheets the art generators write for review (--preview, --show)
 *_preview.png
+fish_show.png
 *_preview.png.import
