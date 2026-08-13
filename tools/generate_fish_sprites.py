@@ -33,7 +33,7 @@ import random
 from PIL import Image
 
 FRAME_W, FRAME_H = 64, 32
-COLUMNS, ROWS = 11, 9
+COLUMNS, ROWS = 12, 10
 MODEL_COUNT = COLUMNS * ROWS
 CENTER_Y = 15.5
 OUT_PATH = os.path.join("assets", "sprites", "fish", "fish_atlas.png")
@@ -411,8 +411,22 @@ def draw_fish(spec, seed):
     head_y = int(round(CENTER_Y)) + spec.get("head_offset", 0)
     head_radius = spec.get("head_radius", 2.2)
     neck_cols = snout if not spec.get("head_block") else max(0, snout - int(round(head_radius * 0.8)))
-    for k in range(neck_cols):
-        _put(px, x0 - 1 - k, head_y, "limb")
+    if spec.get("head_block") and neck_cols > 0:
+        # Anchor the neck to the shell's own front-edge midpoint instead of
+        # a fixed row, and interpolate down to head_y — a thin front edge
+        # (low head_h) otherwise leaves the neck floating below the shell
+        # with a visible gap rather than actually touching it.
+        front_top, front_bottom = bounds[0]
+        attach_y = (front_top + front_bottom) / 2.0
+        neck_width = spec.get("neck_width", 3)
+        for k in range(neck_cols):
+            t = k / float(neck_cols - 1) if neck_cols > 1 else 1.0
+            y = int(round(attach_y + (head_y - attach_y) * t))
+            for w in range(neck_width):
+                _put(px, x0 - 1 - k, y + w, "limb")
+    else:
+        for k in range(neck_cols):
+            _put(px, x0 - 1 - k, head_y, "limb")
     if spec.get("head_block"):
         head_cx = x0 - snout
         r = head_radius
@@ -727,7 +741,7 @@ SPECS = [
     # since head_block now sits at the outermost snout columns (see
     # draw_fish) so it no longer needs as much extra downward push to
     # read as separate from the shell.
-    {"name": "turtle", "palette": "copper", "accent_palette": "emerald", "body_len": 22, "body_h": 6.2, "head_h": 0.2, "tail_h": 0.15, "peak": 0.5, "back_bias": 1.12, "belly_bias": 0.68, "taper": "linear", "tail": "round", "tail_len": 3, "tail_flare": 0.4, "snout": 6, "head_block": True, "head_offset": 2, "pectoral": [0.18, 0.82], "pectoral_style": "flipper", "dorsal": False, "pattern": "scutes"},
+    {"name": "turtle", "palette": "copper", "accent_palette": "emerald", "body_len": 22, "body_h": 6.2, "head_h": 0.2, "tail_h": 0.15, "peak": 0.5, "back_bias": 1.12, "belly_bias": 0.68, "taper": "linear", "tail": "round", "tail_len": 3, "tail_flare": 0.4, "snout": 6, "head_block": True, "head_offset": 2, "head_radius": 3.2, "pectoral": [0.18, 0.82], "pectoral_style": "flipper", "dorsal": False, "pattern": "scutes"},
     {"name": "dolphin", "palette": "steel", "body_len": 30, "body_h": 6.8, "head_h": 0.55, "tail_h": 0.3, "peak": 0.38, "tail": "fan", "tail_len": 12, "tail_flare": 0.55, "snout": 4, "dorsal": (0.42, 0.62, 3.6)},
     # The tall dorsal fin is the one silhouette trait everyone recognizes;
     # kept the palette dark and plain rather than fighting the fixed
@@ -812,6 +826,104 @@ SPECS = [
         ],
         "eyes": [(-2, -2), (2, -2)],
     },
+
+    # --- Batch: backfilling under-populated habitats + de-recycling the
+    # most-reused models (2026-08-13). Two of the 10 species reassigned to
+    # a dedicated look this round point at *existing* models instead
+    # (Galewing Ray -> the existing "manta", already an unused-since-built
+    # wide-wing shape; Riptide Barracuda -> the existing "barracuda",
+    # genuine real-family reuse) rather than authoring a near-duplicate,
+    # so only 21 new SPECS entries are needed for 22 improved species.
+    {"name": "eagleray", "shape": "radial", "palette": "teal",
+     "core_w": 4.6, "core_h": 3.0,
+     "limbs": [
+         {"angle": 200, "length": 12, "width": 5.5},
+         {"angle": 340, "length": 12, "width": 5.5},
+         {"angle": 90, "length": 15, "width": 1.4},
+     ],
+     "eyes": [(-1, -3), (1, -3)]},
+    {"name": "stingray", "shape": "radial", "palette": "sand",
+     "core_w": 7.0, "core_h": 6.0,
+     # Toned "belly" (not the default "body") so the whip reads as its own
+     # part instead of blending into the disc at the same colour, with a
+     # slight curl so it trails rather than running dead straight.
+     "limbs": [{"angle": 100, "length": 14, "width": 1.3, "tone": "belly", "curl": 20}],
+     "pattern": "spots", "eyes": [(-1, -4), (1, -4)]},
+    {"name": "sole", "palette": "sand", "body_len": 22, "body_h": 8.5, "head_h": 0.3, "tail_h": 0.25, "peak": 0.5, "tail": "round", "tail_len": 5, "tail_flare": 0.3, "pectoral": False, "pattern": "spots"},
+    {"name": "toadfish", "palette": "olive", "body_len": 24, "body_h": 8.0, "head_h": 0.9, "tail_h": 0.3, "peak": 0.2, "back_bias": 1.0, "belly_bias": 1.1, "tail": "round", "tail_len": 5, "tail_flare": 0.4, "snout": 2, "pattern": "bars"},
+    {"name": "driftfish", "palette": "emerald", "body_len": 34, "body_h": 2.6, "head_h": 0.6, "tail_h": 0.3, "peak": 0.5, "taper": "linear", "tail": "point", "tail_len": 6, "pectoral": False, "pattern": "line"},
+    {"name": "pinfish", "palette": "silver", "body_len": 22, "body_h": 6.6, "head_h": 0.5, "peak": 0.4, "tail": "fork", "tail_len": 6, "dorsal": (0.2, 0.55, 3.0), "pattern": "bars"},
+    {"name": "sandgoby", "palette": "sand", "body_len": 20, "body_h": 4.8, "head_h": 0.9, "tail_h": 0.25, "peak": 0.15, "taper": "linear", "tail": "round", "tail_len": 5, "pattern": "spots"},
+    {"name": "stormfish", "palette": "abyss", "body_len": 30, "body_h": 5.6, "head_h": 0.55, "peak": 0.4, "tail": "fork", "tail_len": 9, "tail_flare": 0.9, "dorsal": (0.2, 0.7, 4.6), "pattern": "line"},
+    {"name": "titan", "palette": "abyss", "body_len": 46, "body_h": 8.4, "head_h": 0.8, "tail_h": 0.3, "peak": 0.3, "back_bias": 1.1, "taper": "linear", "tail": "long", "tail_len": 12, "dorsal": (0.15, 0.85, 5.6), "pattern": "bars"},
+    {"name": "ballastcrab", "shape": "radial", "palette": "copper",
+     # Rebuilt directly on the Shore Crab's proven frontal claws-up-and-out
+     # pose (same core proportions, same up-then-swing-outward claw
+     # geometry, same two-fan leg layout) rather than the original
+     # freehand attempt, which read as a spiky insect rather than a crab.
+     # The one deliberate difference is scale: the left claw is roughly
+     # 2x the right one -- a fiddler crab's single oversized display claw
+     # -- so it's still a distinct silhouette from the Shore Crab's
+     # matched pair at a glance.
+     "cy": 12, "core_w": 6.0, "core_h": 4.8,
+     "limbs": [
+         {"angle": 255, "length": 11, "width": 3.2,
+          "bend": {"angle": 195, "length": 12, "width": 5.6, "tone": "belly", "flare": True}},
+         {"angle": 285, "length": 6, "width": 2.0,
+          "bend": {"angle": 340, "length": 6, "width": 2.6, "tone": "belly", "flare": True}},
+         {"angle": 25, "length": 6, "width": 2.2, "bend": {"angle": 45, "length": 7, "width": 1.6}},
+         {"angle": 50, "length": 6, "width": 2.2, "bend": {"angle": 70, "length": 7, "width": 1.6}},
+         {"angle": 75, "length": 6, "width": 2.2, "bend": {"angle": 95, "length": 7, "width": 1.6}},
+         {"angle": 105, "length": 6, "width": 2.2, "bend": {"angle": 85, "length": 7, "width": 1.6}},
+         {"angle": 130, "length": 6, "width": 2.2, "bend": {"angle": 110, "length": 7, "width": 1.6}},
+         {"angle": 155, "length": 6, "width": 2.2, "bend": {"angle": 135, "length": 7, "width": 1.6}},
+     ],
+     "eyes": [(-2, -4), (2, -4)]},
+    {"name": "wreckwarden", "palette": "slate", "body_len": 32, "body_h": 8.2, "head_h": 0.7, "peak": 0.4, "back_bias": 1.1, "tail": "round", "tail_len": 7, "tail_flare": 0.4, "dorsal": (0.25, 0.65, 3.6), "pattern": "bars"},
+    {"name": "rustedpike", "palette": "amber", "body_len": 38, "body_h": 5.4, "head_h": 0.6, "peak": 0.3, "taper": "linear", "snout": 4, "tail": "fork", "tail_len": 8, "dorsal": (0.55, 0.85, 3.2), "pattern": "spots"},
+    {"name": "hullbreaker", "palette": "steel", "body_len": 44, "body_h": 6.0, "head_h": 1.0, "tail_h": 0.4, "peak": 0.0, "taper": "linear", "tail": "point", "tail_len": 8, "dorsal": (0.1, 0.95, 3.0), "pectoral": False, "pattern": "bars"},
+    {"name": "baypipefish", "palette": "teal", "body_len": 30, "body_h": 2.0, "head_h": 0.8, "tail_h": 0.15, "peak": 0.65, "taper": "linear", "snout": 10, "tail": "point", "tail_len": 4, "pectoral": False, "pattern": "spots"},
+    {"name": "seahare", "shape": "radial", "palette": "rose",
+     "cy": 12, "core_w": 5.0, "core_h": 4.2,
+     "limbs": [
+         {"angle": 250, "length": 5, "width": 3.2, "flare": True, "tone": "back"},
+         {"angle": 290, "length": 5, "width": 3.2, "flare": True, "tone": "back"},
+         {"angle": 90, "length": 4, "width": 2.0},
+     ],
+     "pattern": "spots", "eyes": [(-1, -3), (1, -3)]},
+    {"name": "conch", "shape": "radial", "palette": "gold",
+     # A single thick limb spiralled almost a full turn (curl=340) with
+     # flare widening toward the outer whorl -- the generator's first
+     # genuinely spiral silhouette, for a mollusc rather than anything
+     # with a head/limb body plan.
+     "core_w": 3.4, "core_h": 3.4,
+     "limbs": [{"angle": 0, "length": 14, "width": 3.4, "curl": 340, "flare": True}]},
+    {"name": "bluefish", "palette": "steel", "body_len": 32, "body_h": 5.4, "head_h": 0.6, "peak": 0.4, "tail": "fork", "tail_len": 9, "dorsal": (0.3, 0.6, 3.0), "pattern": "line"},
+    {"name": "waterspout", "palette": "abyss", "body_len": 40, "body_h": 5.0, "head_h": 0.9, "tail_h": 0.35, "peak": 0.1, "taper": "linear", "tail": "point", "tail_len": 7, "dorsal": (0.1, 0.9, 2.6), "pectoral": False, "pattern": "bars"},
+    {"name": "dragonfish", "palette": "ink", "body_len": 26, "body_h": 3.6, "head_h": 0.8, "tail_h": 0.3, "peak": 0.25, "taper": "linear", "snout": 3, "tail": "point", "tail_len": 6, "pectoral": False, "pattern": "glow"},
+    {"name": "vampiresquid", "shape": "radial", "palette": "crimson",
+     "cy": 12, "core_w": 4.6, "core_h": 5.6,
+     "limbs": [
+         {"angle": 100, "length": 9, "width": 2.6, "tone": "body", "curl": -40},
+         {"angle": 130, "length": 9, "width": 2.6, "tone": "back", "curl": 40},
+         {"angle": 160, "length": 9, "width": 2.6, "tone": "body", "curl": -40},
+         {"angle": 200, "length": 9, "width": 2.6, "tone": "back", "curl": 40},
+         {"angle": 230, "length": 9, "width": 2.6, "tone": "body", "curl": -40},
+         {"angle": 260, "length": 9, "width": 2.6, "tone": "back", "curl": 40},
+     ],
+     "eyes": [(-2, -2), (2, -2)]},
+    {"name": "isopod", "shape": "radial", "palette": "slate",
+     # A plain oval core read as a flat pebble with no legs at all; small
+     # stub limbs down both sides (no bend, no curl -- just short and
+     # numerous), toned "back" so they actually contrast against the
+     # "body"-toned core instead of blending invisibly into it (a radial
+     # limb defaults to "body" tone if none is given), give it the
+     # segmented, many-legged pillbug silhouette a blob alone can't.
+     # "bars" is a linear-only pattern style with no effect on a radial
+     # fish -- "spots" is the one the radial path actually supports.
+     "cy": 12, "core_w": 6.0, "core_h": 4.6,
+     "limbs": [{"angle": a, "length": 3, "width": 1.3, "tone": "back"} for a in (100, 125, 150, 175, 185, 210, 235, 260)],
+     "pattern": "spots"},
 ]
 
 
